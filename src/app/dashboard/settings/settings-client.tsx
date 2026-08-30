@@ -49,15 +49,14 @@ interface SettingsClientProps {
     system_prompt: string;
     selected_model: string;
     retrieval_model: string;
+    system_message: string;
   };
 }
 
-// Curated from the live ListModels result for this project's API key —
-// deliberately narrowed to the Gemini 2.5 generation only. Newer 3.x releases
-// and the "-latest" aliases (which can silently point at a 3.x model) were
-// excluded because they've repeatedly hit Google 503 "high demand" errors in
-// this workflow; 2.5 is established and is the same generation already used
-// successfully by the audio/image/video analysis nodes in this n8n instance.
+// Curated from the live ListModels result for this project's API key, and kept to
+// generations confirmed to still work in production (some 2.5 models were retired
+// by Google mid-project — see gemini-2.5-flash-lite/-pro). "-latest" aliases are
+// avoided since they can silently repoint to a different underlying model.
 // โมเดลสำหรับ "RAG AI Agent" (โหนด Google Gemini Chat Model3) — ตัวคิด/ตอบหลัก
 // เน้นความสามารถในการให้เหตุผลและทำตามกฎ System Prompt ที่ซับซ้อน จึงไม่ใช้รุ่น Lite
 const MAIN_MODELS = [
@@ -87,6 +86,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   const [savingModel, setSavingModel] = useState(false);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [savedSystemMessage, setSavedSystemMessage] = useState(initialSettings.system_message);
+  const [systemMessage, setSystemMessage] = useState(initialSettings.system_message);
+  const [editingSystemMessage, setEditingSystemMessage] = useState(false);
+  const [confirmSystemMessageSaveOpen, setConfirmSystemMessageSaveOpen] = useState(false);
+  const [savingSystemMessage, setSavingSystemMessage] = useState(false);
 
   async function saveSetting(key: string, value: unknown, silent = false) {
     try {
@@ -178,8 +182,32 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
     }
   }
 
+  function handleStartEditSystemMessage() {
+    setEditingSystemMessage(true);
+  }
+
+  function handleCancelEditSystemMessage() {
+    setSystemMessage(savedSystemMessage);
+    setEditingSystemMessage(false);
+  }
+
+  function handleRequestSaveSystemMessage() {
+    setConfirmSystemMessageSaveOpen(true);
+  }
+
+  async function handleConfirmSaveSystemMessage() {
+    setSavingSystemMessage(true);
+    const ok = await saveSetting("system_message", systemMessage);
+    setSavingSystemMessage(false);
+    setConfirmSystemMessageSaveOpen(false);
+    if (ok) {
+      setSavedSystemMessage(systemMessage);
+      setEditingSystemMessage(false);
+    }
+  }
+
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Settings</h1>
@@ -188,6 +216,9 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
         </p>
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      {/* Left column */}
+      <div className="space-y-6">
       {/* AI Toggle */}
       <Card className="border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/50 backdrop-blur-sm">
         <CardHeader>
@@ -355,8 +386,86 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
         </CardContent>
       </Card>
 
-      <Separator className="bg-zinc-100 dark:bg-zinc-800/50" />
+      {/* System Message Editor */}
+      <Card className="border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/50 backdrop-blur-sm">
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-violet-400" />
+                System Message
+              </CardTitle>
+              <CardDescription className="text-zinc-500 dark:text-zinc-400 mt-1">
+                กฎพฤติกรรมมาตรฐานของ AI (เช่น เมื่อไหร่ต้องใช้เครื่องมือค้นหา, ห้ามเดาคำตอบ) — แยกจาก System Prompt ด้านขวา ตรงกับช่อง &quot;System Message&quot; ในโหนด &quot;RAG AI Agent&quot; ของ n8n
+              </CardDescription>
+            </div>
+            {!editingSystemMessage && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleStartEditSystemMessage}
+                className="border-zinc-300 dark:border-zinc-700/50 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 shrink-0 items-center gap-1.5"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                แก้ไข
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Textarea
+            value={systemMessage}
+            onChange={(e) => setSystemMessage(e.target.value)}
+            readOnly={!editingSystemMessage}
+            rows={8}
+            placeholder="กรอก System Message สำหรับ AI..."
+            className={`bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-mono text-sm resize-y ${
+              !editingSystemMessage ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+          />
 
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">
+              {systemMessage.length} ตัวอักษร
+            </div>
+
+            {editingSystemMessage && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={handleCancelEditSystemMessage}
+                  disabled={savingSystemMessage}
+                  className="text-zinc-500 dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-500 items-center gap-1.5"
+                >
+                  <X className="w-4 h-4" />
+                  ยกเลิก
+                </Button>
+                <Button
+                  onClick={handleRequestSaveSystemMessage}
+                  disabled={savingSystemMessage || !systemMessage.trim()}
+                  className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-lg shadow-blue-500/20 items-center gap-2"
+                >
+                  {savingSystemMessage ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      กำลังบันทึก...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      บันทึก System Message
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      </div>
+
+      {/* Right column */}
+      <div className="space-y-6">
       {/* System Prompt Editor */}
       <Card className="border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/50 backdrop-blur-sm">
         <CardHeader>
@@ -439,6 +548,9 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
         </CardContent>
       </Card>
 
+      </div>
+      </div>
+
       {/* Confirm Save Dialog */}
       <Dialog open={confirmSaveOpen} onOpenChange={(o) => !saving && setConfirmSaveOpen(o)}>
         <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100">
@@ -492,6 +604,38 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
               className="bg-blue-600 hover:bg-blue-500 text-white"
             >
               {savingModel ? "กำลังบันทึก..." : "ยืนยัน"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Save System Message Dialog */}
+      <Dialog
+        open={confirmSystemMessageSaveOpen}
+        onOpenChange={(o) => !savingSystemMessage && setConfirmSystemMessageSaveOpen(o)}
+      >
+        <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100">
+          <DialogHeader>
+            <DialogTitle>ยืนยันการเปลี่ยน System Message</DialogTitle>
+            <DialogDescription className="text-zinc-500 dark:text-zinc-400">
+              แน่ใจนะว่าจะเปลี่ยน System Message — บอทจะเริ่มใช้กฎนี้ในการตอบกลับทันทีหลังบันทึก
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setConfirmSystemMessageSaveOpen(false)}
+              disabled={savingSystemMessage}
+              className="text-zinc-500 dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-500"
+            >
+              ยกเลิก
+            </Button>
+            <Button
+              onClick={handleConfirmSaveSystemMessage}
+              disabled={savingSystemMessage}
+              className="bg-blue-600 hover:bg-blue-500 text-white"
+            >
+              {savingSystemMessage ? "กำลังบันทึก..." : "ยืนยัน"}
             </Button>
           </DialogFooter>
         </DialogContent>

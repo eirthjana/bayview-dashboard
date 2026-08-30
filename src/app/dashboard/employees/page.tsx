@@ -25,7 +25,7 @@ export default async function EmployeesPage() {
   const linkedCount = employees.filter((e) => e.line_user_id).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Employees Management</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">

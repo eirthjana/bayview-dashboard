@@ -24,7 +24,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-1 border-b border-zinc-200/80 dark:border-zinc-800">
         <div>
           <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
-            Hotel Overview Dashboard
+            Overview Dashboard
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">
             ภาพรวมการทำงานของระบบ AI Automation และการสื่อสารผ่าน LINE OA

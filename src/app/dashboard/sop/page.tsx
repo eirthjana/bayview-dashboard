@@ -47,7 +47,7 @@ export default async function SopPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">SOP Documents</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">

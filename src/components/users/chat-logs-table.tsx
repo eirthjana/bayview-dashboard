@@ -524,7 +524,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
                 <th className="px-3.5 py-3 text-left">คำถาม (User Message)</th>
                 <th className="px-3.5 py-3 text-left">คำตอบ AI (Response)</th>
                 <th className="px-3.5 py-3 text-center whitespace-nowrap">สถานะ (Status)</th>
-                <th className="px-3.5 py-3 text-right whitespace-nowrap">Token</th>
+                <th className="px-3.5 py-3 text-right whitespace-nowrap">Tokens</th>
                 <th className="px-2 py-3 text-center"></th>
               </tr>
             </thead>

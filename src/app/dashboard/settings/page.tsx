@@ -3,11 +3,17 @@ import { SettingsClient } from "./settings-client";
 
 export const dynamic = "force-dynamic";
 
-// Default settings — system_prompt mirrors the original "Prompt (User Message)" text
-// from the n8n "RAG AI Agent" node, with the node's {{ $('...').item.json... }}
-// expressions swapped for simple {{token}} placeholders that n8n's "Build Final Prompt"
-// code node substitutes at runtime (n8n only evaluates {{ }} written directly in a
-// node's own parameters, not expressions embedded inside data fetched from Supabase).
+// Default settings. The n8n "RAG AI Agent" node has two separate prompt fields, and
+// each is independently editable from this Settings page:
+//   - system_prompt   -> node's "Prompt (User Message)" field (per-turn user/context
+//                        data), via {{token}} placeholders that "Build Final Prompt"
+//                        substitutes at runtime.
+//   - system_message  -> node's own "System Message" option (standing behavioral
+//                        rules: tool-use requirement, anti-hallucination), read
+//                        directly from "Parse System Settings" — no token substitution.
+// n8n only evaluates {{ }} written directly in a node's own parameters, not
+// expressions embedded inside data fetched from Supabase, hence the token scheme
+// for system_prompt.
 const DEFAULT_SETTINGS = {
   ai_enabled: true,
   system_prompt: `ข้อมูลผู้ถาม (ยึดตามนี้เป็นหลักเสมอ ห้ามอ้างอิงเป็นอย่างอื่น):
@@ -34,11 +40,20 @@ const DEFAULT_SETTINGS = {
 ต้องกดเว้นบรรทัด (Line break) ทุกครั้งที่ขึ้นหัวข้อใหม่ หรือข้อใหม่
 ใช้ Bullet Points หรือ ตัวเลข: หากคำตอบมีหลายขั้นตอนหรือหลายหัวข้อ ให้ใช้สัญลักษณ์ - หรือ 1., 2., 3.
 ห้ามใช้ Emoji ในการตอบทุกกรณี
-ตอบให้กระชับ และตอบแค่สิ่งที่จำเป็น ถ้า User ถามนอกเหนือจากความรู้ที่มีให้ตอบดังนี้ "ไม่มีข้อมูลในส่วนนี้ให้ติดต่อไปยังไปยังผู้รับผิดชอบแต่ละแผนก หรือ หัวหน้างาน" {{user_question}}`,
+ตอบให้กระชับ และตอบแค่สิ่งที่จำเป็น
+
+ห้ามเดาหรือแต่งคำตอบขึ้นเองเด็ดขาด แม้คำถามจะดูเกี่ยวข้องกับตำแหน่งหรือแผนกของผู้ถามก็ตาม ต้องใช้เฉพาะข้อมูลที่ค้นเจอจากเครื่องมือค้นหาเอกสารเท่านั้นในการตอบ ถ้าค้นแล้วไม่พบข้อมูลที่เกี่ยวข้องโดยตรงกับคำถาม ห้ามอนุมานหรือใช้ความรู้ทั่วไปของตัวเองมาตอบแทนเด็ดขาด ให้ตอบด้วยข้อความนี้เท่านั้น: "ไม่มีข้อมูลในส่วนนี้ให้ติดต่อไปยังไปยังผู้รับผิดชอบแต่ละแผนก หรือ หัวหน้างาน" {{user_question}}`,
   // Drives "Google Gemini Chat Model3" (feeds the RAG AI Agent's own reasoning)
   selected_model: "models/gemini-3.5-flash",
   // Drives "Google Gemini Chat Model2" (feeds the Retrieve Documents vector-search tool)
   retrieval_model: "models/gemini-2.5-flash",
+  // RAG AI Agent's own "System Message" option — standing behavioral rules, separate
+  // from system_prompt above
+  system_message: `สำหรับคำทักทายทั่วไปหรือคำพูดคุยเล็กน้อย (เช่น สวัสดี หวัดดี ขอบคุณ สบายดีไหม) ให้ตอบกลับอย่างเป็นมิตรได้เลยโดยไม่ต้องใช้เครื่องมือค้นหาเอกสาร
+
+สำหรับคำถามอื่นๆ ที่ต้องใช้ข้อมูลจริง คุณ MUST ใช้เครื่องมือ user_documents เพื่อค้นหาข้อมูลก่อนตอบเสมอ ห้ามตอบจากความรู้ของตัวเอง
+
+หลังจากค้นด้วยเครื่องมือ user_documents แล้ว หากไม่พบข้อมูลที่เกี่ยวข้องโดยตรงกับคำถาม ห้ามเดา ห้ามแต่งคำตอบขึ้นเอง และห้ามอนุมานจากตำแหน่งงานหรือแผนกที่ดูเกี่ยวข้องเด็ดขาด แม้ว่าคำถามจะดูเป็นเรื่องที่ควรรู้ก็ตาม ให้ตอบว่าไม่มีข้อมูลตามที่ระบุไว้ใน System Prompt เท่านั้น`,
 };
 
 export default async function SettingsPage() {
@@ -75,6 +90,10 @@ export default async function SettingsPage() {
           typeof settingsMap.retrieval_model === "string" && settingsMap.retrieval_model
             ? settingsMap.retrieval_model
             : DEFAULT_SETTINGS.retrieval_model,
+        system_message:
+          typeof settingsMap.system_message === "string" && settingsMap.system_message
+            ? settingsMap.system_message
+            : DEFAULT_SETTINGS.system_message,
       };
     }
   } catch {
