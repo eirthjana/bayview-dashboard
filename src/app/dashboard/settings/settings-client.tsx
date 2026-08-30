@@ -58,10 +58,18 @@ interface SettingsClientProps {
 // excluded because they've repeatedly hit Google 503 "high demand" errors in
 // this workflow; 2.5 is established and is the same generation already used
 // successfully by the audio/image/video analysis nodes in this n8n instance.
-const AI_MODELS = [
-  { value: "models/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite" },
+// โมเดลสำหรับ "RAG AI Agent" (โหนด Google Gemini Chat Model3) — ตัวคิด/ตอบหลัก
+// เน้นความสามารถในการให้เหตุผลและทำตามกฎ System Prompt ที่ซับซ้อน จึงไม่ใช้รุ่น Lite
+const MAIN_MODELS = [
+  { value: "models/gemini-3.5-flash", label: "Gemini 3.5 Flash" },
   { value: "models/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-  { value: "models/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
+];
+
+// โมเดลสำหรับ "Retrieve Documents" (โหนด Google Gemini Chat Model2) — ตัวค้นหาเอกสาร
+// เน้นความเร็ว/ประหยัด เพราะแค่ค้นและสรุปเอกสารที่เจอ ไม่ต้องคิดซับซ้อนเท่าตัวหลัก
+const RETRIEVAL_MODELS = [
+  { value: "models/gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite" },
+  { value: "models/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
 ];
 
 export function SettingsClient({ initialSettings }: SettingsClientProps) {
@@ -268,11 +276,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
             <Select value={selectedModel} onValueChange={handleModelChange} disabled={!editingModel}>
               <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
                 <SelectValue placeholder="เลือกโมเดล">
-                  {(value: string) => AI_MODELS.find((m) => m.value === value)?.label || value}
+                  {(value: string) => MAIN_MODELS.find((m) => m.value === value)?.label || value}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-                {AI_MODELS.map((model) => (
+                {MAIN_MODELS.map((model) => (
                   <SelectItem
                     key={model.value}
                     value={model.value}
@@ -297,11 +305,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
             <Select value={retrievalModel} onValueChange={handleRetrievalModelChange} disabled={!editingModel}>
               <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
                 <SelectValue placeholder="เลือกโมเดล">
-                  {(value: string) => AI_MODELS.find((m) => m.value === value)?.label || value}
+                  {(value: string) => RETRIEVAL_MODELS.find((m) => m.value === value)?.label || value}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-                {AI_MODELS.map((model) => (
+                {RETRIEVAL_MODELS.map((model) => (
                   <SelectItem
                     key={model.value}
                     value={model.value}
