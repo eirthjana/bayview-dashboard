@@ -70,12 +70,17 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   const [systemPrompt, setSystemPrompt] = useState(initialSettings.system_prompt);
   const [editingPrompt, setEditingPrompt] = useState(false);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+  const [savedSelectedModel, setSavedSelectedModel] = useState(initialSettings.selected_model);
   const [selectedModel, setSelectedModel] = useState(initialSettings.selected_model);
+  const [savedRetrievalModel, setSavedRetrievalModel] = useState(initialSettings.retrieval_model);
   const [retrievalModel, setRetrievalModel] = useState(initialSettings.retrieval_model);
+  const [editingModel, setEditingModel] = useState(false);
+  const [confirmModelSaveOpen, setConfirmModelSaveOpen] = useState(false);
+  const [savingModel, setSavingModel] = useState(false);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
-  async function saveSetting(key: string, value: unknown) {
+  async function saveSetting(key: string, value: unknown, silent = false) {
     try {
       const supabase = createClient();
       const { error } = await supabase
@@ -90,7 +95,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
 
       if (error) throw error;
       setLastSaved(new Date());
-      toast.success("บันทึกสำเร็จ");
+      if (!silent) toast.success("บันทึกสำเร็จ");
       return true;
     } catch {
       toast.error("บันทึกไม่สำเร็จ กรุณาลองใหม่");
@@ -103,16 +108,42 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
     await saveSetting("ai_enabled", checked);
   }
 
-  async function handleModelChange(model: string | null) {
+  function handleModelChange(model: string | null) {
     if (!model) return;
     setSelectedModel(model);
-    await saveSetting("selected_model", model);
   }
 
-  async function handleRetrievalModelChange(model: string | null) {
+  function handleRetrievalModelChange(model: string | null) {
     if (!model) return;
     setRetrievalModel(model);
-    await saveSetting("retrieval_model", model);
+  }
+
+  function handleStartEditModel() {
+    setEditingModel(true);
+  }
+
+  function handleCancelEditModel() {
+    setSelectedModel(savedSelectedModel);
+    setRetrievalModel(savedRetrievalModel);
+    setEditingModel(false);
+  }
+
+  function handleRequestSaveModel() {
+    setConfirmModelSaveOpen(true);
+  }
+
+  async function handleConfirmSaveModel() {
+    setSavingModel(true);
+    const okMain = await saveSetting("selected_model", selectedModel, true);
+    const okRetrieval = await saveSetting("retrieval_model", retrievalModel, true);
+    setSavingModel(false);
+    setConfirmModelSaveOpen(false);
+    if (okMain && okRetrieval) {
+      setSavedSelectedModel(selectedModel);
+      setSavedRetrievalModel(retrievalModel);
+      setEditingModel(false);
+      toast.success("บันทึกโมเดล AI สำเร็จ");
+    }
   }
 
   function handleStartEditPrompt() {
@@ -203,13 +234,28 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
       {/* Model Selection */}
       <Card className="border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-lg text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-            <Cpu className="w-5 h-5 text-violet-400" />
-            AI Model
-          </CardTitle>
-          <CardDescription className="text-zinc-500 dark:text-zinc-400">
-            เลือกโมเดล AI ที่ต้องการใช้งาน
-          </CardDescription>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
+                <Cpu className="w-5 h-5 text-violet-400" />
+                AI Model
+              </CardTitle>
+              <CardDescription className="text-zinc-500 dark:text-zinc-400 mt-1">
+                เลือกโมเดล AI ที่ต้องการใช้งาน
+              </CardDescription>
+            </div>
+            {!editingModel && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleStartEditModel}
+                className="border-zinc-300 dark:border-zinc-700/50 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 shrink-0 items-center gap-1.5"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                แก้ไข
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -219,7 +265,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                 ใช้คิดและตอบคำถามผู้ใช้ — โหนด &quot;Google Gemini Chat Model3&quot; ใน n8n
               </p>
             </div>
-            <Select value={selectedModel} onValueChange={handleModelChange}>
+            <Select value={selectedModel} onValueChange={handleModelChange} disabled={!editingModel}>
               <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
                 <SelectValue placeholder="เลือกโมเดล">
                   {(value: string) => AI_MODELS.find((m) => m.value === value)?.label || value}
@@ -248,7 +294,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                 ใช้ค้นข้อมูลจากฐานเอกสารก่อนตอบ — โหนด &quot;Google Gemini Chat Model2&quot; ใน n8n
               </p>
             </div>
-            <Select value={retrievalModel} onValueChange={handleRetrievalModelChange}>
+            <Select value={retrievalModel} onValueChange={handleRetrievalModelChange} disabled={!editingModel}>
               <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
                 <SelectValue placeholder="เลือกโมเดล">
                   {(value: string) => AI_MODELS.find((m) => m.value === value)?.label || value}
@@ -267,6 +313,37 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
               </SelectContent>
             </Select>
           </div>
+
+          {editingModel && (
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="ghost"
+                onClick={handleCancelEditModel}
+                disabled={savingModel}
+                className="text-zinc-500 dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-500 items-center gap-1.5"
+              >
+                <X className="w-4 h-4" />
+                ยกเลิก
+              </Button>
+              <Button
+                onClick={handleRequestSaveModel}
+                disabled={savingModel}
+                className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-lg shadow-blue-500/20 items-center gap-2"
+              >
+                {savingModel ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    กำลังบันทึก...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    บันทึกโมเดล AI
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -326,7 +403,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                   variant="ghost"
                   onClick={handleCancelEditPrompt}
                   disabled={saving}
-                  className="text-zinc-500 dark:text-zinc-400 items-center gap-1.5"
+                  className="text-zinc-500 dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-500 items-center gap-1.5"
                 >
                   <X className="w-4 h-4" />
                   ยกเลิก
@@ -368,7 +445,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
               variant="ghost"
               onClick={() => setConfirmSaveOpen(false)}
               disabled={saving}
-              className="text-zinc-500 dark:text-zinc-400"
+              className="text-zinc-500 dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-500"
             >
               ยกเลิก
             </Button>
@@ -377,7 +454,36 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
               disabled={saving}
               className="bg-blue-600 hover:bg-blue-500 text-white"
             >
-              {saving ? "กำลังบันทึก..." : "ยืนยัน บันทึก"}
+              {saving ? "กำลังบันทึก..." : "ยืนยัน"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Save Model Dialog */}
+      <Dialog open={confirmModelSaveOpen} onOpenChange={(o) => !savingModel && setConfirmModelSaveOpen(o)}>
+        <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100">
+          <DialogHeader>
+            <DialogTitle>ยืนยันการเปลี่ยนโมเดล AI</DialogTitle>
+            <DialogDescription className="text-zinc-500 dark:text-zinc-400">
+              แน่ใจนะว่าจะเปลี่ยนโมเดล AI — บอทจะเริ่มใช้โมเดลนี้ทันทีหลังบันทึก
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setConfirmModelSaveOpen(false)}
+              disabled={savingModel}
+              className="text-zinc-500 dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-500"
+            >
+              ยกเลิก
+            </Button>
+            <Button
+              onClick={handleConfirmSaveModel}
+              disabled={savingModel}
+              className="bg-blue-600 hover:bg-blue-500 text-white"
+            >
+              {savingModel ? "กำลังบันทึก..." : "ยืนยัน"}
             </Button>
           </DialogFooter>
         </DialogContent>
