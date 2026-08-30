@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { SOP_STORAGE_BUCKET } from "@/lib/documents";
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,6 +34,16 @@ export async function POST(request: NextRequest) {
     const admin = createAdminClient();
     const { error } = await admin.from("documents1").delete().eq("metadata->>file_id", fileId);
     if (error) throw error;
+
+    // Best-effort: also remove the stored original file (folder named after
+    // file_id). Older rows ingested via the n8n Google Drive flow never had
+    // one, so a missing object here is expected and not an error.
+    const { data: objects } = await admin.storage.from(SOP_STORAGE_BUCKET).list(fileId);
+    if (objects && objects.length > 0) {
+      await admin.storage
+        .from(SOP_STORAGE_BUCKET)
+        .remove(objects.map((o) => `${fileId}/${o.name}`));
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

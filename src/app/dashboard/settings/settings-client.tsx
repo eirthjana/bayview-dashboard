@@ -53,22 +53,19 @@ interface SettingsClientProps {
   };
 }
 
-// Curated from the live ListModels result for this project's API key, and kept to
-// generations confirmed to still work in production (some 2.5 models were retired
-// by Google mid-project — see gemini-2.5-flash-lite/-pro). "-latest" aliases are
-// avoided since they can silently repoint to a different underlying model.
-// โมเดลสำหรับ "RAG AI Agent" (โหนด Google Gemini Chat Model3) — ตัวคิด/ตอบหลัก
-// เน้นความสามารถในการให้เหตุผลและทำตามกฎ System Prompt ที่ซับซ้อน จึงไม่ใช้รุ่น Lite
-const MAIN_MODELS = [
-  { value: "models/gemini-3.5-flash", label: "Gemini 3.5 Flash" },
+// รายชื่อโมเดล Gemini ทั้งหมดที่ยิงทดสอบ generateContent จริงกับ Google API แล้วว่าใช้งานได้
+// (ดึงจาก ListModels ของคีย์นี้ ตัดตัวที่ Google เลิกให้บริการแล้ว เช่น gemini-2.5-flash-lite/-pro
+// ที่ตอบ 404 "no longer available to new users", ตัวที่ตอบ 503 "high demand" ซ้ำๆ อย่าง
+// gemini-3.7-flash, และ alias แบบ "-latest" ที่อาจสลับโมเดลจริงข้างหลังได้โดยไม่แจ้งล่วงหน้า)
+// ใช้ลิสต์เดียวกันทั้ง 2 ช่อง (โมเดลหลัก / โมเดลค้นหาเอกสาร) เพื่อให้เลือกได้ครบทุกตัวที่ใช้งานได้จริง
+const AI_MODELS = [
   { value: "models/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-];
-
-// โมเดลสำหรับ "Retrieve Documents" (โหนด Google Gemini Chat Model2) — ตัวค้นหาเอกสาร
-// เน้นความเร็ว/ประหยัด เพราะแค่ค้นและสรุปเอกสารที่เจอ ไม่ต้องคิดซับซ้อนเท่าตัวหลัก
-const RETRIEVAL_MODELS = [
+  { value: "models/gemini-3-flash-preview", label: "Gemini 3 Flash Preview" },
+  { value: "models/gemini-3.1-flash-lite", label: "Gemini 3.1 Flash-Lite" },
+  { value: "models/gemini-3.1-flash-lite-preview", label: "Gemini 3.1 Flash-Lite Preview" },
   { value: "models/gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite" },
-  { value: "models/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  { value: "models/gemini-3.5-flash", label: "Gemini 3.5 Flash" },
+  { value: "models/gemini-3.6-flash", label: "Gemini 3.6 Flash" },
 ];
 
 export function SettingsClient({ initialSettings }: SettingsClientProps) {
@@ -307,11 +304,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
             <Select value={selectedModel} onValueChange={handleModelChange} disabled={!editingModel}>
               <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
                 <SelectValue placeholder="เลือกโมเดล">
-                  {(value: string) => MAIN_MODELS.find((m) => m.value === value)?.label || value}
+                  {(value: string) => AI_MODELS.find((m) => m.value === value)?.label || value}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-                {MAIN_MODELS.map((model) => (
+                {AI_MODELS.map((model) => (
                   <SelectItem
                     key={model.value}
                     value={model.value}
@@ -336,11 +333,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
             <Select value={retrievalModel} onValueChange={handleRetrievalModelChange} disabled={!editingModel}>
               <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
                 <SelectValue placeholder="เลือกโมเดล">
-                  {(value: string) => RETRIEVAL_MODELS.find((m) => m.value === value)?.label || value}
+                  {(value: string) => AI_MODELS.find((m) => m.value === value)?.label || value}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-                {RETRIEVAL_MODELS.map((model) => (
+                {AI_MODELS.map((model) => (
                   <SelectItem
                     key={model.value}
                     value={model.value}

@@ -18,7 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { UploadCloud, FileText, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { UploadCloud, FileText, Trash2, Loader2, AlertTriangle, Eye } from "lucide-react";
 import type { SopDocumentSummary } from "@/app/api/documents/route";
 
 interface SopClientProps {
@@ -26,15 +26,46 @@ interface SopClientProps {
   configError: string | null;
 }
 
+const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"];
+
 export function SopClient({ initialDocuments, configError }: SopClientProps) {
   const [documents, setDocuments] = useState(initialDocuments);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handlePickFile(e: React.ChangeEvent<HTMLInputElement>) {
     setPendingFile(e.target.files?.[0] || null);
+  }
+
+  function isAcceptedFile(file: File) {
+    const name = file.name.toLowerCase();
+    return ACCEPTED_EXTENSIONS.some((ext) => name.endsWith(ext));
+  }
+
+  function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (!isAcceptedFile(file)) {
+      toast.error("รองรับเฉพาะไฟล์ PDF, DOCX, TXT หรือ MD เท่านั้น");
+      return;
+    }
+    setPendingFile(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleUpload() {
@@ -60,6 +91,7 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
               title: data.title,
               chunk_count: data.chunk_count,
               updated_at: new Date().toISOString(),
+              view_url: data.view_url ?? null,
             },
             ...withoutOld,
           ];
@@ -124,31 +156,45 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
-              onChange={handlePickFile}
-              className="flex-1 text-sm text-zinc-700 dark:text-zinc-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-zinc-100 dark:file:bg-zinc-800 file:text-zinc-700 dark:file:text-zinc-300 file:text-sm file:font-medium hover:file:bg-zinc-200 dark:hover:file:bg-zinc-700 rounded-lg border border-zinc-300 dark:border-zinc-700/50 bg-zinc-50 dark:bg-zinc-800/50"
-            />
-            <Button
-              onClick={handleUpload}
-              disabled={!pendingFile || uploading}
-              className="bg-blue-600 hover:bg-blue-500 text-white shrink-0 items-center gap-2"
-            >
-              {uploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  กำลังอัปโหลด...
-                </>
-              ) : (
-                <>
-                  <UploadCloud className="w-4 h-4" />
-                  อัปโหลดและบันทึก
-                </>
-              )}
-            </Button>
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`rounded-lg border-2 border-dashed p-4 transition-colors ${
+              isDragging
+                ? "border-blue-500 bg-blue-500/5"
+                : "border-zinc-300 dark:border-zinc-700/50"
+            }`}
+          >
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+              ลากไฟล์มาวางตรงนี้ หรือเลือกไฟล์ด้านล่าง
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
+                onChange={handlePickFile}
+                className="flex-1 text-sm text-zinc-700 dark:text-zinc-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-zinc-100 dark:file:bg-zinc-800 file:text-zinc-700 dark:file:text-zinc-300 file:text-sm file:font-medium hover:file:bg-zinc-200 dark:hover:file:bg-zinc-700 rounded-lg border border-zinc-300 dark:border-zinc-700/50 bg-zinc-50 dark:bg-zinc-800/50"
+              />
+              <Button
+                onClick={handleUpload}
+                disabled={!pendingFile || uploading}
+                className="bg-blue-600 hover:bg-blue-500 text-white shrink-0 items-center gap-2"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    กำลังอัปโหลด...
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="w-4 h-4" />
+                    อัปโหลดและบันทึก
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
           {pendingFile && (
             <p className="text-xs text-zinc-600 dark:text-zinc-400">
@@ -201,20 +247,33 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
                     {new Date(doc.updated_at).toLocaleString("th-TH")}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(doc)}
-                      disabled={deletingId === doc.file_id}
-                      className="text-zinc-500 dark:text-zinc-400 hover:text-rose-500 h-8 px-2 items-center gap-1.5"
-                    >
-                      {deletingId === doc.file_id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-3.5 h-3.5" />
+                    <div className="flex items-center justify-end gap-1">
+                      {doc.view_url && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          render={<a href={doc.view_url} target="_blank" rel="noopener noreferrer" />}
+                          className="text-zinc-500 dark:text-zinc-400 hover:text-blue-500 h-8 px-2 items-center gap-1.5"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          ดู
+                        </Button>
                       )}
-                      ลบ
-                    </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(doc)}
+                        disabled={deletingId === doc.file_id}
+                        className="text-zinc-500 dark:text-zinc-400 hover:text-rose-500 h-8 px-2 items-center gap-1.5"
+                      >
+                        {deletingId === doc.file_id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
+                        ลบ
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

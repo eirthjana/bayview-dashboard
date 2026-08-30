@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { chunkText, detectFileType, embedText, extractText, fileIdFromName } from "@/lib/documents";
+import {
+  SOP_STORAGE_BUCKET,
+  chunkText,
+  detectFileType,
+  embedText,
+  extractText,
+  fileIdFromName,
+  sopStoragePath,
+} from "@/lib/documents";
+
+const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 export const maxDuration = 120;
 
@@ -66,6 +76,18 @@ export async function POST(request: NextRequest) {
       .eq("metadata->>file_id", fileId);
     if (deleteError) throw deleteError;
 
+    // Store the original file so admins can open/preview it later without
+    // re-downloading — upsert so re-uploading the same filename replaces it.
+    const storagePath = sopStoragePath(fileId, file.name);
+    const { error: storageError } = await admin.storage
+      .from(SOP_STORAGE_BUCKET)
+      .upload(storagePath, buffer, { contentType: file.type || undefined, upsert: true });
+    if (storageError) throw storageError;
+
+    const { data: signedUrlData } = await admin.storage
+      .from(SOP_STORAGE_BUCKET)
+      .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
+
     const now = new Date().toISOString();
     for (let i = 0; i < chunks.length; i++) {
       const embedding = await embedText(chunks[i]);
@@ -85,6 +107,7 @@ export async function POST(request: NextRequest) {
       file_id: fileId,
       title: file.name,
       chunk_count: chunks.length,
+      view_url: signedUrlData?.signedUrl ?? null,
     });
   } catch (error) {
     console.error("Upload document API error:", error);

@@ -7,6 +7,15 @@ const EMBEDDING_MODEL = "gemini-embedding-001";
 const CHUNK_SIZE = 1000;
 const CHUNK_OVERLAP = 150;
 
+// Private Storage bucket holding the original uploaded files, so admins can
+// open/preview a SOP doc straight from the browser instead of only having
+// the chunked text used for RAG search.
+export const SOP_STORAGE_BUCKET = "sop-documents";
+
+export function sopStoragePath(fileId: string, fileName: string): string {
+  return `${fileId}/${fileName}`;
+}
+
 export type SupportedFileType = "pdf" | "docx" | "text";
 
 export function detectFileType(fileName: string, mimeType: string): SupportedFileType | null {
@@ -22,8 +31,51 @@ export function detectFileType(fileName: string, mimeType: string): SupportedFil
   return null;
 }
 
+// pdfjs-dist (used internally by pdf-parse) constructs a `DOMMatrix` at module
+// load time for its canvas-rendering code paths. That's a browser-only Canvas
+// API with no equivalent in Node, so importing pdf-parse server-side throws
+// "DOMMatrix is not defined" unless something provides the global first. We
+// only ever call getText() (never render a page to canvas), so a no-op stub
+// that just avoids crashing on construction is enough — the real matrix math
+// in these methods is never exercised by plain text extraction.
+function ensureDOMMatrixPolyfill() {
+  if (typeof (globalThis as { DOMMatrix?: unknown }).DOMMatrix !== "undefined") return;
+
+  class DOMMatrixPolyfill {
+    a = 1;
+    b = 0;
+    c = 0;
+    d = 1;
+    e = 0;
+    f = 0;
+    constructor(init?: number[]) {
+      if (Array.isArray(init) && init.length === 6) {
+        [this.a, this.b, this.c, this.d, this.e, this.f] = init;
+      }
+    }
+    multiplySelf() {
+      return this;
+    }
+    preMultiplySelf() {
+      return this;
+    }
+    translate() {
+      return this;
+    }
+    scale() {
+      return this;
+    }
+    invertSelf() {
+      return this;
+    }
+  }
+
+  (globalThis as { DOMMatrix?: unknown }).DOMMatrix = DOMMatrixPolyfill;
+}
+
 export async function extractText(buffer: Buffer, fileType: SupportedFileType): Promise<string> {
   if (fileType === "pdf") {
+    ensureDOMMatrixPolyfill();
     const { PDFParse } = await import("pdf-parse");
     const parser = new PDFParse({ data: new Uint8Array(buffer) });
     const result = await parser.getText();
