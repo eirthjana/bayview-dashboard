@@ -55,6 +55,14 @@ const DEPARTMENTS = [
   "Guest / Unregistered",
 ];
 
+const STATUS_FILTER_LABELS: Record<string, string> = {
+  all: "ทุกสถานะ (All)",
+  success: "Success",
+  not_found: "Not Found",
+  unauthorized: "Unauthorized",
+  error: "Error",
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function cleanText(str: string | null | undefined): string {
@@ -419,7 +427,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
                 variant="ghost"
                 size="sm"
                 onClick={handleResetFilters}
-                className="h-7 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/30 px-2 flex items-center gap-1 rounded-lg"
+                className="h-7 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/30 px-2 items-center gap-1 rounded-lg"
               >
                 <RotateCcw className="w-3 h-3" />
                 ล้างตัวกรอง (Reset)
@@ -430,7 +438,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
             {/* 1. Real-time Search */}
             <div className="lg:col-span-4 relative">
-              <Search className="absolute left-3 top-1/2 -tranzinc-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
               <Input
                 placeholder="ค้นหาข้อความ, คำตอบ, ชื่อผู้ใช้, หรือ ID..."
                 value={search}
@@ -478,7 +486,9 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
             <div className="lg:col-span-2">
               <Select value={statusFilter} onValueChange={(v) => setStatusFilter((v || "all") as StatusFilterType)}>
                 <SelectTrigger className="w-full bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800">
-                  <SelectValue placeholder="สถานะ" />
+                  <SelectValue placeholder="สถานะ">
+                    {(value: string) => STATUS_FILTER_LABELS[value] || value}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-[#18181B] border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs">
                   <SelectItem value="all">ทุกสถานะ (All)</SelectItem>
@@ -503,6 +513,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
               <col />
               <col />
               <col style={{ width: "115px" }} />
+              <col style={{ width: "90px" }} />
               <col style={{ width: "48px" }} />
             </colgroup>
 
@@ -513,6 +524,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
                 <th className="px-3.5 py-3 text-left">คำถาม (User Message)</th>
                 <th className="px-3.5 py-3 text-left">คำตอบ AI (Response)</th>
                 <th className="px-3.5 py-3 text-center whitespace-nowrap">สถานะ (Status)</th>
+                <th className="px-3.5 py-3 text-right whitespace-nowrap">Token</th>
                 <th className="px-2 py-3 text-center"></th>
               </tr>
             </thead>
@@ -520,7 +532,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 font-medium">
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center text-zinc-500 dark:text-zinc-400 py-16">
+                  <td colSpan={7} className="text-center text-zinc-500 dark:text-zinc-400 py-16">
                     <MessageSquare className="w-8 h-8 mx-auto mb-2 text-zinc-300 dark:text-zinc-600" />
                     <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</p>
                     <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">ลองปรับตัวกรองค้นหา หรือกด Reset ตัวกรอง</p>
@@ -599,6 +611,18 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
                       {/* Status Badge */}
                       <td className="px-3.5 py-3 align-middle text-center" onClick={(e) => e.stopPropagation()}>
                         <StatusBadge status={log.status} />
+                      </td>
+
+                      {/* Tokens used for this exchange */}
+                      <td className="px-3.5 py-3 align-middle text-right">
+                        {log.tokens_used > 0 ? (
+                          <span className="inline-flex items-center gap-1 font-mono text-[#8B5E3C] dark:text-[#D4A373] font-semibold whitespace-nowrap">
+                            <Zap className="w-3 h-3" />
+                            {log.tokens_used.toLocaleString()}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-400 dark:text-zinc-500">—</span>
+                        )}
                       </td>
 
                       {/* Eye button */}

@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Layers,
   IdCard,
+  UploadCloud,
 } from "lucide-react";
 
 const navItems = [
@@ -41,6 +42,11 @@ const navItems = [
     label: "Employees Management",
     href: "/dashboard/employees",
     icon: IdCard,
+  },
+  {
+    label: "SOP Documents",
+    href: "/dashboard/sop",
+    icon: UploadCloud,
   },
   {
     label: "Settings",

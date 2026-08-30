@@ -52,10 +52,16 @@ interface SettingsClientProps {
   };
 }
 
+// Curated from the live ListModels result for this project's API key —
+// deliberately narrowed to the Gemini 2.5 generation only. Newer 3.x releases
+// and the "-latest" aliases (which can silently point at a 3.x model) were
+// excluded because they've repeatedly hit Google 503 "high demand" errors in
+// this workflow; 2.5 is established and is the same generation already used
+// successfully by the audio/image/video analysis nodes in this n8n instance.
 const AI_MODELS = [
-  { value: "models/gemini-3.5-flash-lite", label: "Gemini 3.5 Flash Lite", provider: "Google" },
-  { value: "models/gemini-3.7-flash", label: "Gemini 3.7 Flash", provider: "Google" },
-  { value: "models/gemini-2.5-flash", label: "Gemini 2.5 Flash", provider: "Google" },
+  { value: "models/gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite" },
+  { value: "models/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
+  { value: "models/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
 ];
 
 export function SettingsClient({ initialSettings }: SettingsClientProps) {
@@ -215,7 +221,9 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
             </div>
             <Select value={selectedModel} onValueChange={handleModelChange}>
               <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
-                <SelectValue placeholder="เลือกโมเดล" />
+                <SelectValue placeholder="เลือกโมเดล">
+                  {(value: string) => AI_MODELS.find((m) => m.value === value)?.label || value}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
                 {AI_MODELS.map((model) => (
@@ -224,12 +232,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                     value={model.value}
                     className="text-zinc-800 dark:text-zinc-200 focus:bg-zinc-200 dark:focus:bg-zinc-700 focus:text-zinc-900 dark:focus:text-zinc-100"
                   >
-                    <div className="flex items-center gap-2">
-                      <span>{model.label}</span>
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                        ({model.provider})
-                      </span>
-                    </div>
+                    {model.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -247,7 +250,9 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
             </div>
             <Select value={retrievalModel} onValueChange={handleRetrievalModelChange}>
               <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
-                <SelectValue placeholder="เลือกโมเดล" />
+                <SelectValue placeholder="เลือกโมเดล">
+                  {(value: string) => AI_MODELS.find((m) => m.value === value)?.label || value}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
                 {AI_MODELS.map((model) => (
@@ -256,12 +261,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                     value={model.value}
                     className="text-zinc-800 dark:text-zinc-200 focus:bg-zinc-200 dark:focus:bg-zinc-700 focus:text-zinc-900 dark:focus:text-zinc-100"
                   >
-                    <div className="flex items-center gap-2">
-                      <span>{model.label}</span>
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                        ({model.provider})
-                      </span>
-                    </div>
+                    {model.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -290,7 +290,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                 variant="outline"
                 size="sm"
                 onClick={handleStartEditPrompt}
-                className="border-zinc-300 dark:border-zinc-700/50 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 shrink-0 flex items-center gap-1.5"
+                className="border-zinc-300 dark:border-zinc-700/50 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 shrink-0 items-center gap-1.5"
               >
                 <Pencil className="w-3.5 h-3.5" />
                 แก้ไข
@@ -326,7 +326,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                   variant="ghost"
                   onClick={handleCancelEditPrompt}
                   disabled={saving}
-                  className="text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5"
+                  className="text-zinc-500 dark:text-zinc-400 items-center gap-1.5"
                 >
                   <X className="w-4 h-4" />
                   ยกเลิก
@@ -334,7 +334,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                 <Button
                   onClick={handleRequestSavePrompt}
                   disabled={saving || !systemPrompt.trim()}
-                  className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-lg shadow-blue-500/20 flex items-center gap-2"
+                  className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-lg shadow-blue-500/20 items-center gap-2"
                 >
                   {saving ? (
                     <>

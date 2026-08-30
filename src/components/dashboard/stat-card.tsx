@@ -83,7 +83,7 @@ export function StatCard({
         border border-zinc-200/90 dark:border-zinc-800/80
         ${colors.hoverBorder}
         hover:shadow-md dark:hover:shadow-black/40 transition-all duration-300 ease-out
-        hover:-tranzinc-y-0.5 rounded-2xl
+        hover:-translate-y-0.5 rounded-2xl
       `}
     >
       {/* Top subtle accent highlight on hover */}

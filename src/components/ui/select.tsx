@@ -61,9 +61,12 @@ function SelectContent({
   children,
   side = "bottom",
   sideOffset = 4,
-  align = "center",
+  align = "start",
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  // Always drop straight down below the trigger instead of trying to align
+  // the selected item with the trigger (which lets the popup expand upward
+  // too, depending on where the selected item sits in the list).
+  alignItemWithTrigger = false,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
