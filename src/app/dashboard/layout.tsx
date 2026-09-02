@@ -25,6 +25,7 @@ import {
   Layers,
   IdCard,
   UploadCloud,
+  BarChart3,
 } from "lucide-react";
 
 const navItems = [
@@ -32,6 +33,11 @@ const navItems = [
     label: "Overview",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    label: "Analytics & Insights",
+    href: "/dashboard/analytics",
+    icon: BarChart3,
   },
   {
     label: "Users & Logs",

@@ -82,6 +82,35 @@ export interface DeptTokenUsage {
 }
 
 // ==========================================
+// Analytics & Insights Types
+// ==========================================
+
+export interface AnalyticsSummary {
+  totalInquiries: number;
+  avgTokensPerQuery: number;
+  peakTrafficTime: string;
+  mostActiveDept: string;
+}
+
+export interface FaqItem {
+  question: string;
+  count: number;
+  percentage: number;
+  tag: string;
+}
+
+export interface HourlyUsage {
+  hour: string;
+  count: number;
+  tier: "peak" | "high" | "regular";
+}
+
+export interface DeptActivity {
+  department: string;
+  count: number;
+}
+
+// ==========================================
 // API Request/Response Types
 // ==========================================
 

@@ -12,6 +12,7 @@ import {
 } from "@/lib/documents";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
 
 export const maxDuration = 120;
 
@@ -47,6 +48,16 @@ export async function POST(request: NextRequest) {
     if (!fileType) {
       return NextResponse.json(
         { success: false, error: "รองรับเฉพาะไฟล์ PDF, DOCX, TXT หรือ MD เท่านั้น" },
+        { status: 400 }
+      );
+    }
+
+    if (file.size === 0) {
+      return NextResponse.json({ success: false, error: "ไฟล์นี้ว่างเปล่า" }, { status: 400 });
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return NextResponse.json(
+        { success: false, error: "ไฟล์มีขนาดใหญ่เกินไป (จำกัดไม่เกิน 25 MB)" },
         { status: 400 }
       );
     }
@@ -89,17 +100,26 @@ export async function POST(request: NextRequest) {
       .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
 
     const now = new Date().toISOString();
-    for (let i = 0; i < chunks.length; i++) {
-      const embedding = await embedText(chunks[i]);
-      const { error: insertError } = await admin.from("documents1").insert({
-        title: file.name,
-        content: chunks[i],
-        embedding,
-        metadata: { file_id: fileId, title: file.name, chunk_index: i },
-        created_at: now,
-        updated_at: now,
-      });
-      if (insertError) throw insertError;
+    try {
+      for (let i = 0; i < chunks.length; i++) {
+        const embedding = await embedText(chunks[i]);
+        const { error: insertError } = await admin.from("documents1").insert({
+          title: file.name,
+          content: chunks[i],
+          embedding,
+          metadata: { file_id: fileId, title: file.name, chunk_index: i },
+          created_at: now,
+          updated_at: now,
+        });
+        if (insertError) throw insertError;
+      }
+    } catch (error) {
+      // Don't leave a half-ingested doc behind (some chunks searchable, rest
+      // missing) — clean up whatever this attempt already wrote and let the
+      // user retry from a clean slate.
+      await admin.from("documents1").delete().eq("metadata->>file_id", fileId);
+      await admin.storage.from(SOP_STORAGE_BUCKET).remove([storagePath]);
+      throw error;
     }
 
     return NextResponse.json({
