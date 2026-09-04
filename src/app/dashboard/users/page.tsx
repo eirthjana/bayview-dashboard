@@ -77,11 +77,6 @@ export default async function UsersPage() {
             ประวัติการสนทนาทั้งหมดพร้อมระบบค้นหาและตัวกรองข้อมูลขั้นสูงแบบเรียลไทม์
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#8B5E3C]/10 dark:bg-[#8B5E3C]/20 text-[#8B5E3C] dark:text-[#D4A373] border border-[#8B5E3C]/20 dark:border-[#8B5E3C]/30">
-            {chatLogs.length} Records Loaded
-          </span>
-        </div>
       </div>
 
       <ChatLogsTable chatLogs={chatLogs} employees={employees} />

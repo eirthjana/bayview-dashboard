@@ -67,8 +67,10 @@ export interface DashboardStats {
 
 export interface DailyUsage {
   date: string;
-  messages: number;
-  errors: number;
+  success: number;
+  not_found: number;
+  unauthorized: number;
+  error: number;
 }
 
 export interface DailyTokenUsage {

@@ -4,6 +4,40 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ── Sundeck Teal — The Bayview Pattaya brand palette ──────────────────────
+   Overrides Tailwind's built-in zinc and blue scales at the source, so
+   every hardcoded bg-zinc, text-zinc, border-zinc, and blue utility class
+   across the app (most components predate the token system below and use
+   these directly rather than bg-background, text-primary, etc.) picks up
+   the sea-and-sand brand colors automatically instead of generic cool gray
+   and generic blue. zinc becomes a teal-tinted neutral; blue becomes the
+   brand teal used for primary actions, links, and focus rings. */
+@theme {
+  --color-zinc-50: #F6FAF9;
+  --color-zinc-100: #EAF2F0;
+  --color-zinc-200: #DCEAE6;
+  --color-zinc-300: #C0D6D1;
+  --color-zinc-400: #8FAEA9;
+  --color-zinc-500: #5C7370;
+  --color-zinc-600: #445C58;
+  --color-zinc-700: #2E4643;
+  --color-zinc-800: #1B332F;
+  --color-zinc-900: #0E2624;
+  --color-zinc-950: #071A19;
+
+  --color-blue-50: #EAF8F4;
+  --color-blue-100: #D1EFE7;
+  --color-blue-200: #A3DFCE;
+  --color-blue-300: #6FC9B2;
+  --color-blue-400: #2CA495;
+  --color-blue-500: #158577;
+  --color-blue-600: #0E6B63;
+  --color-blue-700: #0A544D;
+  --color-blue-800: #0D3F38;
+  --color-blue-900: #0A2E29;
+  --color-blue-950: #051C18;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -49,74 +83,74 @@
 }
 
 :root {
-  /* Zinc + blue theme — matches Employees Management / Settings */
-  --background: #FAFAFA;
-  --foreground: #18181B;
+  /* Sundeck Teal — The Bayview Pattaya brand theme (light) */
+  --background: #F6FAF9;
+  --foreground: #142524;
   --card: #FFFFFF;
-  --card-foreground: #18181B;
+  --card-foreground: #142524;
   --popover: #FFFFFF;
-  --popover-foreground: #18181B;
-  --primary: #2563EB;
+  --popover-foreground: #142524;
+  --primary: #0E6B63;
   --primary-foreground: #FFFFFF;
-  --secondary: #F4F4F5;
-  --secondary-foreground: #18181B;
-  --muted: #F4F4F5;
-  --muted-foreground: #71717A;
-  --accent: #EFF6FF;
-  --accent-foreground: #1D4ED8;
+  --secondary: #EAF2F0;
+  --secondary-foreground: #142524;
+  --muted: #EAF2F0;
+  --muted-foreground: #5C7370;
+  --accent: #EAF8F4;
+  --accent-foreground: #0A544D;
   --destructive: #EF4444;
-  --border: #E4E4E7;
-  --input: #E4E4E7;
-  --ring: #2563EB;
-  --chart-1: #2563EB;
-  --chart-2: #7C3AED;
-  --chart-3: #059669;
-  --chart-4: #F59E0B;
-  --chart-5: #F43F5E;
+  --border: #DCEAE6;
+  --input: #DCEAE6;
+  --ring: #0E6B63;
+  --chart-1: #0E6B63;
+  --chart-2: #C98F3A;
+  --chart-3: #2CA495;
+  --chart-4: #5C7370;
+  --chart-5: #0A544D;
   --radius: 0.75rem;
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #18181B;
-  --sidebar-primary: #2563EB;
+  --sidebar-foreground: #142524;
+  --sidebar-primary: #0E6B63;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F4F4F5;
-  --sidebar-accent-foreground: #1D4ED8;
-  --sidebar-border: #E4E4E7;
-  --sidebar-ring: #2563EB;
+  --sidebar-accent: #EAF2F0;
+  --sidebar-accent-foreground: #0A544D;
+  --sidebar-border: #DCEAE6;
+  --sidebar-ring: #0E6B63;
 }
 
 .dark {
-  /* Zinc + blue theme — matches Employees Management / Settings */
-  --background: #09090B;
-  --foreground: #F4F4F5;
-  --card: #18181B;
-  --card-foreground: #F4F4F5;
-  --popover: #18181B;
-  --popover-foreground: #F4F4F5;
-  --primary: #3B82F6;
-  --primary-foreground: #FFFFFF;
-  --secondary: #27272A;
-  --secondary-foreground: #F4F4F5;
-  --muted: #27272A;
-  --muted-foreground: #A1A1AA;
-  --accent: #27272A;
-  --accent-foreground: #60A5FA;
+  /* Sundeck Teal — The Bayview Pattaya brand theme (dark) */
+  --background: #071A19;
+  --foreground: #E7F3F1;
+  --card: #0E2624;
+  --card-foreground: #E7F3F1;
+  --popover: #0E2624;
+  --popover-foreground: #E7F3F1;
+  --primary: #2AA89D;
+  --primary-foreground: #04100F;
+  --secondary: #163634;
+  --secondary-foreground: #E7F3F1;
+  --muted: #163634;
+  --muted-foreground: #86A6A2;
+  --accent: #163634;
+  --accent-foreground: #2CA495;
   --destructive: #F87171;
-  --border: #27272A;
-  --input: #27272A;
-  --ring: #3B82F6;
-  --chart-1: #60A5FA;
-  --chart-2: #A78BFA;
-  --chart-3: #34D399;
-  --chart-4: #FBBF24;
-  --chart-5: #FB7185;
-  --sidebar: #18181B;
-  --sidebar-foreground: #F4F4F5;
-  --sidebar-primary: #3B82F6;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #27272A;
-  --sidebar-accent-foreground: #60A5FA;
-  --sidebar-border: #27272A;
-  --sidebar-ring: #3B82F6;
+  --border: #163634;
+  --input: #163634;
+  --ring: #2AA89D;
+  --chart-1: #2AA89D;
+  --chart-2: #E0A94F;
+  --chart-3: #6FC9B2;
+  --chart-4: #86A6A2;
+  --chart-5: #A3DFCE;
+  --sidebar: #0E2624;
+  --sidebar-foreground: #E7F3F1;
+  --sidebar-primary: #2AA89D;
+  --sidebar-primary-foreground: #04100F;
+  --sidebar-accent: #163634;
+  --sidebar-accent-foreground: #2CA495;
+  --sidebar-border: #163634;
+  --sidebar-ring: #2AA89D;
 }
 
 @layer base {
@@ -142,20 +176,20 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D4D4D8;
+  background: #C0D6D1;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #A1A1AA;
+  background: #8FAEA9;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #3F3F46;
+  background: #2E4643;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #52525B;
+  background: #445C58;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -163,27 +197,27 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(244, 244, 245, 0.6);
+  background: rgba(234, 242, 240, 0.6);
   border-radius: 9999px;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(24, 24, 27, 0.6);
+  background: rgba(14, 38, 36, 0.6);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #D4D4D8;
+  background: #C0D6D1;
   border-radius: 9999px;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #3F3F46;
+  background: #2E4643;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #A1A1AA;
+  background: #8FAEA9;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #52525B;
+  background: #445C58;
 }

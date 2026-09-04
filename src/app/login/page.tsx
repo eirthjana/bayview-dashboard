@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Suspense } from "react";
-import { Layers, AlertTriangle, AlertCircle, Loader2 } from "lucide-react";
+import { AlertTriangle, AlertCircle, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 function LoginForm() {
@@ -121,8 +121,9 @@ function LoginForm() {
       <Card className="w-full max-w-md mx-4 border-zinc-800/50 bg-zinc-900/80 backdrop-blur-xl shadow-2xl shadow-black/50 relative z-10">
         <CardHeader className="text-center space-y-3 pb-2">
           {/* Logo */}
-          <div className="mx-auto w-14 h-14 bg-gradient-to-br from-blue-500 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20 mb-2">
-            <Layers className="w-7 h-7 text-white" />
+          <div className="mx-auto w-20 h-20 rounded-2xl flex items-center justify-center mb-2 overflow-hidden shadow-lg">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/bayview-mark.png" alt="The Bayview Pattaya" className="w-full h-full object-contain" />
           </div>
           <CardTitle className="text-2xl font-bold text-zinc-100">
             Admin Dashboard

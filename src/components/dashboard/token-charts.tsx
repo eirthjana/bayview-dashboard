@@ -65,16 +65,16 @@ export function DailyTokenChart({ data }: { data: DailyTokenUsage[] }) {
                   <stop offset="100%" stopColor="#8B5E3C" stopOpacity={0.01} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(143, 174, 169, 0.15)" vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 10, fill: "#A1A1AA" }}
-                axisLine={{ stroke: "rgba(148, 163, 184, 0.2)" }}
+                tick={{ fontSize: 10, fill: "#8FAEA9" }}
+                axisLine={{ stroke: "rgba(143, 174, 169, 0.2)" }}
                 tickLine={false}
                 interval={4}
               />
               <YAxis
-                tick={{ fontSize: 10, fill: "#A1A1AA" }}
+                tick={{ fontSize: 10, fill: "#8FAEA9" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={fmtK}
@@ -171,18 +171,18 @@ export function DeptTokenChart({ data }: { data: DeptTokenUsage[] }) {
                 margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
                 barCategoryGap="25%"
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" horizontal={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(143, 174, 169, 0.15)" horizontal={false} />
                 <XAxis
                   type="number"
-                  tick={{ fontSize: 10, fill: "#A1A1AA" }}
-                  axisLine={{ stroke: "rgba(148, 163, 184, 0.2)" }}
+                  tick={{ fontSize: 10, fill: "#8FAEA9" }}
+                  axisLine={{ stroke: "rgba(143, 174, 169, 0.2)" }}
                   tickLine={false}
                   tickFormatter={fmtK}
                 />
                 <YAxis
                   type="category"
                   dataKey="department"
-                  tick={{ fontSize: 11, fill: "#71717A", fontWeight: 600 }}
+                  tick={{ fontSize: 11, fill: "#5C7370", fontWeight: 600 }}
                   axisLine={false}
                   tickLine={false}
                   width={110}

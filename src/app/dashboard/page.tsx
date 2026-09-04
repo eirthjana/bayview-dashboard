@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { DashboardClient } from "./dashboard-client";
+import { normalizeStatusKey } from "@/components/dashboard/status-badge";
 import type { DailyUsage, ChatLog, DailyTokenUsage, DeptTokenUsage, Employee } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -15,21 +16,22 @@ function cleanId(id: string | null | undefined): string {
     .toLowerCase();
 }
 
-// Generate last 30 days date slots with actual counts from chat logs
+// Generate last 30 days date slots with actual per-status counts from chat
+// logs (success/not_found/unauthorized/error) — matches the same 4 statuses
+// shown everywhere else (StatusBadge, StatusDot) instead of collapsing
+// everything but "error" into an undifferentiated "messages" total.
 function getDailyUsageFromLogs(logs: ChatLog[]): DailyUsage[] {
   const days = 30;
   const result: DailyUsage[] = [];
   const now = new Date();
 
-  const countMap = new Map<string, { messages: number; errors: number }>();
+  const emptyStats = () => ({ success: 0, not_found: 0, unauthorized: 0, error: 0 });
+  const countMap = new Map<string, ReturnType<typeof emptyStats>>();
 
   logs.forEach((log) => {
     const logDate = new Date(log.created_at).toISOString().split("T")[0];
-    const current = countMap.get(logDate) || { messages: 0, errors: 0 };
-    current.messages += 1;
-    if (log.status === "error") {
-      current.errors += 1;
-    }
+    const current = countMap.get(logDate) || emptyStats();
+    current[normalizeStatusKey(log.status)] += 1;
     countMap.set(logDate, current);
   });
 
@@ -37,12 +39,11 @@ function getDailyUsageFromLogs(logs: ChatLog[]): DailyUsage[] {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
     const key = d.toISOString().split("T")[0];
-    const stats = countMap.get(key) || { messages: 0, errors: 0 };
+    const stats = countMap.get(key) || emptyStats();
 
     result.push({
       date: d.toLocaleDateString("th-TH", { day: "2-digit", month: "short" }),
-      messages: stats.messages,
-      errors: stats.errors,
+      ...stats,
     });
   }
 

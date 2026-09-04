@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -19,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ChatLog, Employee } from "@/lib/types";
+import { StatusBadge } from "@/components/dashboard/status-badge";
 import {
   Search,
   Eye,
@@ -26,10 +30,6 @@ import {
   Bot,
   Briefcase,
   UserCircle,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  ShieldAlert,
   Zap,
   Calendar,
   MessageSquare,
@@ -39,6 +39,8 @@ import {
   Crown,
   RotateCcw,
   Filter,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 
 // Real Hotel Departments List
@@ -155,47 +157,11 @@ function SummaryMetricCard({
   );
 }
 
-// ─── Status Badge Component ───────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: string }) {
-  const s = status.toLowerCase();
-
-  if (s === "success") {
-    return (
-      <span className="inline-flex items-center justify-center gap-1 text-emerald-800 dark:text-emerald-300 text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded-full whitespace-nowrap">
-        <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-        Success
-      </span>
-    );
-  }
-
-  if (s === "not_found") {
-    return (
-      <span className="inline-flex items-center justify-center gap-1 text-amber-800 dark:text-amber-300 text-[11px] font-bold bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 px-2 py-0.5 rounded-full whitespace-nowrap">
-        <AlertCircle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-        Not Found
-      </span>
-    );
-  }
-
-  if (s === "unauthorized") {
-    return (
-      <span className="inline-flex items-center justify-center gap-1 text-purple-800 dark:text-purple-300 text-[11px] font-bold bg-purple-50 dark:bg-purple-950/50 border border-purple-200 dark:border-purple-800/60 px-2 py-0.5 rounded-full whitespace-nowrap">
-        <ShieldAlert className="w-3 h-3 text-purple-600 dark:text-purple-400 shrink-0" />
-        Unauthorized
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex items-center justify-center gap-1 text-rose-800 dark:text-rose-300 text-[11px] font-bold bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800/60 px-2 py-0.5 rounded-full whitespace-nowrap">
-      <XCircle className="w-3 h-3 text-rose-600 dark:text-rose-400 shrink-0" />
-      Error
-    </span>
-  );
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
+
+// Cap the in-memory log list so a long-running open tab can't grow this
+// unbounded — matches the server's initial fetch limit (see users/page.tsx).
+const MAX_LOGS = 500;
 
 export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
   // Filter States
@@ -207,6 +173,41 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
 
   const [selectedLog, setSelectedLog] = useState<EnrichedLog | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Live logs: seeded from the server-rendered initial fetch, then kept
+  // current via a Supabase Realtime subscription below — no more needing to
+  // hit F5 to see the newest question a user just asked the bot.
+  const [logs, setLogs] = useState<ChatLog[]>(chatLogs);
+  const [isLive, setIsLive] = useState(false);
+  const knownIds = useRef(new Set(chatLogs.map((l) => l.id)));
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("chat_logs_live")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "chat_logs" },
+        (payload) => {
+          const newLog = payload.new as ChatLog;
+          if (knownIds.current.has(newLog.id)) return; // dedupe against re-deliveries
+          knownIds.current.add(newLog.id);
+
+          setLogs((prev) => [newLog, ...prev].slice(0, MAX_LOGS));
+
+          const who = newLog.display_name || "ผู้ใช้ใหม่";
+          const preview = String(newLog.user_message || "").replace(/^=+/, "").trim();
+          toast.info(`ข้อความใหม่จาก ${who}`, {
+            description: preview ? preview.slice(0, 80) : undefined,
+          });
+        }
+      )
+      .subscribe((status) => setIsLive(status === "SUBSCRIBED"));
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Build employee lookup maps for multi-strategy matching
   const { empLineIdMap, empLineNameMap } = useMemo(() => {
@@ -233,7 +234,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
 
   // Enrich each log
   const enrichedLogs = useMemo<EnrichedLog[]>(() => {
-    return chatLogs.map((log) => {
+    return logs.map((log) => {
       const normId = normalizeLineId(log.line_user_id);
       const displayId = cleanDisplayId(log.line_user_id);
 
@@ -300,7 +301,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
         cleanResponse: cleanText(log.ai_response),
       };
     });
-  }, [chatLogs, empLineIdMap, empLineNameMap]);
+  }, [logs, empLineIdMap, empLineNameMap]);
 
   // Apply all 4 filters simultaneously
   const filteredLogs = useMemo(() => {
@@ -333,17 +334,13 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
         if (logDateStr > endDate) return false;
       }
 
-      // 4. Search Bar Filter (Message, AI Response, Name, ID, EmpID, Dept)
+      // 4. Search Bar Filter — sender name only.
+      // Deliberately excludes message/response text: a name mentioned inside
+      // an AI reply (e.g. a contact-lookup answer) used to make unrelated
+      // rows match a search for that name, which read as broken filtering.
       if (q) {
         const nameMatch = String(log.resolvedName || "").toLowerCase().includes(q);
-        const lineIdMatch = String(log.cleanLineUserId || "").toLowerCase().includes(q);
-        const msgMatch = String(log.cleanMessage || "").toLowerCase().includes(q);
-        const respMatch = String(log.cleanResponse || "").toLowerCase().includes(q);
-        const deptMatch = String(log.resolvedDept || "").toLowerCase().includes(q);
-        const posMatch = String(log.employee?.position || "").toLowerCase().includes(q);
-        const empIdMatch = String(log.employee?.emp_id || "").toLowerCase().includes(q);
-
-        if (!nameMatch && !lineIdMatch && !msgMatch && !respMatch && !deptMatch && !posMatch && !empIdMatch) {
+        if (!nameMatch) {
           return false;
         }
       }
@@ -395,7 +392,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
           icon={<Database className="w-5 h-5 text-[#1B4D3E] dark:text-emerald-400" />}
           label="Total Logs (ผลลัพธ์)"
           value={dynamicMetrics.total}
-          subtext={`จากทั้งหมด ${chatLogs.length.toLocaleString()} รายการ`}
+          subtext={`จากทั้งหมด ${logs.length.toLocaleString()} รายการ`}
           colorClass="bg-[#1B4D3E]/10 dark:bg-[#2D6A4F]/20 border-[#1B4D3E]/20 dark:border-emerald-500/30"
         />
         <SummaryMetricCard
@@ -418,9 +415,23 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
       <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl p-4">
         <div className="flex flex-col space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-bold text-zinc-700 dark:text-zinc-200">
-              <Filter className="w-3.5 h-3.5 text-[#1B4D3E] dark:text-emerald-400" />
-              <span>ตัวกรองข้อมูลขั้นสูง (Advanced Filters)</span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-zinc-700 dark:text-zinc-200">
+                <Filter className="w-3.5 h-3.5 text-[#1B4D3E] dark:text-emerald-400" />
+                <span>ตัวกรองข้อมูลขั้นสูง (Advanced Filters)</span>
+              </div>
+              {isLive ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded-full">
+                  <Wifi className="w-2.5 h-2.5" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 px-2 py-0.5 rounded-full">
+                  <WifiOff className="w-2.5 h-2.5" />
+                  กำลังเชื่อมต่อ...
+                </span>
+              )}
             </div>
             {isFiltered && (
               <Button
@@ -440,7 +451,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
             <div className="lg:col-span-4 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
               <Input
-                placeholder="ค้นหาข้อความ, คำตอบ, ชื่อผู้ใช้, หรือ ID..."
+                placeholder="ค้นหาชื่อผู้ส่ง..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9 bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800 transition-colors"
@@ -465,21 +476,9 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
 
             {/* 3. Date Range Picker (Start & End) */}
             <div className="lg:col-span-3 flex items-center gap-1.5">
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 h-9 rounded-xl text-[11px] font-medium px-2"
-                title="Start Date"
-              />
-              <span className="text-zinc-400 text-xs">-</span>
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 h-9 rounded-xl text-[11px] font-medium px-2"
-                title="End Date"
-              />
+              <DateInput value={startDate} onChange={setStartDate} />
+              <span className="text-zinc-400 text-xs shrink-0">-</span>
+              <DateInput value={endDate} onChange={setEndDate} />
             </div>
 
             {/* 4. Status Dropdown */}

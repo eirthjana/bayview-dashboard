@@ -22,7 +22,6 @@ import {
   Menu,
   ChevronLeft,
   ChevronRight,
-  Layers,
   IdCard,
   UploadCloud,
   BarChart3,
@@ -68,12 +67,13 @@ function SidebarContent({ collapsed = false }: { collapsed?: boolean }) {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className={`flex items-center gap-3 px-4 py-5 ${collapsed ? "justify-center" : ""}`}>
-        <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0">
-          <Layers className="w-5 h-5 text-white" />
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/bayview-mark.png" alt="" className="w-full h-full object-contain" />
         </div>
         {!collapsed && (
           <div>
-            <h1 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Bayview</h1>
+            <h1 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Bayview Dashboard</h1>
             <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Admin Panel</p>
           </div>
         )}

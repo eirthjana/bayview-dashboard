@@ -95,7 +95,7 @@ export function TopFaqsCard({ items }: { items: FaqItem[] }) {
 const TIER_COLOR: Record<HourlyUsage["tier"], string> = {
   peak: "#1B4D3E",
   high: "#4F9E7F",
-  regular: "#D4D4D8",
+  regular: "#C0D6D1",
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -133,21 +133,21 @@ export function PeakHoursChart({ data, peakLabel }: { data: HourlyUsage[]; peakL
         <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(143, 174, 169, 0.15)" vertical={false} />
               <XAxis
                 dataKey="hour"
-                tick={{ fontSize: 10, fill: "#A1A1AA" }}
-                axisLine={{ stroke: "rgba(148, 163, 184, 0.2)" }}
+                tick={{ fontSize: 10, fill: "#8FAEA9" }}
+                axisLine={{ stroke: "rgba(143, 174, 169, 0.2)" }}
                 tickLine={false}
                 interval={2}
               />
               <YAxis
-                tick={{ fontSize: 10, fill: "#A1A1AA" }}
+                tick={{ fontSize: 10, fill: "#8FAEA9" }}
                 axisLine={false}
                 tickLine={false}
                 allowDecimals={false}
               />
-              <Tooltip content={<HourlyTooltip />} cursor={{ fill: "rgba(148, 163, 184, 0.08)" }} />
+              <Tooltip content={<HourlyTooltip />} cursor={{ fill: "rgba(143, 174, 169, 0.08)" }} />
               <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={22}>
                 {data.map((d, i) => (
                   <Cell key={`cell-${i}`} fill={TIER_COLOR[d.tier]} />
@@ -186,7 +186,7 @@ const DEPT_PALETTE = [
   "#D97706",
   "#DB2777",
   "#4F46E5",
-  "#71717A",
+  "#5C7370",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -246,23 +246,23 @@ export function DeptActivityChart({ data }: { data: DeptActivity[] }) {
                 margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
                 barCategoryGap="25%"
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.15)" horizontal={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(143, 174, 169, 0.15)" horizontal={false} />
                 <XAxis
                   type="number"
-                  tick={{ fontSize: 10, fill: "#A1A1AA" }}
-                  axisLine={{ stroke: "rgba(148, 163, 184, 0.2)" }}
+                  tick={{ fontSize: 10, fill: "#8FAEA9" }}
+                  axisLine={{ stroke: "rgba(143, 174, 169, 0.2)" }}
                   tickLine={false}
                   allowDecimals={false}
                 />
                 <YAxis
                   type="category"
                   dataKey="department"
-                  tick={{ fontSize: 11, fill: "#71717A", fontWeight: 600 }}
+                  tick={{ fontSize: 11, fill: "#5C7370", fontWeight: 600 }}
                   axisLine={false}
                   tickLine={false}
                   width={160}
                 />
-                <Tooltip content={<DeptActivityTooltip />} cursor={{ fill: "rgba(148, 163, 184, 0.08)" }} />
+                <Tooltip content={<DeptActivityTooltip />} cursor={{ fill: "rgba(143, 174, 169, 0.08)" }} />
                 <Bar dataKey="count" maxBarSize={22} radius={[0, 6, 6, 0]}>
                   {sorted.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={DEPT_PALETTE[index % DEPT_PALETTE.length]} />

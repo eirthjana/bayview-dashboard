@@ -10,14 +10,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ChatLog } from "@/lib/types";
+import { StatusBadge, StatusDot } from "@/components/dashboard/status-badge";
 import {
   Clock,
   Briefcase,
   UserCircle,
   Zap,
   Calendar,
-  CheckCircle2,
-  XCircle,
   MessageSquare,
   Bot,
   User,
@@ -193,11 +192,7 @@ export function RecentActivity({ logs }: RecentActivityProps) {
 
                         {/* Status Icon */}
                         <div className="shrink-0 flex items-center">
-                          {log.status === "success" ? (
-                            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
-                          ) : (
-                            <span className="inline-block w-2 h-2 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50" />
-                          )}
+                          <StatusDot status={log.status} />
                         </div>
                       </div>
 
@@ -333,17 +328,7 @@ function RecentActivityDetailModal({
           </div>
 
           <div className="text-right shrink-0">
-            {log.status === "success" ? (
-              <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 px-2.5 py-1 rounded-lg">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Success
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-rose-700 dark:text-rose-400 text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 px-2.5 py-1 rounded-lg">
-                <XCircle className="w-3.5 h-3.5" />
-                Error
-              </span>
-            )}
+            <StatusBadge status={log.status} />
           </div>
         </div>
 
