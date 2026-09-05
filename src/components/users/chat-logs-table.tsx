@@ -147,7 +147,7 @@ function SummaryMetricCard({
         <div className={`p-3 rounded-xl border ${colorClass} shrink-0`}>{icon}</div>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">{label}</p>
-          <p className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight tabular-nums mt-0.5">
+          <p className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight tabular-nums mt-0.5">
             {typeof value === "number" ? value.toLocaleString() : value}
           </p>
           {subtext && <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5 truncate">{subtext}</p>}
@@ -389,11 +389,11 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
       {/* ── Dynamic Summary Metric Cards (Recalculates based on Filter) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <SummaryMetricCard
-          icon={<Database className="w-5 h-5 text-[#1B4D3E] dark:text-emerald-400" />}
+          icon={<Database className="w-5 h-5 text-[#0C645B] dark:text-emerald-400" />}
           label="Total Logs (ผลลัพธ์)"
           value={dynamicMetrics.total}
           subtext={`จากทั้งหมด ${logs.length.toLocaleString()} รายการ`}
-          colorClass="bg-[#1B4D3E]/10 dark:bg-[#2D6A4F]/20 border-[#1B4D3E]/20 dark:border-emerald-500/30"
+          colorClass="bg-[#0C645B]/10 dark:bg-[#17A594]/20 border-[#0C645B]/20 dark:border-emerald-500/30"
         />
         <SummaryMetricCard
           icon={<Users className="w-5 h-5 text-[#8B5E3C] dark:text-[#D4A373]" />}
@@ -417,7 +417,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 text-xs font-bold text-zinc-700 dark:text-zinc-200">
-                <Filter className="w-3.5 h-3.5 text-[#1B4D3E] dark:text-emerald-400" />
+                <Filter className="w-3.5 h-3.5 text-[#0C645B] dark:text-emerald-400" />
                 <span>ตัวกรองข้อมูลขั้นสูง (Advanced Filters)</span>
               </div>
               {isLive ? (
@@ -464,7 +464,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
                 <SelectTrigger className="w-full bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800">
                   <SelectValue placeholder="เลือกแผนก" />
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-[#18181B] border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs">
+                <SelectContent className="bg-white dark:bg-[#27211C] border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs">
                   {DEPARTMENTS.map((dept) => (
                     <SelectItem key={dept} value={dept}>
                       {dept}
@@ -489,7 +489,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
                     {(value: string) => STATUS_FILTER_LABELS[value] || value}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-white dark:bg-[#18181B] border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs">
+                <SelectContent className="bg-white dark:bg-[#27211C] border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs">
                   <SelectItem value="all">ทุกสถานะ (All)</SelectItem>
                   <SelectItem value="success">Success</SelectItem>
                   <SelectItem value="not_found">Not Found</SelectItem>
@@ -545,7 +545,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
                   if (log.roleType === "admin") {
                     badgeClass = "border-purple-200 dark:border-purple-800/60 text-purple-800 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40";
                   } else if (log.roleType === "manager") {
-                    badgeClass = "border-[#1B4D3E]/20 dark:border-emerald-500/40 text-[#1B4D3E] dark:text-emerald-300 bg-[#1B4D3E]/10 dark:bg-emerald-950/40";
+                    badgeClass = "border-[#0C645B]/20 dark:border-emerald-500/40 text-[#0C645B] dark:text-emerald-300 bg-[#0C645B]/10 dark:bg-emerald-950/40";
                   } else if (log.roleType === "staff") {
                     badgeClass = "border-[#8B5E3C]/20 dark:border-[#8B5E3C]/40 text-[#8B5E3C] dark:text-[#D4A373] bg-[#8B5E3C]/10 dark:bg-[#8B5E3C]/20";
                   }
@@ -630,7 +630,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => openDetail(log)}
-                          className="h-7 w-7 p-0 text-zinc-400 dark:text-zinc-400 hover:text-[#1B4D3E] dark:hover:text-emerald-400 hover:bg-[#1B4D3E]/10 dark:hover:bg-zinc-800 rounded-lg"
+                          className="h-7 w-7 p-0 text-zinc-400 dark:text-zinc-400 hover:text-[#0C645B] dark:hover:text-emerald-400 hover:bg-[#0C645B]/10 dark:hover:bg-zinc-800 rounded-lg"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </Button>
@@ -670,17 +670,17 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
   if (log.roleType === "admin") {
     badgeClass = "border-purple-200 dark:border-purple-800/60 text-purple-800 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40";
   } else if (log.roleType === "manager") {
-    badgeClass = "border-[#1B4D3E]/20 dark:border-emerald-500/40 text-[#1B4D3E] dark:text-emerald-300 bg-[#1B4D3E]/10 dark:bg-emerald-950/40";
+    badgeClass = "border-[#0C645B]/20 dark:border-emerald-500/40 text-[#0C645B] dark:text-emerald-300 bg-[#0C645B]/10 dark:bg-emerald-950/40";
   } else if (log.roleType === "staff") {
     badgeClass = "border-[#8B5E3C]/20 dark:border-[#8B5E3C]/40 text-[#8B5E3C] dark:text-[#D4A373] bg-[#8B5E3C]/10 dark:bg-[#8B5E3C]/20";
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white dark:bg-[#18181B] border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-w-2xl max-h-[85vh] overflow-hidden flex flex-col gap-4 shadow-2xl rounded-2xl">
+      <DialogContent className="bg-white dark:bg-[#27211C] border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-w-2xl max-h-[85vh] overflow-hidden flex flex-col gap-4 shadow-2xl rounded-2xl">
         <DialogHeader className="shrink-0 pb-0">
-          <DialogTitle className="flex items-center gap-2 text-base font-bold text-zinc-900 dark:text-white">
-            <span className="p-1.5 rounded-lg bg-[#1B4D3E]/10 dark:bg-[#2D6A4F]/20 text-[#1B4D3E] dark:text-emerald-400">
+          <DialogTitle className="flex items-center gap-2 text-base font-bold text-zinc-900 dark:text-zinc-100">
+            <span className="p-1.5 rounded-lg bg-[#0C645B]/10 dark:bg-[#17A594]/20 text-[#0C645B] dark:text-emerald-400">
               <MessageSquare className="w-4 h-4" />
             </span>
             รายละเอียดการสนทนา (Conversation Log)
@@ -702,7 +702,7 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
             </Badge>
             <span className="font-extrabold text-zinc-900 dark:text-zinc-100">{log.resolvedName}</span>
             {log.isStaff && (
-              <span className="text-[#1B4D3E] dark:text-emerald-400 font-semibold">({log.resolvedDept})</span>
+              <span className="text-[#0C645B] dark:text-emerald-400 font-semibold">({log.resolvedDept})</span>
             )}
             <span className="font-mono text-zinc-400 dark:text-zinc-500 text-[11px]">{log.cleanLineUserId}</span>
           </div>
@@ -734,12 +734,12 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
         <div className="flex-1 overflow-y-auto space-y-4 min-h-0 custom-scrollbar pr-1">
           {/* User Message */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-[#1B4D3E] dark:text-emerald-400">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-[#0C645B] dark:text-emerald-400">
               <User className="w-3.5 h-3.5" />
               <span>{log.resolvedName}</span>
               <span className="font-normal text-zinc-400 dark:text-zinc-500 font-mono">({shortId(log.cleanLineUserId)})</span>
             </div>
-            <div className="rounded-xl border border-[#1B4D3E]/20 dark:border-emerald-500/30 bg-[#1B4D3E]/5 dark:bg-emerald-950/20 px-4 py-3">
+            <div className="rounded-xl border border-[#0C645B]/20 dark:border-emerald-500/30 bg-[#0C645B]/5 dark:bg-emerald-950/20 px-4 py-3">
               {log.cleanMessage ? (
                 <p className="text-sm text-zinc-900 dark:text-zinc-100 leading-relaxed whitespace-pre-wrap break-words">
                   {log.cleanMessage}

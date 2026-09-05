@@ -29,11 +29,11 @@ const colorMap: Record<
   }
 > = {
   emerald: {
-    bg: "bg-[#1B4D3E]/10 dark:bg-[#2D6A4F]/20",
-    border: "border-[#1B4D3E]/20 dark:border-emerald-500/30",
-    hoverBorder: "hover:border-[#1B4D3E]/40 dark:hover:border-emerald-500/50",
-    iconColor: "text-[#1B4D3E] dark:text-emerald-400",
-    accentLine: "bg-[#1B4D3E] dark:bg-emerald-500",
+    bg: "bg-[#0C645B]/10 dark:bg-[#17A594]/20",
+    border: "border-[#0C645B]/20 dark:border-emerald-500/30",
+    hoverBorder: "hover:border-[#0C645B]/40 dark:hover:border-emerald-500/50",
+    iconColor: "text-[#0C645B] dark:text-emerald-400",
+    accentLine: "bg-[#0C645B] dark:bg-emerald-500",
   },
   wood: {
     bg: "bg-[#8B5E3C]/10 dark:bg-[#8B5E3C]/20",
@@ -76,6 +76,11 @@ export function StatCard({
 }: StatCardProps) {
   const colors = colorMap[color] || colorMap.emerald;
 
+  // One consistent size/weight for every card's value — short numeric KPIs
+  // and long text values (e.g. "Food & Beverage") now render at the same
+  // height, so every card in a row stays the same size.
+  const valueSizeClass = "text-xl lg:text-2xl font-bold";
+
   return (
     <Card
       className={`
@@ -106,7 +111,7 @@ export function StatCard({
               )}
             </div>
 
-            <p className="text-2xl lg:text-3xl font-extrabold text-zinc-900 dark:text-white tracking-tight tabular-nums">
+            <p className={`${valueSizeClass} text-zinc-900 dark:text-zinc-100 tracking-tight tabular-nums leading-snug`}>
               {typeof value === "number" ? value.toLocaleString() : value}
             </p>
 

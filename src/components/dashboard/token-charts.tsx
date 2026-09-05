@@ -47,7 +47,7 @@ export function DailyTokenChart({ data }: { data: DailyTokenUsage[] }) {
   return (
     <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
       <CardHeader className="py-3.5 px-5 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 shrink-0">
-        <CardTitle className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+        <CardTitle className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
           <span className="p-1.5 rounded-lg bg-[#8B5E3C]/10 dark:bg-[#8B5E3C]/20 text-[#8B5E3C] dark:text-[#D4A373]">
             <Zap className="w-4 h-4" />
           </span>
@@ -65,16 +65,16 @@ export function DailyTokenChart({ data }: { data: DailyTokenUsage[] }) {
                   <stop offset="100%" stopColor="#8B5E3C" stopOpacity={0.01} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(143, 174, 169, 0.15)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(147, 173, 168, 0.15)" vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 10, fill: "#8FAEA9" }}
-                axisLine={{ stroke: "rgba(143, 174, 169, 0.2)" }}
+                tick={{ fontSize: 10, fill: "#93ADA8" }}
+                axisLine={{ stroke: "rgba(147, 173, 168, 0.2)" }}
                 tickLine={false}
                 interval={4}
               />
               <YAxis
-                tick={{ fontSize: 10, fill: "#8FAEA9" }}
+                tick={{ fontSize: 10, fill: "#93ADA8" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={fmtK}
@@ -101,10 +101,10 @@ export function DailyTokenChart({ data }: { data: DailyTokenUsage[] }) {
 // ─── Department Token Chart ───────────────────────────────────────────────────
 
 const DEPT_PALETTE = [
-  { fill: "#1B4D3E", bg: "#E8F3EE" },
-  { fill: "#8B5E3C", bg: "#F7F3E9" },
+  { fill: "#0C645B", bg: "#DEEFEC" },
+  { fill: "#8B5E3C", bg: "#EFE8DF" },
   { fill: "#2563EB", bg: "#EFF6FF" },
-  { fill: "#0D9488", bg: "#F0FDFA" },
+  { fill: "#0F7D72", bg: "#F0FDFA" },
   { fill: "#7C3AED", bg: "#F5F3FF" },
   { fill: "#D97706", bg: "#FFFBEB" },
   { fill: "#DB2777", bg: "#FDF2F8" },
@@ -144,8 +144,8 @@ export function DeptTokenChart({ data }: { data: DeptTokenUsage[] }) {
   return (
     <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
       <CardHeader className="py-3.5 px-5 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 shrink-0">
-        <CardTitle className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-          <span className="p-1.5 rounded-lg bg-[#1B4D3E]/10 dark:bg-[#2D6A4F]/20 text-[#1B4D3E] dark:text-emerald-400">
+        <CardTitle className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+          <span className="p-1.5 rounded-lg bg-[#0C645B]/10 dark:bg-[#17A594]/20 text-[#0C645B] dark:text-emerald-400">
             <Building2 className="w-4 h-4" />
           </span>
           Token Usage แยกตามแผนก (Department Breakdown)
@@ -171,18 +171,18 @@ export function DeptTokenChart({ data }: { data: DeptTokenUsage[] }) {
                 margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
                 barCategoryGap="25%"
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(143, 174, 169, 0.15)" horizontal={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(147, 173, 168, 0.15)" horizontal={false} />
                 <XAxis
                   type="number"
-                  tick={{ fontSize: 10, fill: "#8FAEA9" }}
-                  axisLine={{ stroke: "rgba(143, 174, 169, 0.2)" }}
+                  tick={{ fontSize: 10, fill: "#93ADA8" }}
+                  axisLine={{ stroke: "rgba(147, 173, 168, 0.2)" }}
                   tickLine={false}
                   tickFormatter={fmtK}
                 />
                 <YAxis
                   type="category"
                   dataKey="department"
-                  tick={{ fontSize: 11, fill: "#5C7370", fontWeight: 600 }}
+                  tick={{ fontSize: 11, fill: "#6E6157", fontWeight: 600 }}
                   axisLine={false}
                   tickLine={false}
                   width={110}

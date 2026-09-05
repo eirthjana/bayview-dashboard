@@ -18,14 +18,14 @@ export function AnalyticsClient({ summary, faqs, hourly, deptActivity }: Analyti
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-1 border-b border-zinc-200/80 dark:border-zinc-800">
         <div>
-          <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
             Analytics & Insights
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">
             วิเคราะห์เชิงลึก: คำถามยอดนิยม (Top FAQs), ช่วงเวลาใช้งานสูงสุด (Peak Hours), และสถิติแยกตามแผนกจริง
           </p>
         </div>
-        <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#1B4D3E]/10 dark:bg-[#2D6A4F]/20 text-[#1B4D3E] dark:text-emerald-400 border border-[#1B4D3E]/20 dark:border-emerald-500/30 shrink-0">
+        <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#0C645B]/10 dark:bg-[#17A594]/20 text-[#0C645B] dark:text-emerald-400 border border-[#0C645B]/20 dark:border-emerald-500/30 shrink-0">
           Bayview Intelligence
         </span>
       </div>

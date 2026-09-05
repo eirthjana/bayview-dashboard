@@ -80,8 +80,8 @@ export function UsageChart({ data, title = "การใช้งานย้อ
     <Card className="h-[380px] flex flex-col bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
       <CardHeader className="py-3.5 px-5 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 shrink-0">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <CardTitle className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-[#1B4D3E]/10 dark:bg-[#2D6A4F]/20 text-[#1B4D3E] dark:text-emerald-400">
+          <CardTitle className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+            <span className="p-1.5 rounded-lg bg-[#0C645B]/10 dark:bg-[#17A594]/20 text-[#0C645B] dark:text-emerald-400">
               <BarChart3 className="w-4 h-4" />
             </span>
             {title}
@@ -103,7 +103,7 @@ export function UsageChart({ data, title = "การใช้งานย้อ
                 >
                   <span
                     className="w-2 h-2 rounded-full"
-                    style={{ background: isHidden ? "#a1a1aa" : STATUS_META[key].hex }}
+                    style={{ background: isHidden ? "#93ADA8" : STATUS_META[key].hex }}
                   />
                   {STATUS_META[key].label}
                 </button>
@@ -124,16 +124,16 @@ export function UsageChart({ data, title = "การใช้งานย้อ
                   </linearGradient>
                 ))}
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(143, 174, 169, 0.15)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(147, 173, 168, 0.15)" vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 10, fill: "#8FAEA9" }}
-                axisLine={{ stroke: "rgba(143, 174, 169, 0.2)" }}
+                tick={{ fontSize: 10, fill: "#93ADA8" }}
+                axisLine={{ stroke: "rgba(147, 173, 168, 0.2)" }}
                 tickLine={false}
                 interval={4}
               />
               <YAxis
-                tick={{ fontSize: 10, fill: "#8FAEA9" }}
+                tick={{ fontSize: 10, fill: "#93ADA8" }}
                 axisLine={false}
                 tickLine={false}
                 allowDecimals={false}

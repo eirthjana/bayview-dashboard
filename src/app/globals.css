@@ -4,38 +4,43 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ── Sundeck Teal — The Bayview Pattaya brand palette ──────────────────────
-   Overrides Tailwind's built-in zinc and blue scales at the source, so
-   every hardcoded bg-zinc, text-zinc, border-zinc, and blue utility class
-   across the app (most components predate the token system below and use
-   these directly rather than bg-background, text-primary, etc.) picks up
-   the sea-and-sand brand colors automatically instead of generic cool gray
-   and generic blue. zinc becomes a teal-tinted neutral; blue becomes the
-   brand teal used for primary actions, links, and focus rings. */
-@theme {
-  --color-zinc-50: #F6FAF9;
-  --color-zinc-100: #EAF2F0;
-  --color-zinc-200: #DCEAE6;
-  --color-zinc-300: #C0D6D1;
-  --color-zinc-400: #8FAEA9;
-  --color-zinc-500: #5C7370;
-  --color-zinc-600: #445C58;
-  --color-zinc-700: #2E4643;
-  --color-zinc-800: #1B332F;
-  --color-zinc-900: #0E2624;
-  --color-zinc-950: #071A19;
+/* ── Driftwood and Lagoon — The Bayview Pattaya brand palette ──────────────
+   Overrides Tailwind's built-in zinc and blue scales at the source, so every
+   hardcoded bg-zinc, text-zinc, border-zinc and blue utility class across the
+   app (most components predate the token system below and use those directly
+   rather than bg-background, text-primary and friends) picks up the brand
+   colors automatically.
 
-  --color-blue-50: #EAF8F4;
-  --color-blue-100: #D1EFE7;
-  --color-blue-200: #A3DFCE;
-  --color-blue-300: #6FC9B2;
-  --color-blue-400: #2CA495;
-  --color-blue-500: #158577;
-  --color-blue-600: #0E6B63;
-  --color-blue-700: #0A544D;
-  --color-blue-800: #0D3F38;
-  --color-blue-900: #0A2E29;
-  --color-blue-950: #051C18;
+   The zinc ramp carries two jobs at once, which is what makes the warm-cool
+   split below work. Its light end is both the light-mode surface AND the
+   dark-mode text, so it is a pale lagoon green. Its dark end is both the
+   dark-mode surface AND the light-mode text, so it is driftwood brown. The
+   hue therefore flips between 400 and 500, where the two modes hand off.
+   blue becomes the lagoon teal used for primary actions, links and focus. */
+@theme {
+  --color-zinc-50: #EFF7F6;
+  --color-zinc-100: #DEEFEC;
+  --color-zinc-200: #C6E1DD;
+  --color-zinc-300: #A6CAC5;
+  --color-zinc-400: #93ADA8;
+  --color-zinc-500: #6E6157;
+  --color-zinc-600: #574B42;
+  --color-zinc-700: #423931;
+  --color-zinc-800: #322B25;
+  --color-zinc-900: #27211C;
+  --color-zinc-950: #1A1613;
+
+  --color-blue-50: #E6F7F4;
+  --color-blue-100: #C9EFE8;
+  --color-blue-200: #98E0D2;
+  --color-blue-300: #5FCBB8;
+  --color-blue-400: #1BAE9C;
+  --color-blue-500: #14998A;
+  --color-blue-600: #0F7D72;
+  --color-blue-700: #0C645B;
+  --color-blue-800: #0A4D46;
+  --color-blue-900: #083A34;
+  --color-blue-950: #052220;
 }
 
 @theme inline {
@@ -83,74 +88,74 @@
 }
 
 :root {
-  /* Sundeck Teal — The Bayview Pattaya brand theme (light) */
-  --background: #F6FAF9;
-  --foreground: #142524;
+  /* Driftwood and Lagoon — light mode: pale lagoon ground, driftwood ink */
+  --background: #EFF7F6;
+  --foreground: #27211C;
   --card: #FFFFFF;
-  --card-foreground: #142524;
+  --card-foreground: #27211C;
   --popover: #FFFFFF;
-  --popover-foreground: #142524;
-  --primary: #0E6B63;
+  --popover-foreground: #27211C;
+  --primary: #0F7D72;
   --primary-foreground: #FFFFFF;
-  --secondary: #EAF2F0;
-  --secondary-foreground: #142524;
-  --muted: #EAF2F0;
-  --muted-foreground: #5C7370;
-  --accent: #EAF8F4;
-  --accent-foreground: #0A544D;
-  --destructive: #EF4444;
-  --border: #DCEAE6;
-  --input: #DCEAE6;
-  --ring: #0E6B63;
-  --chart-1: #0E6B63;
-  --chart-2: #C98F3A;
-  --chart-3: #2CA495;
-  --chart-4: #5C7370;
-  --chart-5: #0A544D;
+  --secondary: #DEEFEC;
+  --secondary-foreground: #27211C;
+  --muted: #DEEFEC;
+  --muted-foreground: #6E6157;
+  --accent: #E6F7F4;
+  --accent-foreground: #0C645B;
+  --destructive: #D8483C;
+  --border: #C6E1DD;
+  --input: #C6E1DD;
+  --ring: #0F7D72;
+  --chart-1: #0F7D72;
+  --chart-2: #B0803F;
+  --chart-3: #1BAE9C;
+  --chart-4: #6E6157;
+  --chart-5: #0A4D46;
   --radius: 0.75rem;
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #142524;
-  --sidebar-primary: #0E6B63;
+  --sidebar-foreground: #27211C;
+  --sidebar-primary: #0F7D72;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #EAF2F0;
-  --sidebar-accent-foreground: #0A544D;
-  --sidebar-border: #DCEAE6;
-  --sidebar-ring: #0E6B63;
+  --sidebar-accent: #DEEFEC;
+  --sidebar-accent-foreground: #0C645B;
+  --sidebar-border: #C6E1DD;
+  --sidebar-ring: #0F7D72;
 }
 
 .dark {
-  /* Sundeck Teal — The Bayview Pattaya brand theme (dark) */
-  --background: #071A19;
-  --foreground: #E7F3F1;
-  --card: #0E2624;
-  --card-foreground: #E7F3F1;
-  --popover: #0E2624;
-  --popover-foreground: #E7F3F1;
-  --primary: #2AA89D;
-  --primary-foreground: #04100F;
-  --secondary: #163634;
-  --secondary-foreground: #E7F3F1;
-  --muted: #163634;
-  --muted-foreground: #86A6A2;
-  --accent: #163634;
-  --accent-foreground: #2CA495;
-  --destructive: #F87171;
-  --border: #163634;
-  --input: #163634;
-  --ring: #2AA89D;
-  --chart-1: #2AA89D;
-  --chart-2: #E0A94F;
-  --chart-3: #6FC9B2;
-  --chart-4: #86A6A2;
-  --chart-5: #A3DFCE;
-  --sidebar: #0E2624;
-  --sidebar-foreground: #E7F3F1;
-  --sidebar-primary: #2AA89D;
-  --sidebar-primary-foreground: #04100F;
-  --sidebar-accent: #163634;
-  --sidebar-accent-foreground: #2CA495;
-  --sidebar-border: #163634;
-  --sidebar-ring: #2AA89D;
+  /* Driftwood and Lagoon — dark mode: driftwood ground, lagoon ink */
+  --background: #1A1613;
+  --foreground: #DEEFEC;
+  --card: #27211C;
+  --card-foreground: #DEEFEC;
+  --popover: #27211C;
+  --popover-foreground: #DEEFEC;
+  --primary: #1BAE9C;
+  --primary-foreground: #0B1614;
+  --secondary: #322B25;
+  --secondary-foreground: #DEEFEC;
+  --muted: #322B25;
+  --muted-foreground: #93ADA8;
+  --accent: #322B25;
+  --accent-foreground: #5FCBB8;
+  --destructive: #F1766A;
+  --border: #322B25;
+  --input: #322B25;
+  --ring: #1BAE9C;
+  --chart-1: #1BAE9C;
+  --chart-2: #D9A85C;
+  --chart-3: #5FCBB8;
+  --chart-4: #93ADA8;
+  --chart-5: #98E0D2;
+  --sidebar: #27211C;
+  --sidebar-foreground: #DEEFEC;
+  --sidebar-primary: #1BAE9C;
+  --sidebar-primary-foreground: #0B1614;
+  --sidebar-accent: #322B25;
+  --sidebar-accent-foreground: #5FCBB8;
+  --sidebar-border: #322B25;
+  --sidebar-ring: #1BAE9C;
 }
 
 @layer base {
@@ -176,20 +181,20 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #C0D6D1;
+  background: #A6CAC5;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #8FAEA9;
+  background: #93ADA8;
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #2E4643;
+  background: #423931;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #445C58;
+  background: #574B42;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -197,27 +202,27 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(234, 242, 240, 0.6);
+  background: rgba(222, 239, 236, 0.6);
   border-radius: 9999px;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(14, 38, 36, 0.6);
+  background: rgba(39, 33, 28, 0.6);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #C0D6D1;
+  background: #A6CAC5;
   border-radius: 9999px;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #2E4643;
+  background: #423931;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #8FAEA9;
+  background: #93ADA8;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #445C58;
+  background: #574B42;
 }

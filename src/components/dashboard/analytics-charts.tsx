@@ -18,7 +18,7 @@ import { HelpCircle, Clock, Building2 } from "lucide-react";
 // ─── Top FAQs Card ─────────────────────────────────────────────────────────
 
 const RANK_COLORS = [
-  "bg-[#1B4D3E] dark:bg-emerald-600",
+  "bg-[#0C645B] dark:bg-emerald-600",
   "bg-[#8B5E3C] dark:bg-[#8B5E3C]",
   "bg-zinc-700 dark:bg-zinc-600",
 ];
@@ -28,7 +28,7 @@ export function TopFaqsCard({ items }: { items: FaqItem[] }) {
     <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
       <CardHeader className="py-3.5 px-5 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 shrink-0">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+          <CardTitle className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
             <span className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
               <HelpCircle className="w-4 h-4" />
             </span>
@@ -74,7 +74,7 @@ export function TopFaqsCard({ items }: { items: FaqItem[] }) {
               <div className="mt-2.5 flex items-center gap-3">
                 <div className="flex-1 h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-[#1B4D3E] dark:bg-emerald-500"
+                    className="h-full rounded-full bg-[#0C645B] dark:bg-emerald-500"
                     style={{ width: `${Math.max(item.percentage, 2)}%` }}
                   />
                 </div>
@@ -93,9 +93,9 @@ export function TopFaqsCard({ items }: { items: FaqItem[] }) {
 // ─── Peak Usage Hours Chart ─────────────────────────────────────────────────
 
 const TIER_COLOR: Record<HourlyUsage["tier"], string> = {
-  peak: "#1B4D3E",
-  high: "#4F9E7F",
-  regular: "#C0D6D1",
+  peak: "#0C645B",
+  high: "#14998A",
+  regular: "#A6CAC5",
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -118,7 +118,7 @@ export function PeakHoursChart({ data, peakLabel }: { data: HourlyUsage[]; peakL
     <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
       <CardHeader className="py-3.5 px-5 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 shrink-0">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <CardTitle className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+          <CardTitle className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
             <span className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
               <Clock className="w-4 h-4" />
             </span>
@@ -133,21 +133,21 @@ export function PeakHoursChart({ data, peakLabel }: { data: HourlyUsage[]; peakL
         <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(143, 174, 169, 0.15)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(147, 173, 168, 0.15)" vertical={false} />
               <XAxis
                 dataKey="hour"
-                tick={{ fontSize: 10, fill: "#8FAEA9" }}
-                axisLine={{ stroke: "rgba(143, 174, 169, 0.2)" }}
+                tick={{ fontSize: 10, fill: "#93ADA8" }}
+                axisLine={{ stroke: "rgba(147, 173, 168, 0.2)" }}
                 tickLine={false}
                 interval={2}
               />
               <YAxis
-                tick={{ fontSize: 10, fill: "#8FAEA9" }}
+                tick={{ fontSize: 10, fill: "#93ADA8" }}
                 axisLine={false}
                 tickLine={false}
                 allowDecimals={false}
               />
-              <Tooltip content={<HourlyTooltip />} cursor={{ fill: "rgba(143, 174, 169, 0.08)" }} />
+              <Tooltip content={<HourlyTooltip />} cursor={{ fill: "rgba(147, 173, 168, 0.08)" }} />
               <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={22}>
                 {data.map((d, i) => (
                   <Cell key={`cell-${i}`} fill={TIER_COLOR[d.tier]} />
@@ -178,15 +178,15 @@ export function PeakHoursChart({ data, peakLabel }: { data: HourlyUsage[]; peakL
 // ─── Department Activity Breakdown ──────────────────────────────────────────
 
 const DEPT_PALETTE = [
-  "#1B4D3E",
+  "#0C645B",
   "#8B5E3C",
   "#2563EB",
-  "#0D9488",
+  "#0F7D72",
   "#7C3AED",
   "#D97706",
   "#DB2777",
   "#4F46E5",
-  "#5C7370",
+  "#6E6157",
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -220,7 +220,7 @@ export function DeptActivityChart({ data }: { data: DeptActivity[] }) {
     <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
       <CardHeader className="py-3.5 px-5 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 shrink-0">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+          <CardTitle className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
             <span className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
               <Building2 className="w-4 h-4" />
             </span>
@@ -246,23 +246,23 @@ export function DeptActivityChart({ data }: { data: DeptActivity[] }) {
                 margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
                 barCategoryGap="25%"
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(143, 174, 169, 0.15)" horizontal={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(147, 173, 168, 0.15)" horizontal={false} />
                 <XAxis
                   type="number"
-                  tick={{ fontSize: 10, fill: "#8FAEA9" }}
-                  axisLine={{ stroke: "rgba(143, 174, 169, 0.2)" }}
+                  tick={{ fontSize: 10, fill: "#93ADA8" }}
+                  axisLine={{ stroke: "rgba(147, 173, 168, 0.2)" }}
                   tickLine={false}
                   allowDecimals={false}
                 />
                 <YAxis
                   type="category"
                   dataKey="department"
-                  tick={{ fontSize: 11, fill: "#5C7370", fontWeight: 600 }}
+                  tick={{ fontSize: 11, fill: "#6E6157", fontWeight: 600 }}
                   axisLine={false}
                   tickLine={false}
                   width={160}
                 />
-                <Tooltip content={<DeptActivityTooltip />} cursor={{ fill: "rgba(143, 174, 169, 0.08)" }} />
+                <Tooltip content={<DeptActivityTooltip />} cursor={{ fill: "rgba(147, 173, 168, 0.08)" }} />
                 <Bar dataKey="count" maxBarSize={22} radius={[0, 6, 6, 0]}>
                   {sorted.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={DEPT_PALETTE[index % DEPT_PALETTE.length]} />

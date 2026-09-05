@@ -64,8 +64,8 @@ export function RecentActivity({ logs }: RecentActivityProps) {
       <Card className="h-[380px] flex flex-col bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
         <CardHeader className="py-3.5 px-5 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 shrink-0">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-[#1B4D3E]/10 dark:bg-[#2D6A4F]/20 text-[#1B4D3E] dark:text-emerald-400">
+            <CardTitle className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-[#0C645B]/10 dark:bg-[#17A594]/20 text-[#0C645B] dark:text-emerald-400">
                 <Clock className="w-4 h-4" />
               </span>
               กิจกรรมล่าสุด (Recent Activity)
@@ -118,7 +118,7 @@ export function RecentActivity({ logs }: RecentActivityProps) {
                     level === "manager" ||
                     String(employee.position || "").toLowerCase().includes("manager")
                   ) {
-                    badgeClass = "border-[#1B4D3E]/20 dark:border-emerald-500/40 text-[#1B4D3E] dark:text-emerald-300 bg-[#1B4D3E]/10 dark:bg-emerald-950/40";
+                    badgeClass = "border-[#0C645B]/20 dark:border-emerald-500/40 text-[#0C645B] dark:text-emerald-300 bg-[#0C645B]/10 dark:bg-emerald-950/40";
                   } else {
                     badgeClass = "border-[#8B5E3C]/20 dark:border-[#8B5E3C]/40 text-[#8B5E3C] dark:text-[#D4A373] bg-[#8B5E3C]/10 dark:bg-[#8B5E3C]/20";
                   }
@@ -143,13 +143,13 @@ export function RecentActivity({ logs }: RecentActivityProps) {
                   <div
                     key={log.id}
                     onClick={() => handleOpenDetail(log)}
-                    className="group relative flex items-start gap-3 p-3 rounded-xl bg-zinc-50/70 dark:bg-zinc-800/40 hover:bg-[#1B4D3E]/5 dark:hover:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-800 hover:border-[#1B4D3E]/30 dark:hover:border-zinc-700 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+                    className="group relative flex items-start gap-3 p-3 rounded-xl bg-zinc-50/70 dark:bg-zinc-800/40 hover:bg-[#0C645B]/5 dark:hover:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-800 hover:border-[#0C645B]/30 dark:hover:border-zinc-700 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
                   >
                     {/* Avatar Initials with Luxury Gradient */}
                     <div
                       className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105 ${
                         isEmployee
-                          ? "bg-gradient-to-br from-[#1B4D3E] to-[#2D6A4F] text-white border border-[#1B4D3E]/40"
+                          ? "bg-gradient-to-br from-[#0C645B] to-[#17A594] text-white border border-[#0C645B]/40"
                           : "bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-700 dark:to-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-700"
                       }`}
                     >
@@ -165,7 +165,7 @@ export function RecentActivity({ logs }: RecentActivityProps) {
                       {/* Name + Badge + Status */}
                       <div className="flex items-center justify-between gap-1.5">
                         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                          <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-[#1B4D3E] dark:group-hover:text-emerald-400 transition-colors">
+                          <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate group-hover:text-[#0C645B] dark:group-hover:text-emerald-400 transition-colors">
                             {displayName}
                           </span>
                           <Badge
@@ -273,7 +273,7 @@ function RecentActivityDetailModal({
       level === "manager" ||
       String(employee.position || "").toLowerCase().includes("manager")
     ) {
-      badgeClass = "border-[#1B4D3E]/20 dark:border-emerald-500/40 text-[#1B4D3E] dark:text-emerald-300 bg-[#1B4D3E]/10 dark:bg-emerald-950/40";
+      badgeClass = "border-[#0C645B]/20 dark:border-emerald-500/40 text-[#0C645B] dark:text-emerald-300 bg-[#0C645B]/10 dark:bg-emerald-950/40";
     } else {
       badgeClass = "border-[#8B5E3C]/20 dark:border-[#8B5E3C]/40 text-[#8B5E3C] dark:text-[#D4A373] bg-[#8B5E3C]/10 dark:bg-[#8B5E3C]/20";
     }
@@ -285,10 +285,10 @@ function RecentActivityDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-white dark:bg-[#18181B] border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-w-xl max-h-[85vh] overflow-hidden flex flex-col p-6 shadow-2xl rounded-2xl">
+      <DialogContent className="bg-white dark:bg-[#27211C] border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-w-xl max-h-[85vh] overflow-hidden flex flex-col p-6 shadow-2xl rounded-2xl">
         <DialogHeader className="shrink-0 pb-2">
           <DialogTitle className="flex items-center gap-2 text-base font-bold text-zinc-900 dark:text-zinc-100">
-            <span className="p-1.5 rounded-lg bg-[#1B4D3E]/10 dark:bg-[#2D6A4F]/20 text-[#1B4D3E] dark:text-emerald-400">
+            <span className="p-1.5 rounded-lg bg-[#0C645B]/10 dark:bg-[#17A594]/20 text-[#0C645B] dark:text-emerald-400">
               <MessageSquare className="w-4 h-4" />
             </span>
             รายละเอียดกิจกรรม (Activity Detail)
@@ -301,7 +301,7 @@ function RecentActivityDetailModal({
             <div
               className={`w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 shadow-sm ${
                 isEmployee
-                  ? "bg-gradient-to-br from-[#1B4D3E] to-[#2D6A4F] text-white"
+                  ? "bg-gradient-to-br from-[#0C645B] to-[#17A594] text-white"
                   : "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-600"
               }`}
             >
@@ -317,7 +317,7 @@ function RecentActivityDetailModal({
                 </Badge>
               </div>
               {isEmployee && employee?.department ? (
-                <p className="text-xs text-[#1B4D3E] dark:text-emerald-400 font-medium truncate mt-0.5">
+                <p className="text-xs text-[#0C645B] dark:text-emerald-400 font-medium truncate mt-0.5">
                   แผนก: {employee.department} {employee?.emp_id ? `(ID: ${employee.emp_id})` : ""}
                 </p>
               ) : null}
@@ -358,11 +358,11 @@ function RecentActivityDetailModal({
         <div className="flex-1 overflow-y-auto space-y-3.5 pr-1 mt-1 custom-scrollbar">
           {/* User Message */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-[#1B4D3E] dark:text-emerald-400">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-[#0C645B] dark:text-emerald-400">
               <User className="w-3.5 h-3.5" />
               <span>{displayName}</span>
             </div>
-            <div className="rounded-xl border border-[#1B4D3E]/20 dark:border-emerald-500/30 bg-[#1B4D3E]/5 dark:bg-emerald-950/20 px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap break-words leading-relaxed">
+            <div className="rounded-xl border border-[#0C645B]/20 dark:border-emerald-500/30 bg-[#0C645B]/5 dark:bg-emerald-950/20 px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap break-words leading-relaxed">
               {userMsg || <span className="text-zinc-400 dark:text-zinc-500 italic">— ไม่มีข้อความ —</span>}
             </div>
           </div>

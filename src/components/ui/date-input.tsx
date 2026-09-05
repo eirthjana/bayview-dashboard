@@ -126,7 +126,7 @@ export function DateInput({ value, onChange, placeholder = "dd/mm/yyyy", classNa
     <div
       ref={panelRef}
       style={{ position: "fixed", top: panelPos.top, left: panelPos.left }}
-      className="z-50 w-64 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#18181B] shadow-xl p-3"
+      className="z-50 w-64 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#27211C] shadow-xl p-3"
     >
       {/* Month header */}
       <div className="flex items-center justify-between mb-2">
@@ -175,9 +175,9 @@ export function DateInput({ value, onChange, placeholder = "dd/mm/yyyy", classNa
               className={cn(
                 "h-7 w-7 mx-auto flex items-center justify-center rounded-lg text-[11px] font-medium transition-colors",
                 isSelected
-                  ? "bg-[#1B4D3E] dark:bg-emerald-600 text-white font-bold"
+                  ? "bg-[#0C645B] dark:bg-emerald-600 text-white font-bold"
                   : isToday
-                    ? "border border-[#1B4D3E]/40 dark:border-emerald-500/50 text-zinc-800 dark:text-zinc-200"
+                    ? "border border-[#0C645B]/40 dark:border-emerald-500/50 text-zinc-800 dark:text-zinc-200"
                     : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
               )}
             >
