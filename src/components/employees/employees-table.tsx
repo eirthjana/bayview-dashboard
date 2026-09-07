@@ -28,7 +28,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { EmployeeRegistry } from "@/lib/types";
 import { DEPARTMENTS, ACCESS_LEVELS } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
@@ -105,16 +104,23 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
   const [editPos, setEditPos] = useState("");
   const [editLineId, setEditLineId] = useState("");
   const [editLineName, setEditLineName] = useState("");
-  const [editLinePicture, setEditLinePicture] = useState("");
-  const [fetchingEditProfile, setFetchingEditProfile] = useState(false);
   const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const editAccess = deriveAccessLevel(editPos);
+  // Email is identity data tied to the employee id, so it is fill-once: an
+  // admin may supply a missing one (the OTP flow cannot start without it) but
+  // cannot type over an address that is already on record.
+  const emailLocked = !!editing?.email?.trim();
 
   const [addOpen, setAddOpen] = useState(false);
   const [addEmpId, setAddEmpId] = useState("");
   const [addName, setAddName] = useState("");
+  const [addNameTh, setAddNameTh] = useState("");
+  const [addNickname, setAddNickname] = useState("");
+  const [addNicknameTh, setAddNicknameTh] = useState("");
   const [addEmail, setAddEmail] = useState("");
+  const [addPhone, setAddPhone] = useState("");
   const [addDept, setAddDept] = useState("Executive Office");
   const [addPos, setAddPos] = useState(DEPARTMENTS["Executive Office"][0]);
   const [adding, setAdding] = useState(false);
@@ -147,37 +153,8 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
     setEditPos(emp.position || "");
     setEditLineId(emp.line_user_id || "");
     setEditLineName(emp.line_name || "");
-    setEditLinePicture("");
     setEditEmail(emp.email || "");
-  }
-
-  async function handleFetchProfileEdit() {
-    const lineUserId = editLineId.trim();
-    if (!lineUserId) {
-      toast.error("ใส่ LINE User ID ก่อนกดดึงโปรไฟล์");
-      return;
-    }
-    setFetchingEditProfile(true);
-    setEditLinePicture("");
-    try {
-      const res = await fetch("/api/line/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lineUserId }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setEditLineName(data.displayName || "");
-        setEditLinePicture(data.pictureUrl || "");
-        toast.success("ดึงโปรไฟล์ LINE สำเร็จ");
-      } else {
-        toast.error(data.error || "ไม่พบโปรไฟล์ LINE ID นี้");
-      }
-    } catch {
-      toast.error("เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่");
-    } finally {
-      setFetchingEditProfile(false);
-    }
+    setEditPhone(emp.phone_number || "");
   }
 
   async function saveEdit() {
@@ -187,6 +164,7 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
       const trimmedLineId = editLineId.trim() || null;
       const trimmedLineName = editLineName.trim() || null;
       const trimmedEmail = editEmail.trim() || null;
+      const trimmedPhone = editPhone.trim() || null;
       const nextStatus =
         editing.status === "disabled" ? "disabled" : trimmedLineId ? "linked" : "unlinked";
 
@@ -200,6 +178,7 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
           line_user_id: trimmedLineId,
           line_name: trimmedLineName,
           email: trimmedEmail,
+          phone_number: trimmedPhone,
           status: nextStatus,
         })
         .eq("emp_id", editing.emp_id);
@@ -217,6 +196,7 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
                 line_user_id: trimmedLineId,
                 line_name: trimmedLineName,
                 email: trimmedEmail,
+                phone_number: trimmedPhone,
                 status: nextStatus,
               }
             : e
@@ -242,7 +222,11 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
       : 1001;
     setAddEmpId(String(nextId));
     setAddName("");
+    setAddNameTh("");
+    setAddNickname("");
+    setAddNicknameTh("");
     setAddEmail("");
+    setAddPhone("");
     setAddDept("Executive Office");
     setAddPos(DEPARTMENTS["Executive Office"][0]);
     setAddOpen(true);
@@ -257,16 +241,24 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
     setAdding(true);
     try {
       const trimmedEmail = addEmail.trim() || null;
+      const trimmedPhone = addPhone.trim() || null;
+      const trimmedNameTh = addNameTh.trim() || null;
+      const trimmedNickname = addNickname.trim() || null;
+      const trimmedNicknameTh = addNicknameTh.trim() || null;
 
       const supabase = createClient();
       const { error } = await supabase.from("employee_test").insert({
         emp_id: empId,
         name: addName.trim(),
+        name_th: trimmedNameTh,
+        nickname: trimmedNickname,
+        nickname_th: trimmedNicknameTh,
         department: addDept,
         position: addPos,
         line_user_id: null,
         line_name: null,
         email: trimmedEmail,
+        phone_number: trimmedPhone,
         status: "unlinked",
       });
 
@@ -277,15 +269,15 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
         {
           emp_id: empId,
           name: addName.trim(),
-          name_th: null,
-          nickname: null,
-          nickname_th: null,
+          name_th: trimmedNameTh,
+          nickname: trimmedNickname,
+          nickname_th: trimmedNicknameTh,
           department: addDept,
           position: addPos,
           line_user_id: null,
           line_name: null,
           email: trimmedEmail,
-          phone_number: null,
+          phone_number: trimmedPhone,
           status: "unlinked",
           access_level: addAccess,
         },
@@ -301,30 +293,6 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
       }
     } finally {
       setAdding(false);
-    }
-  }
-
-  async function handleUnlink(emp: EmployeeRegistry) {
-    if (!confirm(`ยกเลิกการผูก LINE ID ของ "${emp.name}" ใช่หรือไม่?`)) return;
-    try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("employee_test")
-        .update({ line_user_id: null, line_name: null, status: "unlinked" })
-        .eq("emp_id", emp.emp_id);
-
-      if (error) throw error;
-
-      setEmployees((prev) =>
-        prev.map((e) =>
-          e.emp_id === emp.emp_id
-            ? { ...e, line_user_id: null, line_name: null, status: "unlinked" }
-            : e
-        )
-      );
-      toast.success(`ยกเลิกการผูก LINE ของ ${emp.name} แล้ว`);
-    } catch {
-      toast.error("ทำรายการไม่สำเร็จ");
     }
   }
 
@@ -361,7 +329,7 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
           className="max-w-sm bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
         />
         <Select value={deptFilter} onValueChange={(v) => setDeptFilter(v || "__all__")}>
-          <SelectTrigger className="w-[220px] bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100">
+          <SelectTrigger className="w-[13.75rem] bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100">
             <SelectValue placeholder="ทุกแผนก">
               {(value: string) => (!value || value === "__all__" ? "ทุกแผนก" : value)}
             </SelectValue>
@@ -376,7 +344,7 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
           </SelectContent>
         </Select>
         <Select value={linkFilter} onValueChange={(v) => setLinkFilter(v || "__all__")}>
-          <SelectTrigger className="w-[180px] bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100">
+          <SelectTrigger className="w-[11.25rem] bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100">
             <SelectValue placeholder="สถานะการผูก">
               {(value: string) => {
                 if (value === "linked") return "ผูก LINE แล้ว";
@@ -401,13 +369,13 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
         <Table>
           <TableHeader>
             <TableRow className="border-zinc-200 dark:border-zinc-800/50 hover:bg-transparent">
-              <TableHead className="text-zinc-500 dark:text-zinc-400">รหัส</TableHead>
-              <TableHead className="text-zinc-500 dark:text-zinc-400">ชื่อ-นามสกุล</TableHead>
-              <TableHead className="text-zinc-500 dark:text-zinc-400">แผนก / ตำแหน่ง</TableHead>
-              <TableHead className="text-zinc-500 dark:text-zinc-400">สิทธิ์</TableHead>
-              <TableHead className="text-zinc-500 dark:text-zinc-400">LINE ID</TableHead>
-              <TableHead className="text-zinc-500 dark:text-zinc-400">สถานะ</TableHead>
-              <TableHead className="text-zinc-500 dark:text-zinc-400 text-right">จัดการ</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">รหัส</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">ชื่อ-นามสกุล</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">แผนก / ตำแหน่ง</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">สิทธิ์</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">LINE ID</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">สถานะ</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400 text-right">จัดการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -424,18 +392,18 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
                   onClick={() => setViewing(emp)}
                   className="border-zinc-200 dark:border-zinc-800/50 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/30 cursor-pointer"
                 >
-                  <TableCell className="font-mono text-xs text-zinc-500 dark:text-zinc-400">{emp.emp_id}</TableCell>
-                  <TableCell>
-                    <div className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{emp.name}</div>
-                    <div className="text-xs text-zinc-500 dark:text-zinc-400">
+                  <TableCell className="px-4 py-4 font-mono text-sm text-zinc-500 dark:text-zinc-400">{emp.emp_id}</TableCell>
+                  <TableCell className="px-4 py-4">
+                    <div className="text-[0.9375rem] font-medium text-zinc-800 dark:text-zinc-200">{emp.name}</div>
+                    <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
                       {emp.name_th || <span className="italic">-</span>}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="text-sm text-zinc-700 dark:text-zinc-300">{emp.department}</div>
-                    <div className="text-xs text-zinc-500 dark:text-zinc-400">{emp.position}</div>
+                  <TableCell className="px-4 py-4">
+                    <div className="text-[0.9375rem] text-zinc-700 dark:text-zinc-300">{emp.department}</div>
+                    <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">{emp.position}</div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-4">
                     <Badge
                       variant="outline"
                       className={ACCESS_BADGE_CLASS[emp.access_level] || ACCESS_BADGE_CLASS.staff}
@@ -443,10 +411,10 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
                       {ACCESS_LEVELS.find((a) => a.value === emp.access_level)?.label || emp.access_level}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+                  <TableCell className="px-4 py-4 font-mono text-sm text-zinc-500 dark:text-zinc-400">
                     {emp.line_user_id || <span className="italic">ยังไม่ผูก</span>}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-4">
                     {emp.status === "disabled" ? (
                       <Badge variant="outline" className="border-rose-500/30 text-rose-400 bg-rose-500/10">
                         ปิดใช้งาน
@@ -461,31 +429,21 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <TableCell className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => openEdit(emp)}
-                        className="text-zinc-500 dark:text-zinc-400 hover:text-blue-400 h-8 px-2"
+                        className="text-zinc-500 dark:text-zinc-400 hover:text-blue-400 h-9 px-3"
                       >
                         แก้ไข
                       </Button>
-                      {emp.line_user_id && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleUnlink(emp)}
-                          className="text-zinc-500 dark:text-zinc-400 hover:text-orange-400 h-8 px-2"
-                        >
-                          ยกเลิกผูก
-                        </Button>
-                      )}
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleToggleDisable(emp)}
-                        className="text-zinc-500 dark:text-zinc-400 hover:text-rose-400 h-8 px-2"
+                        className="text-zinc-500 dark:text-zinc-400 hover:text-rose-400 h-9 px-3"
                       >
                         {emp.status === "disabled" ? "เปิดใช้งาน" : "ปิดใช้งาน"}
                       </Button>
@@ -500,7 +458,7 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
 
       {/* View details dialog */}
       <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
-        <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100">
+        <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-h-[85vh] overflow-y-auto custom-scrollbar">
           <DialogHeader>
             <DialogTitle>รายละเอียดพนักงาน</DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400">
@@ -569,7 +527,7 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
 
       {/* Edit dialog */}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100">
+        <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-h-[85vh] overflow-y-auto custom-scrollbar">
           <DialogHeader>
             <DialogTitle>แก้ไขข้อมูล: {editing?.name}</DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400">
@@ -579,16 +537,39 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-zinc-500 dark:text-zinc-400">อีเมลบริษัท</Label>
+              <Label className="text-zinc-500 dark:text-zinc-400">Email</Label>
               <Input
                 type="email"
                 placeholder="เช่น somchai@bayviewpattaya.com"
                 value={editEmail}
                 onChange={(e) => setEditEmail(e.target.value)}
+                readOnly={emailLocked}
+                disabled={emailLocked}
+                className={
+                  emailLocked
+                    ? "bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-500 dark:text-zinc-400 cursor-not-allowed opacity-70"
+                    : "bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100"
+                }
+              />
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {emailLocked
+                  ? "อีเมลผูกกับรหัสพนักงานไว้แล้ว แก้จากหน้านี้ไม่ได้"
+                  : "ยังไม่มีอีเมลในระบบ กรอกก่อน พนักงานถึงจะผูก LINE ผ่าน OTP เองในแชทได้"}
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-zinc-500 dark:text-zinc-400">เบอร์โทร</Label>
+              <Input
+                type="tel"
+                inputMode="tel"
+                placeholder="เช่น 081-234-5678"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
                 className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100"
               />
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                ต้องกรอกก่อน ถึงจะให้พนักงานผูก LINE ผ่านระบบยืนยัน OTP เองในแชทได้
+                AI ใช้ตอบเมื่อมีพนักงานถามข้อมูลติดต่อของคนนี้
               </p>
             </div>
 
@@ -596,26 +577,30 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
               <Label className="text-zinc-500 dark:text-zinc-400">LINE User ID</Label>
               <div className="flex gap-2">
                 <Input
-                  placeholder="เช่น U1234567890abcdef1234567890abcdef (เว้นว่างได้ถ้ายังไม่ผูก)"
                   value={editLineId}
-                  onChange={(e) => {
-                    setEditLineId(e.target.value);
-                    setEditLineName("");
-                    setEditLinePicture("");
-                  }}
-                  className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 font-mono text-sm"
+                  readOnly
+                  disabled
+                  placeholder="ยังไม่ผูก — พนักงานผูกเองผ่าน OTP ในแชท"
+                  className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-500 dark:text-zinc-400 cursor-not-allowed opacity-70 font-mono text-sm"
                 />
-                <Button
-                  variant="secondary"
-                  onClick={handleFetchProfileEdit}
-                  disabled={fetchingEditProfile || !editLineId.trim()}
-                  className="shrink-0"
-                >
-                  {fetchingEditProfile ? "กำลังดึง..." : "ดึงโปรไฟล์"}
-                </Button>
+                {editLineId.trim() && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setEditLineId("");
+                      setEditLineName("");
+                    }}
+                    className="shrink-0 text-rose-600 dark:text-rose-400"
+                  >
+                    ยกเลิกการผูก
+                  </Button>
+                )}
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                กรอกเองได้ถ้าต้องการผูกด้วยมือ หรือปล่อยว่างให้พนักงานผูกเองผ่าน OTP ในแชท
+                {editLineId.trim()
+                  ? "ผูกผ่านการยืนยัน OTP แก้ด้วยมือไม่ได้ — ถ้าพนักงานเปลี่ยนเครื่อง กดยกเลิกการผูกแล้วบันทึก เพื่อให้ผูกใหม่ได้"
+                  : "พนักงานผูกเองในแชทด้วยรหัสพนักงาน 4 หลัก + OTP ที่ส่งไปทางอีเมล"}
               </p>
             </div>
 
@@ -625,28 +610,13 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
                 value={editLineName}
                 readOnly
                 disabled
-                placeholder="กดปุ่ม &quot;ดึงโปรไฟล์&quot; เพื่อดึงชื่อจาก LINE"
+                placeholder="ระบบดึงให้อัตโนมัติเมื่อพนักงานยืนยันตัวตนสำเร็จ"
                 className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-500 dark:text-zinc-400 cursor-not-allowed opacity-70"
               />
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                บอทจะบอกชื่อนี้ในข้อความ &quot;ยังไม่พบข้อมูล&quot; ให้พนักงานส่งมาให้แอดมินตอนขอลิงก์
+                บอทดึงชื่อ LINE มาเก็บให้เองตอนพนักงานยืนยัน OTP สำเร็จ ไม่ต้องกรอกเอง
               </p>
             </div>
-
-            {editLinePicture && (
-              <div className="flex items-center gap-3 p-2.5 rounded-lg bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-300 dark:border-zinc-700/50">
-                <Avatar className="h-9 w-9">
-                  <AvatarImage src={editLinePicture} alt={editLineName} />
-                  <AvatarFallback className="bg-zinc-300 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs">
-                    {editLineName[0]?.toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{editLineName}</p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">ชื่อโปรไฟล์ LINE ที่ดึงมา</p>
-                </div>
-              </div>
-            )}
 
             <div className="space-y-1.5">
               <Label className="text-zinc-500 dark:text-zinc-400">แผนก</Label>
@@ -717,39 +687,73 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
 
       {/* Add employee dialog */}
       <Dialog open={addOpen} onOpenChange={(o) => !o && setAddOpen(false)}>
-        <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100">
+        <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-h-[85vh] overflow-y-auto custom-scrollbar">
           <DialogHeader>
             <DialogTitle>เพิ่มพนักงานใหม่</DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400">
-              กรอกข้อมูลพนักงานและอีเมลบริษัท พนักงานจะผูก LINE เองผ่านระบบยืนยัน OTP ในแชท
+              กรอกข้อมูลพนักงานและ Email พนักงานจะผูก LINE เองผ่านระบบยืนยัน OTP ในแชท
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-zinc-500 dark:text-zinc-400">รหัสพนักงาน</Label>
+              <Input
+                type="number"
+                value={addEmpId}
+                readOnly
+                disabled
+                className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-500 dark:text-zinc-400 font-mono cursor-not-allowed opacity-70"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-zinc-500 dark:text-zinc-400">ชื่อ-นามสกุล (อังกฤษ)</Label>
+              <Input
+                placeholder="เช่น K.Somchai Jaidee"
+                value={addName}
+                onChange={(e) => setAddName(e.target.value)}
+                className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-zinc-500 dark:text-zinc-400">ชื่อ-นามสกุล (ไทย)</Label>
+              <Input
+                placeholder="เช่น สมชาย ใจดี"
+                value={addNameTh}
+                onChange={(e) => setAddNameTh(e.target.value)}
+                className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-zinc-500 dark:text-zinc-400">รหัสพนักงาน</Label>
+                <Label className="text-zinc-500 dark:text-zinc-400">ชื่อเล่น (อังกฤษ)</Label>
                 <Input
-                  type="number"
-                  value={addEmpId}
-                  readOnly
-                  disabled
-                  className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-500 dark:text-zinc-400 font-mono cursor-not-allowed opacity-70"
+                  placeholder="เช่น Chai"
+                  value={addNickname}
+                  onChange={(e) => setAddNickname(e.target.value)}
+                  className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-zinc-500 dark:text-zinc-400">ชื่อพนักงาน</Label>
+                <Label className="text-zinc-500 dark:text-zinc-400">ชื่อเล่น (ไทย)</Label>
                 <Input
-                  placeholder="เช่น K.Somchai Jaidee"
-                  value={addName}
-                  onChange={(e) => setAddName(e.target.value)}
+                  placeholder="เช่น ชาย"
+                  value={addNicknameTh}
+                  onChange={(e) => setAddNicknameTh(e.target.value)}
                   className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100"
                 />
               </div>
             </div>
 
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 -mt-2">
+              ชื่อไทยและชื่อเล่นใช้ให้ AI ค้นเจอเวลาพนักงานถามหาคนด้วยชื่อที่เรียกกันจริง
+            </p>
+
             <div className="space-y-1.5">
-              <Label className="text-zinc-500 dark:text-zinc-400">อีเมลบริษัท</Label>
+              <Label className="text-zinc-500 dark:text-zinc-400">Email</Label>
               <Input
                 type="email"
                 placeholder="เช่น somchai@bayviewpattaya.com"
@@ -760,6 +764,18 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 ต้องกรอกก่อน ถึงจะให้พนักงานผูก LINE ผ่านระบบยืนยัน OTP เองในแชทได้
               </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-zinc-500 dark:text-zinc-400">เบอร์โทร</Label>
+              <Input
+                type="tel"
+                inputMode="tel"
+                placeholder="เช่น 081-234-5678"
+                value={addPhone}
+                onChange={(e) => setAddPhone(e.target.value)}
+                className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100"
+              />
             </div>
 
             <div className="space-y-1.5">

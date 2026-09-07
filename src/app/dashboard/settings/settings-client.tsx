@@ -30,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
+import { requestSystemHealthRefresh } from "@/lib/system-health-events";
 import { toast } from "sonner";
 import {
   Bot,
@@ -41,6 +42,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Loader2,
+  Lock,
 } from "lucide-react";
 
 interface SettingsClientProps {
@@ -114,7 +116,23 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
 
   async function handleToggleAI(checked: boolean) {
     setAiEnabled(checked);
-    await saveSetting("ai_enabled", checked);
+    const saved = await saveSetting("ai_enabled", checked);
+    // the header badge reports this same flag — refresh it now instead of
+    // leaving it stale until its next poll
+    if (saved) requestSystemHealthRefresh();
+  }
+
+  // AI Model, System Prompt and System Message are read live by the running n8n
+  // workflow on every incoming message. Editing them while the bot is answering
+  // means a half-saved prompt can serve a real employee, so the switch has to be
+  // off before any of the three opens for editing — and before a save lands, in
+  // case the bot was switched back on mid-edit.
+  function requireAiOff() {
+    if (aiEnabled) {
+      toast.warning("กรุณาปิด AI System ก่อน จึงจะแก้ไขส่วนนี้ได้");
+      return false;
+    }
+    return true;
   }
 
   function handleModelChange(model: string | null) {
@@ -128,6 +146,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   }
 
   function handleStartEditModel() {
+    if (!requireAiOff()) return;
     setEditingModel(true);
   }
 
@@ -142,6 +161,10 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   }
 
   async function handleConfirmSaveModel() {
+    if (!requireAiOff()) {
+      setConfirmModelSaveOpen(false);
+      return;
+    }
     setSavingModel(true);
     const okMain = await saveSetting("selected_model", selectedModel, true);
     const okRetrieval = await saveSetting("retrieval_model", retrievalModel, true);
@@ -156,6 +179,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   }
 
   function handleStartEditPrompt() {
+    if (!requireAiOff()) return;
     setEditingPrompt(true);
   }
 
@@ -169,6 +193,10 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   }
 
   async function handleConfirmSavePrompt() {
+    if (!requireAiOff()) {
+      setConfirmSaveOpen(false);
+      return;
+    }
     setSaving(true);
     const ok = await saveSetting("system_prompt", systemPrompt);
     setSaving(false);
@@ -180,6 +208,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   }
 
   function handleStartEditSystemMessage() {
+    if (!requireAiOff()) return;
     setEditingSystemMessage(true);
   }
 
@@ -193,6 +222,10 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   }
 
   async function handleConfirmSaveSystemMessage() {
+    if (!requireAiOff()) {
+      setConfirmSystemMessageSaveOpen(false);
+      return;
+    }
     setSavingSystemMessage(true);
     const ok = await saveSetting("system_message", systemMessage);
     setSavingSystemMessage(false);
@@ -285,9 +318,14 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                 variant="outline"
                 size="sm"
                 onClick={handleStartEditModel}
-                className="border-zinc-300 dark:border-zinc-700/50 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 shrink-0 items-center gap-1.5"
+                title={aiEnabled ? "ปิด AI System ก่อนจึงจะแก้ไขได้" : undefined}
+                className={`border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 ${
+                  aiEnabled
+                    ? "text-zinc-400 dark:text-zinc-500"
+                    : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
+                }`}
               >
-                <Pencil className="w-3.5 h-3.5" />
+                {aiEnabled ? <Lock className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
                 แก้ไข
               </Button>
             )}
@@ -401,9 +439,14 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                 variant="outline"
                 size="sm"
                 onClick={handleStartEditSystemMessage}
-                className="border-zinc-300 dark:border-zinc-700/50 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 shrink-0 items-center gap-1.5"
+                title={aiEnabled ? "ปิด AI System ก่อนจึงจะแก้ไขได้" : undefined}
+                className={`border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 ${
+                  aiEnabled
+                    ? "text-zinc-400 dark:text-zinc-500"
+                    : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
+                }`}
               >
-                <Pencil className="w-3.5 h-3.5" />
+                {aiEnabled ? <Lock className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
                 แก้ไข
               </Button>
             )}
@@ -481,9 +524,14 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
                 variant="outline"
                 size="sm"
                 onClick={handleStartEditPrompt}
-                className="border-zinc-300 dark:border-zinc-700/50 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 shrink-0 items-center gap-1.5"
+                title={aiEnabled ? "ปิด AI System ก่อนจึงจะแก้ไขได้" : undefined}
+                className={`border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 ${
+                  aiEnabled
+                    ? "text-zinc-400 dark:text-zinc-500"
+                    : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
+                }`}
               >
-                <Pencil className="w-3.5 h-3.5" />
+                {aiEnabled ? <Lock className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
                 แก้ไข
               </Button>
             )}

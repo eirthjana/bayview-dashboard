@@ -30,7 +30,7 @@ function fmtK(v: number): string {
 function DailyTokenTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-700 rounded-xl p-3.5 shadow-xl min-w-[140px]">
+    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-700 rounded-xl p-3.5 shadow-xl min-w-[8.75rem]">
       <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-1">{label}</p>
       <div className="flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full bg-[#8B5E3C] dark:bg-[#D4A373]" />
@@ -56,7 +56,7 @@ export function DailyTokenChart({ data }: { data: DailyTokenUsage[] }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4 pt-2">
-        <div className="h-[260px] w-full">
+        <div className="h-[16.25rem] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
               <defs>
@@ -120,7 +120,7 @@ function DeptTokenTooltip({ active, payload }: any) {
   const color = DEPT_PALETTE[colorIdx % DEPT_PALETTE.length].fill;
 
   return (
-    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-700 rounded-xl p-3.5 shadow-xl min-w-[160px]">
+    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-700 rounded-xl p-3.5 shadow-xl min-w-[10rem]">
       <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-1">{dept}</p>
       <div className="flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
@@ -158,7 +158,7 @@ export function DeptTokenChart({ data }: { data: DeptTokenUsage[] }) {
       </CardHeader>
       <CardContent className="p-4 pt-2">
         {sorted.length === 0 ? (
-          <div className="h-[260px] flex flex-col items-center justify-center gap-2 text-center">
+          <div className="h-[16.25rem] flex flex-col items-center justify-center gap-2 text-center">
             <Building2 className="w-8 h-8 text-zinc-300 dark:text-zinc-600" />
             <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">ยังไม่มีข้อมูล Token แยกตามแผนก</p>
           </div>

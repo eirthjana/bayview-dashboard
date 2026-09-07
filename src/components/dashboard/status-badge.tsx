@@ -62,7 +62,7 @@ export function StatusBadge({ status }: { status: string }) {
   const { label, Icon, badgeClass, iconClass } = getStatusMeta(status);
   return (
     <span
-      className={`inline-flex items-center justify-center gap-1 text-[11px] font-bold border px-2 py-0.5 rounded-full whitespace-nowrap ${badgeClass}`}
+      className={`inline-flex items-center justify-center gap-1 text-[0.6875rem] font-bold border px-2 py-0.5 rounded-full whitespace-nowrap ${badgeClass}`}
     >
       <Icon className={`w-3 h-3 shrink-0 ${iconClass}`} />
       {label}

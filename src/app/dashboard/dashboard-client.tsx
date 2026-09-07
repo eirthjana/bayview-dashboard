@@ -76,7 +76,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
         />
       </div>
 
-      {/* Message Usage Chart + Recent Activity (Locked Heights h-[380px] perfectly aligned) */}
+      {/* Message Usage Chart + Recent Activity (Locked Heights h-[23.75rem] perfectly aligned) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <div className="lg:col-span-2">
           <UsageChart data={data.dailyUsage} />

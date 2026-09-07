@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { SystemStatus } from "@/components/dashboard/system-status";
 import {
   Tooltip,
   TooltipContent,
@@ -74,7 +75,7 @@ function SidebarContent({ collapsed = false }: { collapsed?: boolean }) {
         {!collapsed && (
           <div>
             <h1 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Bayview Dashboard</h1>
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Admin Panel</p>
+            <p className="text-[0.6875rem] text-zinc-500 dark:text-zinc-400">Admin Panel</p>
           </div>
         )}
       </div>
@@ -206,10 +207,7 @@ export default function DashboardLayout({
 
             {/* Right side */}
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-medium text-emerald-400">System Online</span>
-              </div>
+              <SystemStatus />
               <ThemeToggle />
             </div>
           </header>

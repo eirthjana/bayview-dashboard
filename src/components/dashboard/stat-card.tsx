@@ -100,11 +100,11 @@ export function StatCard({
         <div className="flex items-start justify-between">
           <div className="space-y-1.5 flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              <p className="text-[0.6875rem] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                 {title}
               </p>
               {badge && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1">
+                <span className="text-[0.625rem] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   {badge}
                 </span>

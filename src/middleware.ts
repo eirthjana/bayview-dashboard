@@ -35,10 +35,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Protected routes - redirect to login if not authenticated
-  if (
-    request.nextUrl.pathname.startsWith("/dashboard") ||
-    request.nextUrl.pathname.startsWith("/mfa")
-  ) {
+  if (request.nextUrl.pathname.startsWith("/dashboard")) {
     if (!user) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
@@ -62,27 +59,6 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set("error", "unauthorized");
       return NextResponse.redirect(url);
     }
-
-    // บังคับ 2FA (TOTP) ทุกบัญชี — เช็คระดับการยืนยันตัวตนปัจจุบัน
-    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-
-    if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
-      // มี factor ที่ตั้งค่าไว้แล้ว แต่ session นี้ยังไม่ได้ยืนยัน 2FA
-      const url = request.nextUrl.clone();
-      url.pathname = "/mfa/verify";
-      return NextResponse.redirect(url);
-    }
-
-    if (aal?.currentLevel === "aal1" && aal.nextLevel === "aal1") {
-      // ยังไม่เคยตั้งค่า 2FA เลย — บังคับตั้งค่าก่อนใช้งาน
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      const hasVerifiedFactor = (factors?.totp || []).length > 0;
-      if (!hasVerifiedFactor) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/mfa/enroll";
-        return NextResponse.redirect(url);
-      }
-    }
   }
 
   // If logged in admin visits login page, redirect to dashboard
@@ -104,5 +80,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/mfa/:path*"],
+  matcher: ["/dashboard/:path*", "/login"],
 };

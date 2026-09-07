@@ -348,7 +348,7 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
                     doc.view_url ? "cursor-pointer" : ""
                   }`}
                 >
-                  <TableCell className="max-w-[320px]">
+                  <TableCell className="max-w-[20rem]">
                     <div className="flex items-center gap-2 min-w-0">
                       <FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-400 shrink-0" />
                       <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">

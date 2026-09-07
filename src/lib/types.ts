@@ -33,7 +33,6 @@ export interface Employee {
 
 export interface ChatLog {
   id: string;
-  user_id: string | null;
   line_user_id: string;
   message_type: string;
   user_message: string | null;
@@ -156,7 +155,7 @@ export const DEPARTMENTS: Record<string, string[]> = {
     "General Manager",
     "IT Manager",
     "Asst. E-Distribution Manager",
-    "Cluster Marcom. Manager/0.5",
+    "Cluster Marcom. Manager",
     "Health and Safety Officer",
     "Sales Manager",
     "Sales Coordinator",
@@ -170,7 +169,7 @@ export const DEPARTMENTS: Record<string, string[]> = {
     "Account Receivable Supervisor",
     "F&B Cost Controller",
     "Store & Receiving Officer",
-    "Cluster Purchasing Mgr. /0.5",
+    "Cluster Purchasing Mgr.",
     "Purchasing Officer",
   ],
   "Front Office": [
@@ -218,7 +217,7 @@ export const DEPARTMENTS: Record<string, string[]> = {
     "Bartendy",
   ],
   "Main Kitchen": [
-    "Cluster Executive Chef/0.5",
+    "Cluster Executive Chef",
     "Sous Chef",
     "Executive Chef Consultant",
     "Chef De Partie",
@@ -231,13 +230,13 @@ export const DEPARTMENTS: Record<string, string[]> = {
     "Cook Helper Bakery",
   ],
   "Main Kitchen (Staff Canteen)": [
-    "Cluster Executive Chef/0.5",
+    "Cluster Executive Chef",
     "Sous Chef",
     "Cook Staff Canteen",
     "Steward Canteen",
   ],
   "Main Kitchen (Steward)": [
-    "Cluster Executive Chef / 0.5",
+    "Cluster Executive Chef",
     "Sous Chef",
     "Steward Supervisor",
     "Steward",

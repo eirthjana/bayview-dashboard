@@ -152,7 +152,7 @@ export function DateInput({ value, onChange, placeholder = "dd/mm/yyyy", classNa
       {/* Weekday row */}
       <div className="grid grid-cols-7 gap-0.5 mb-1">
         {WEEKDAYS_TH.map((w) => (
-          <div key={w} className="text-center text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 py-1">
+          <div key={w} className="text-center text-[0.625rem] font-semibold text-zinc-400 dark:text-zinc-500 py-1">
             {w}
           </div>
         ))}
@@ -173,7 +173,7 @@ export function DateInput({ value, onChange, placeholder = "dd/mm/yyyy", classNa
               type="button"
               onClick={() => pickDay(day)}
               className={cn(
-                "h-7 w-7 mx-auto flex items-center justify-center rounded-lg text-[11px] font-medium transition-colors",
+                "h-7 w-7 mx-auto flex items-center justify-center rounded-lg text-[0.6875rem] font-medium transition-colors",
                 isSelected
                   ? "bg-[#0C645B] dark:bg-emerald-600 text-white font-bold"
                   : isToday
@@ -194,7 +194,7 @@ export function DateInput({ value, onChange, placeholder = "dd/mm/yyyy", classNa
             onChange("");
             setOpen(false);
           }}
-          className="mt-2 w-full flex items-center justify-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg py-1.5 transition-colors"
+          className="mt-2 w-full flex items-center justify-center gap-1 text-[0.6875rem] font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg py-1.5 transition-colors"
         >
           <X className="w-3 h-3" />
           ล้างวันที่

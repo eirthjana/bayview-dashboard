@@ -31,7 +31,7 @@ function CustomTooltip({ active, payload, label }: any) {
   const total = payload.reduce((sum: number, p: { value: number }) => sum + p.value, 0);
 
   return (
-    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-700 rounded-xl p-3.5 shadow-xl min-w-[160px]">
+    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-700 rounded-xl p-3.5 shadow-xl min-w-[10rem]">
       <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-2">{label}</p>
       <div className="space-y-1">
         {STATUS_ORDER.filter((key) => byKey.has(key)).map((key) => (
@@ -77,7 +77,7 @@ export function UsageChart({ data, title = "การใช้งานย้อ
   const visibleKeys = STATUS_ORDER.filter((key) => !hidden.has(key));
 
   return (
-    <Card className="h-[380px] flex flex-col bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
+    <Card className="h-[23.75rem] flex flex-col bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
       <CardHeader className="py-3.5 px-5 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 shrink-0">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
@@ -87,7 +87,7 @@ export function UsageChart({ data, title = "การใช้งานย้อ
             {title}
           </CardTitle>
           {/* Clickable legend — toggles a status series on/off */}
-          <div className="flex items-center gap-3 text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+          <div className="flex items-center gap-3 text-[0.6875rem] font-semibold text-zinc-600 dark:text-zinc-400">
             {STATUS_ORDER.map((key) => {
               const isHidden = hidden.has(key);
               return (

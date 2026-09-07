@@ -34,7 +34,7 @@ export function TopFaqsCard({ items }: { items: FaqItem[] }) {
             </span>
             คำถามยอดนิยม (Top FAQs & User Inquiries)
           </CardTitle>
-          <Badge variant="secondary" className="text-[11px] font-semibold shrink-0">
+          <Badge variant="secondary" className="text-[0.6875rem] font-semibold shrink-0">
             Top {items.length} คำถาม
           </Badge>
         </div>
@@ -53,7 +53,7 @@ export function TopFaqsCard({ items }: { items: FaqItem[] }) {
             >
               <div className="flex items-start gap-3">
                 <span
-                  className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold text-white ${
+                  className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.6875rem] font-bold text-white ${
                     RANK_COLORS[i] ?? "bg-zinc-300 dark:bg-zinc-700"
                   }`}
                 >
@@ -63,10 +63,10 @@ export function TopFaqsCard({ items }: { items: FaqItem[] }) {
                   {item.question}
                 </p>
                 <div className="shrink-0 flex items-center gap-1.5">
-                  <Badge variant="outline" className="text-[10px]">
+                  <Badge variant="outline" className="text-[0.625rem]">
                     {item.tag}
                   </Badge>
-                  <Badge variant="secondary" className="text-[10px] whitespace-nowrap">
+                  <Badge variant="secondary" className="text-[0.625rem] whitespace-nowrap">
                     {item.count} ครั้ง
                   </Badge>
                 </div>
@@ -78,7 +78,7 @@ export function TopFaqsCard({ items }: { items: FaqItem[] }) {
                     style={{ width: `${Math.max(item.percentage, 2)}%` }}
                   />
                 </div>
-                <span className="shrink-0 text-[11px] text-zinc-400 dark:text-zinc-500">
+                <span className="shrink-0 text-[0.6875rem] text-zinc-400 dark:text-zinc-500">
                   สัดส่วนการถามคำถามนี้: {item.percentage.toFixed(1)}%
                 </span>
               </div>
@@ -103,7 +103,7 @@ function HourlyTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   const count = payload[0].value as number;
   return (
-    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-700 rounded-xl p-3.5 shadow-xl min-w-[130px]">
+    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-700 rounded-xl p-3.5 shadow-xl min-w-[8.125rem]">
       <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-1">{label} น.</p>
       <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
         {count.toLocaleString()}
@@ -124,13 +124,13 @@ export function PeakHoursChart({ data, peakLabel }: { data: HourlyUsage[]; peakL
             </span>
             ปริมาณการใช้งานแยกตามช่วงเวลา 24 ชั่วโมง (Peak Usage Hours)
           </CardTitle>
-          <Badge variant="secondary" className="text-[11px] font-semibold shrink-0">
+          <Badge variant="secondary" className="text-[0.6875rem] font-semibold shrink-0">
             ช่วงที่คนทักมากที่สุด: {peakLabel}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-2">
-        <div className="h-[280px] w-full">
+        <div className="h-[17.5rem] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(147, 173, 168, 0.15)" vertical={false} />
@@ -157,15 +157,15 @@ export function PeakHoursChart({ data, peakLabel }: { data: HourlyUsage[]; peakL
           </ResponsiveContainer>
         </div>
         <div className="flex flex-wrap items-center gap-4 mt-3 px-1">
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+          <span className="flex items-center gap-1.5 text-[0.6875rem] font-semibold text-zinc-600 dark:text-zinc-400">
             <span className="w-2.5 h-2.5 rounded-full" style={{ background: TIER_COLOR.peak }} />
             Peak Time (ช่วงใช้งานสูงสุด)
           </span>
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+          <span className="flex items-center gap-1.5 text-[0.6875rem] font-semibold text-zinc-600 dark:text-zinc-400">
             <span className="w-2.5 h-2.5 rounded-full" style={{ background: TIER_COLOR.high }} />
             High Activity (ใช้งานหนาแน่น)
           </span>
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+          <span className="flex items-center gap-1.5 text-[0.6875rem] font-semibold text-zinc-600 dark:text-zinc-400">
             <span className="w-2.5 h-2.5 rounded-full" style={{ background: TIER_COLOR.regular }} />
             Regular Traffic (ปกติ)
           </span>
@@ -196,7 +196,7 @@ function DeptActivityTooltip({ active, payload }: any) {
   const count = payload[0].value as number;
   const colorIdx = (payload[0].payload._colorIdx as number) ?? 0;
   return (
-    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-700 rounded-xl p-3.5 shadow-xl min-w-[160px]">
+    <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-700 rounded-xl p-3.5 shadow-xl min-w-[10rem]">
       <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mb-1">{dept}</p>
       <div className="flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full" style={{ background: DEPT_PALETTE[colorIdx % DEPT_PALETTE.length] }} />
@@ -226,14 +226,14 @@ export function DeptActivityChart({ data }: { data: DeptActivity[] }) {
             </span>
             สถิติการใช้งานแยกตามแผนกจริง (Department Activity Breakdown)
           </CardTitle>
-          <Badge variant="secondary" className="text-[11px] font-semibold shrink-0">
+          <Badge variant="secondary" className="text-[0.6875rem] font-semibold shrink-0">
             {sorted.length} แผนก / กลุ่มผู้ใช้
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="p-4 pt-2">
         {sorted.length === 0 ? (
-          <div className="h-[220px] flex flex-col items-center justify-center gap-2 text-center">
+          <div className="h-[13.75rem] flex flex-col items-center justify-center gap-2 text-center">
             <Building2 className="w-8 h-8 text-zinc-300 dark:text-zinc-600" />
             <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">ยังไม่มีข้อมูลการใช้งานแยกตามแผนก</p>
           </div>

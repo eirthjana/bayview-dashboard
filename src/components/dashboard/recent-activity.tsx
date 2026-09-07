@@ -61,7 +61,7 @@ export function RecentActivity({ logs }: RecentActivityProps) {
 
   return (
     <>
-      <Card className="h-[380px] flex flex-col bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
+      <Card className="h-[23.75rem] flex flex-col bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
         <CardHeader className="py-3.5 px-5 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 shrink-0">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
@@ -70,7 +70,7 @@ export function RecentActivity({ logs }: RecentActivityProps) {
               </span>
               กิจกรรมล่าสุด (Recent Activity)
             </CardTitle>
-            <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-200 dark:border-zinc-700">
+            <span className="text-[0.6875rem] font-semibold text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-200 dark:border-zinc-700">
               {logs.length} รายการ
             </span>
           </div>
@@ -80,12 +80,12 @@ export function RecentActivity({ logs }: RecentActivityProps) {
         <CardContent className="flex-1 p-3 overflow-y-auto custom-scrollbar">
           <div className="space-y-2">
             {logs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full min-h-[220px] text-center">
+              <div className="flex flex-col items-center justify-center h-full min-h-[13.75rem] text-center">
                 <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 mb-2">
                   <Clock className="w-5 h-5" />
                 </div>
                 <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">ยังไม่มีกิจกรรมการใช้งาน</p>
-                <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">ข้อความล่าสุดจะปรากฏที่นี่</p>
+                <p className="text-[0.6875rem] text-zinc-400 dark:text-zinc-500 mt-0.5">ข้อความล่าสุดจะปรากฏที่นี่</p>
               </div>
             ) : (
               logs.map((log) => {
@@ -170,7 +170,7 @@ export function RecentActivity({ logs }: RecentActivityProps) {
                           </span>
                           <Badge
                             variant="outline"
-                            className={`text-[9px] px-1.5 py-0 h-4 border leading-none font-semibold shrink-0 ${badgeClass}`}
+                            className={`text-[0.5625rem] px-1.5 py-0 h-4 border leading-none font-semibold shrink-0 ${badgeClass}`}
                           >
                             {isEmployee ? (
                               String(employee?.access_level || "").toLowerCase() === "admin" ? (
@@ -184,7 +184,7 @@ export function RecentActivity({ logs }: RecentActivityProps) {
                             {roleBadgeText}
                           </Badge>
                           {isEmployee && employee?.department ? (
-                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium truncate">
+                            <span className="text-[0.625rem] text-zinc-500 dark:text-zinc-400 font-medium truncate">
                               ({employee.department})
                             </span>
                           ) : null}
@@ -204,7 +204,7 @@ export function RecentActivity({ logs }: RecentActivityProps) {
                       </p>
 
                       {/* Meta: Time & Tokens */}
-                      <div className="flex items-center justify-between text-[10px] text-zinc-400 dark:text-zinc-500 pt-0.5">
+                      <div className="flex items-center justify-between text-[0.625rem] text-zinc-400 dark:text-zinc-500 pt-0.5">
                         <span className="font-medium">
                           {dateStr} {timeStr}
                         </span>
@@ -310,7 +310,7 @@ function RecentActivityDetailModal({
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">{displayName}</p>
-                <Badge variant="outline" className={`text-[10px] px-2 py-0.5 font-semibold ${badgeClass}`}>
+                <Badge variant="outline" className={`text-[0.625rem] px-2 py-0.5 font-semibold ${badgeClass}`}>
                   {isEmployee
                     ? employee?.position || employee?.department || employee?.access_level || "Staff"
                     : "Guest"}

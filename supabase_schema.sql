@@ -64,9 +64,12 @@ CREATE INDEX IF NOT EXISTS idx_users_profile_line_user_id ON public.users_profil
 -- ------------------------------------------------------------------------------
 -- 4. Create / Update Chat Logs Table
 -- ------------------------------------------------------------------------------
+-- Note: users_profile and chat_logs.user_id were dropped on 2026-09-07 — nothing
+-- ever wrote to either (no n8n node referenced them, user_id was NULL on every
+-- row). The display names they held were copied into chat_logs.display_name.
+-- See users_profile_backup.sql to restore them.
 CREATE TABLE IF NOT EXISTS public.chat_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES public.users_profile(id) ON DELETE SET NULL,
   line_user_id TEXT NOT NULL,
   message_type TEXT NOT NULL DEFAULT 'text',
   user_message TEXT,

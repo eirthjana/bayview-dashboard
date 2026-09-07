@@ -39,8 +39,6 @@ import {
   Crown,
   RotateCcw,
   Filter,
-  Wifi,
-  WifiOff,
 } from "lucide-react";
 
 // Real Hotel Departments List
@@ -146,11 +144,11 @@ function SummaryMetricCard({
       <div className="flex items-center gap-4">
         <div className={`p-3 rounded-xl border ${colorClass} shrink-0`}>{icon}</div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">{label}</p>
+          <p className="text-[0.6875rem] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">{label}</p>
           <p className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight tabular-nums mt-0.5">
             {typeof value === "number" ? value.toLocaleString() : value}
           </p>
-          {subtext && <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5 truncate">{subtext}</p>}
+          {subtext && <p className="text-[0.6875rem] text-zinc-400 dark:text-zinc-500 mt-0.5 truncate">{subtext}</p>}
         </div>
       </div>
     </Card>
@@ -178,7 +176,6 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
   // current via a Supabase Realtime subscription below — no more needing to
   // hit F5 to see the newest question a user just asked the bot.
   const [logs, setLogs] = useState<ChatLog[]>(chatLogs);
-  const [isLive, setIsLive] = useState(false);
   const knownIds = useRef(new Set(chatLogs.map((l) => l.id)));
 
   useEffect(() => {
@@ -202,7 +199,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
           });
         }
       )
-      .subscribe((status) => setIsLive(status === "SUBSCRIBED"));
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -420,18 +417,6 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
                 <Filter className="w-3.5 h-3.5 text-[#0C645B] dark:text-emerald-400" />
                 <span>ตัวกรองข้อมูลขั้นสูง (Advanced Filters)</span>
               </div>
-              {isLive ? (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded-full">
-                  <Wifi className="w-2.5 h-2.5" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Live
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 px-2 py-0.5 rounded-full">
-                  <WifiOff className="w-2.5 h-2.5" />
-                  กำลังเชื่อมต่อ...
-                </span>
-              )}
             </div>
             {isFiltered && (
               <Button
@@ -509,7 +494,11 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
             <colgroup>
               <col style={{ width: "110px" }} />
               <col style={{ width: "200px" }} />
-              <col />
+              {/* Questions are short ("What is GSA"); answers are paragraphs.
+                  Leaving both columns auto split the space 50/50 and left a wide
+                  blank run after every question, so the question column is capped
+                  and the answer column absorbs what is left. */}
+              <col style={{ width: "25%" }} />
               <col />
               <col style={{ width: "115px" }} />
               <col style={{ width: "90px" }} />
@@ -517,13 +506,16 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
             </colgroup>
 
             <thead>
-              <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 font-bold uppercase tracking-wider">
-                <th className="px-3.5 py-3 text-left whitespace-nowrap">วันที่ / เวลา</th>
-                <th className="px-3.5 py-3 text-left whitespace-nowrap">ผู้ส่ง / บทบาท (แผนก)</th>
-                <th className="px-3.5 py-3 text-left">คำถาม (User Message)</th>
-                <th className="px-3.5 py-3 text-left">คำตอบ AI (Response)</th>
-                <th className="px-3.5 py-3 text-center whitespace-nowrap">สถานะ (Status)</th>
-                <th className="px-3.5 py-3 text-right whitespace-nowrap">Tokens</th>
+              {/* no uppercase/tracking here: letter-spacing pulls Thai glyphs
+                  and their vowel marks apart, which is what made these headings
+                  read as gappy next to the tight rows below them */}
+              <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 font-bold">
+                <th className="px-3.5 py-3 text-left whitespace-nowrap">วันที่และเวลา</th>
+                <th className="px-3.5 py-3 text-left whitespace-nowrap">ชื่อผู้ใช้ / แผนก</th>
+                <th className="px-3.5 py-3 text-left">คำถามผู้ใช้</th>
+                <th className="px-3.5 py-3 text-left">คำตอบ AI</th>
+                <th className="px-3.5 py-3 text-center whitespace-nowrap">สถานะ</th>
+                <th className="px-3.5 py-3 text-right whitespace-nowrap">TOKENS</th>
                 <th className="px-2 py-3 text-center"></th>
               </tr>
             </thead>
@@ -560,7 +552,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
                       <td className="px-3.5 py-3 align-middle">
                         <div className="flex flex-col gap-0.5">
                           <span className="font-bold text-zinc-900 dark:text-zinc-100 whitespace-nowrap">{date}</span>
-                          <span className="text-[10px] text-zinc-400 dark:text-zinc-500">{time}</span>
+                          <span className="text-[0.625rem] text-zinc-400 dark:text-zinc-500">{time}</span>
                         </div>
                       </td>
 
@@ -570,7 +562,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <Badge
                               variant="outline"
-                              className={`text-[9px] px-1.5 py-0 gap-1 w-fit font-bold ${badgeClass}`}
+                              className={`text-[0.5625rem] px-1.5 py-0 gap-1 w-fit font-bold ${badgeClass}`}
                             >
                               {log.roleType === "admin" ? (
                                 <Crown className="w-2.5 h-2.5" />
@@ -587,7 +579,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
                             {log.resolvedName}
                           </span>
 
-                          <span className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium truncate">
+                          <span className="text-[0.6875rem] text-zinc-500 dark:text-zinc-400 font-medium truncate">
                             {log.isStaff ? log.resolvedDept : shortId(log.cleanLineUserId)}
                           </span>
                         </div>
@@ -690,7 +682,7 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
         {/* Meta Bar */}
         <div className="shrink-0 flex flex-wrap items-center gap-x-4 gap-y-2 p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 text-xs">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="outline" className={`text-[10px] gap-1 font-bold ${badgeClass}`}>
+            <Badge variant="outline" className={`text-[0.625rem] gap-1 font-bold ${badgeClass}`}>
               {log.roleType === "admin" ? (
                 <Crown className="w-2.5 h-2.5" />
               ) : log.isStaff ? (
@@ -704,7 +696,7 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
             {log.isStaff && (
               <span className="text-[#0C645B] dark:text-emerald-400 font-semibold">({log.resolvedDept})</span>
             )}
-            <span className="font-mono text-zinc-400 dark:text-zinc-500 text-[11px]">{log.cleanLineUserId}</span>
+            <span className="font-mono text-zinc-400 dark:text-zinc-500 text-[0.6875rem]">{log.cleanLineUserId}</span>
           </div>
 
           <span className="text-zinc-300 dark:text-zinc-600 hidden sm:inline">|</span>

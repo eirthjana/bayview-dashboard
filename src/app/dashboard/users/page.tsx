@@ -11,7 +11,7 @@ export default async function UsersPage() {
   try {
     const supabase = await createClient();
 
-    const [logsResult, employeeTestResult, profilesResult] = await Promise.all([
+    const [logsResult, employeeTestResult] = await Promise.all([
       // Latest 500 logs for display
       supabase
         .from("chat_logs")
@@ -22,40 +22,10 @@ export default async function UsersPage() {
       supabase
         .from("employee_test")
         .select("emp_id, name, department, position, line_user_id, access_level, line_name, status"),
-      // User profiles for display_name resolution
-      supabase.from("users_profile").select("line_user_id, display_name"),
     ]);
 
-    // Build profiles lookup: normalize(line_user_id) -> display_name
-    const profileMap = new Map<string, string>();
-    if (!profilesResult.error && profilesResult.data) {
-      profilesResult.data.forEach((p: { line_user_id: string; display_name: string | null }) => {
-        if (p.line_user_id && p.display_name) {
-          const cleanId = String(p.line_user_id)
-            .replace(/^["'=]+/, "")
-            .replace(/["'=]+$/, "")
-            .replace(/=/g, "")
-            .trim()
-            .toLowerCase();
-          profileMap.set(cleanId, p.display_name);
-        }
-      });
-    }
-
     if (!logsResult.error && logsResult.data) {
-      chatLogs = (logsResult.data as ChatLog[]).map((log) => {
-        const cleanId = String(log.line_user_id || "")
-          .replace(/^["'=]+/, "")
-          .replace(/["'=]+$/, "")
-          .replace(/=/g, "")
-          .trim()
-          .toLowerCase();
-        const profileName = profileMap.get(cleanId);
-        return {
-          ...log,
-          display_name: log.display_name || profileName || null,
-        };
-      });
+      chatLogs = logsResult.data as ChatLog[];
     }
 
     if (!employeeTestResult.error && employeeTestResult.data) {

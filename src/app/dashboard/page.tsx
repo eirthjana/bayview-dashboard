@@ -106,7 +106,6 @@ export default async function DashboardPage() {
       thirtyDaysLogsResult,
       tokenSumResult,
       employeeTestResult,
-      profilesResult,
     ] = await Promise.all([
       // Unique users from chat_logs
       supabase.from("chat_logs").select("line_user_id"),
@@ -133,8 +132,6 @@ export default async function DashboardPage() {
       supabase.from("chat_logs").select("tokens_used"),
       // Fetch employee list directly from employee_test
       supabase.from("employee_test").select("*"),
-      // User profiles for display_name
-      supabase.from("users_profile").select("line_user_id, display_name"),
     ]);
 
     const allEmployees: Employee[] = (!employeeTestResult.error && employeeTestResult.data)
@@ -155,17 +152,6 @@ export default async function DashboardPage() {
         if (nameKey) empLineNameMap.set(nameKey, emp);
       }
     });
-
-    // Profile lookup
-    const profileMap = new Map<string, string>();
-    if (!profilesResult.error && profilesResult.data) {
-      profilesResult.data.forEach((p: { line_user_id: string; display_name: string | null }) => {
-        if (p.line_user_id && p.display_name) {
-          const idKey = cleanId(p.line_user_id);
-          if (idKey) profileMap.set(idKey, p.display_name);
-        }
-      });
-    }
 
     // COUNT(DISTINCT line_user_id) — accurate unique user count
     const totalUsers = new Set(
@@ -210,11 +196,9 @@ export default async function DashboardPage() {
         matchedEmp = empLineNameMap.get(cleanId(log.display_name)) || null;
       }
 
-      const profileDisplayName = profileMap.get(cleanLine) || null;
-
       return {
         ...log,
-        display_name: log.display_name || profileDisplayName || null,
+        display_name: log.display_name || null,
         user_message: log.user_message ? String(log.user_message).replace(/^=+/, "").trim() : null,
         ai_response: log.ai_response ? String(log.ai_response).replace(/^=+/, "").trim() : null,
         employee: matchedEmp,

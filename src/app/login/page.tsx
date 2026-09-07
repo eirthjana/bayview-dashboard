@@ -84,15 +84,7 @@ function LoginForm() {
         }
       }
 
-      // ทุกบัญชีต้องผ่าน 2FA (TOTP) — เช็คว่าเคยตั้งค่าไว้หรือยัง
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      const hasVerifiedFactor = (factors?.totp || []).length > 0;
-
-      if (hasVerifiedFactor) {
-        router.push("/mfa/verify");
-      } else {
-        router.push("/mfa/enroll");
-      }
+      router.push("/dashboard");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการเข้าสู่ระบบ");

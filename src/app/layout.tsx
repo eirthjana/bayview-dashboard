@@ -38,7 +38,12 @@ export default function RootLayout({
           disableTransitionOnChange={false}
         >
           {children}
-          <Toaster position="top-right" richColors />
+          {/* top-center is the one strip of the app that holds nothing worth
+              covering: the header keeps its controls at the far left (collapse)
+              and far right (System Status, theme), and the page heading under it
+              is static text. Both right-hand corners sat on top of real content,
+              and bottom-center lands on table rows on the list pages. */}
+          <Toaster position="top-center" richColors />
         </ThemeProvider>
       </body>
     </html>
