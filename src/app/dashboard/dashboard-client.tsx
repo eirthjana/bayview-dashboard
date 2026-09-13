@@ -5,7 +5,7 @@ import { UsageChart } from "@/components/dashboard/usage-chart";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { DailyTokenChart, DeptTokenChart } from "@/components/dashboard/token-charts";
 import type { DashboardStats, DailyUsage, ChatLog, DailyTokenUsage, DeptTokenUsage } from "@/lib/types";
-import { Users, Activity, MessageSquare, Zap, ShieldCheck } from "lucide-react";
+import { Users, Activity, MessageSquare, Zap, Target } from "lucide-react";
 
 interface DashboardClientProps {
   data: {
@@ -43,6 +43,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
           title="Total Users"
           value={data.stats.totalUsers}
           description="ผู้ใช้งาน LINE OA ทั้งหมด"
+          href="/dashboard/employees"
           icon={<Users className="w-5 h-5" />}
           color="blue"
         />
@@ -50,6 +51,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
           title="Active Today"
           value={data.stats.activeUsersToday}
           description="ผู้ใช้งานในวันนี้"
+          href="/dashboard/users?range=today"
           icon={<Activity className="w-5 h-5" />}
           color="emerald"
         />
@@ -59,19 +61,24 @@ export function DashboardClient({ data }: DashboardClientProps) {
           description="ข้อความ & AI Requests"
           icon={<MessageSquare className="w-5 h-5" />}
           color="wood"
+          href="/dashboard/analytics#dept-activity"
         />
         <StatCard
           title="Total Tokens Used"
           value={data.stats.totalTokensUsed}
           description="ปริมาณ Tokens ที่ใช้งาน"
+          href="/dashboard#token-usage"
           icon={<Zap className="w-5 h-5" />}
           color="amber"
         />
         <StatCard
-          title="Success Rate"
-          value={`${Math.max(0, 100 - data.stats.errorRate).toFixed(1)}%`}
-          description="ข้อความที่ตอบสำเร็จ"
-          icon={<ShieldCheck className="w-5 h-5" />}
+          title="Answer Accuracy"
+          value={`${data.stats.answerAccuracy.toFixed(1)}%`}
+          description="คำถามที่ตอบได้ เทียบกับที่ไม่พบข้อมูล"
+          // Deep-links to the questions the bot could not answer — the half of
+          // this ratio worth acting on, since each one is a gap in the SOPs.
+          href="/dashboard/users?status=not_found"
+          icon={<Target className="w-5 h-5" />}
           color="health"
         />
       </div>
@@ -86,8 +93,8 @@ export function DashboardClient({ data }: DashboardClientProps) {
         </div>
       </div>
 
-      {/* Token Analytics Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Token Analytics Charts — scroll target for the token stat cards */}
+      <div id="token-usage" className="grid grid-cols-1 lg:grid-cols-2 gap-6 scroll-mt-24">
         <DailyTokenChart data={data.dailyTokenUsage} />
         <DeptTokenChart data={data.deptTokenUsage} />
       </div>

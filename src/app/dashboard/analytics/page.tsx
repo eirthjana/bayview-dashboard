@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { AnalyticsClient } from "./analytics-client";
-import type { AnalyticsSummary, FaqItem, HourlyUsage, DeptActivity } from "@/lib/types";
+import type { AnalyticsSummary, HourlyUsage, DeptActivity } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -32,24 +32,6 @@ function bangkokHour(iso: string): number {
   return hourPart ? parseInt(hourPart, 10) % 24 : 0;
 }
 
-// Best-effort topic tag for a FAQ entry: only tag when a distinctive
-// sub-department keyword appears (e.g. "Reservation"), otherwise fall back
-// to "General" — a broad term like "Front Office" covers too many roles
-// (FOM, GSA, Bell, GRO...) to be a useful single tag on its own.
-const TOPIC_KEYWORDS: { pattern: RegExp; tag: string }[] = [
-  { pattern: /reservation|จอง/i, tag: "Reservation" },
-  { pattern: /housekeeping|แม่บ้าน/i, tag: "Housekeeping" },
-  { pattern: /accounting|บัญชี/i, tag: "Accounting" },
-  { pattern: /kitchen|f\s*&\s*b|food\s*&?\s*beverage|ครัว|อาหารและเครื่องดื่ม/i, tag: "F&B" },
-  { pattern: /engineering|ช่างซ่อมบำรุง|วิศวกรรม/i, tag: "Engineering" },
-  { pattern: /human resources|\bhr\b|ฝ่ายบุคคล/i, tag: "HR" },
-];
-
-function classifyTopic(question: string): string {
-  const match = TOPIC_KEYWORDS.find(({ pattern }) => pattern.test(question));
-  return match?.tag ?? "General";
-}
-
 interface ChatLogRow {
   user_message: string | null;
   tokens_used: number | null;
@@ -60,6 +42,8 @@ interface ChatLogRow {
 interface EmployeeDeptRow {
   line_user_id: string | null;
   department: string | null;
+  name: string | null;
+  name_th: string | null;
 }
 
 export default async function AnalyticsPage() {
@@ -69,7 +53,6 @@ export default async function AnalyticsPage() {
     peakTrafficTime: "-",
     mostActiveDept: "-",
   };
-  let faqs: FaqItem[] = [];
   let hourly: HourlyUsage[] = [];
   let deptActivity: DeptActivity[] = [];
 
@@ -77,20 +60,32 @@ export default async function AnalyticsPage() {
     const supabase = await createClient();
 
     const [logsResult, employeesResult] = await Promise.all([
+      // Failed requests are kept in Supabase but never surfaced in the
+      // dashboard, so they are excluded here too — otherwise the inquiry
+      // count and the per-hour/per-department charts would be inflated by
+      // traffic the rest of the UI does not show.
       supabase
         .from("chat_logs")
-        .select("user_message, tokens_used, created_at, line_user_id"),
-      supabase.from("employee_test").select("line_user_id, department"),
+        .select("user_message, tokens_used, created_at, line_user_id")
+        .neq("status", "error"),
+      supabase
+        .from("employee_test")
+        .select("line_user_id, department, name, name_th"),
     ]);
 
     const logs = (logsResult.data as ChatLogRow[]) || [];
     const employees = (employeesResult.data as EmployeeDeptRow[]) || [];
 
     const deptByLineId = new Map<string, string>();
+    const nameByLineId = new Map<string, string>();
     employees.forEach((e) => {
-      if (e.line_user_id && e.department) {
-        deptByLineId.set(cleanId(e.line_user_id), e.department);
-      }
+      const key = cleanId(e.line_user_id);
+      if (!key) return;
+      if (e.department) deptByLineId.set(key, e.department);
+      // Registered full name only — line_name is whatever the person set as
+      // their LINE display name ("❅ Jedi ツ ❅"), which is not an identity.
+      const name = e.name?.trim() || e.name_th?.trim();
+      if (name) nameByLineId.set(key, name);
     });
 
     const total = logs.length;
@@ -122,37 +117,42 @@ export default async function AnalyticsPage() {
     // Department activity: join each message's asker to employee_test via
     // line_user_id; anyone unmatched (guests, unlinked accounts) buckets
     // into "Guest / Unregistered" rather than being dropped from the chart.
+    // Counted per department and, within each, per person — so the chart can be
+    // opened up to show who the messages actually came from. Only a registered
+    // full name is ever shown as a name; someone with no employee record falls
+    // back to a shortened LINE id, which still tells two of them apart without
+    // passing off a self-chosen LINE display name as an identity.
     const deptCounts = new Map<string, number>();
+    const usersByDept = new Map<string, Map<string, { name: string; count: number }>>();
+
     logs.forEach((l) => {
-      const dept = deptByLineId.get(cleanId(l.line_user_id)) || "Guest / Unregistered";
+      const key = cleanId(l.line_user_id);
+      const dept = deptByLineId.get(key) || "Guest / Unregistered";
       deptCounts.set(dept, (deptCounts.get(dept) || 0) + 1);
+
+      const rawId = String(l.line_user_id || "").replace(/^["'=]+|["'=]+$/g, "").trim();
+      const name =
+        nameByLineId.get(key) ||
+        (rawId ? `ไม่ระบุตัวตน (${rawId.slice(0, 8)}…${rawId.slice(-4)})` : "ไม่ระบุตัวตน");
+
+      if (!usersByDept.has(dept)) usersByDept.set(dept, new Map());
+      const bucket = usersByDept.get(dept)!;
+      const seen = bucket.get(key);
+      if (seen) seen.count += 1;
+      else bucket.set(key, { name, count: 1 });
     });
+
     deptActivity = Array.from(deptCounts.entries()).map(([department, count]) => ({
       department,
       count,
+      users: Array.from(usersByDept.get(department)?.entries() || [])
+        .map(([lineUserId, u]) => ({ lineUserId, name: u.name, count: u.count }))
+        .sort((a, b) => b.count - a.count),
     }));
     const mostActiveDept =
       deptActivity.length > 0
         ? [...deptActivity].sort((a, b) => b.count - a.count)[0].department
         : "-";
-
-    // Top FAQs: group by exact (cleaned) question text so repeated identical
-    // asks count as one entry, ranked by frequency.
-    const faqMap = new Map<string, number>();
-    logs.forEach((l) => {
-      const q = l.user_message ? String(l.user_message).replace(/^=+/, "").trim() : "";
-      if (!q) return;
-      faqMap.set(q, (faqMap.get(q) || 0) + 1);
-    });
-    faqs = Array.from(faqMap.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([question, count]) => ({
-        question,
-        count,
-        percentage: total > 0 ? (count / total) * 100 : 0,
-        tag: classifyTopic(question),
-      }));
 
     summary = {
       totalInquiries: total,
@@ -164,5 +164,5 @@ export default async function AnalyticsPage() {
     console.error("Failed to fetch analytics data from Supabase:", error);
   }
 
-  return <AnalyticsClient summary={summary} faqs={faqs} hourly={hourly} deptActivity={deptActivity} />;
+  return <AnalyticsClient summary={summary} hourly={hourly} deptActivity={deptActivity} />;
 }

@@ -94,15 +94,15 @@ export function RecentActivity({ logs }: RecentActivityProps) {
                 const employee = log.employee;
 
                 // 1. User Name resolution
+                // Registered full name, or the LINE id — never log.display_name,
+                // which is the name the person chose for themselves in LINE.
                 let displayName = "";
                 if (isEmployee && employee?.name) {
                   displayName = employee.name;
-                } else if (log.display_name) {
-                  displayName = log.display_name;
                 } else if (rawLineId) {
-                  displayName = `${rawLineId.slice(0, 8)}...`;
+                  displayName = `ไม่ระบุตัวตน (${rawLineId.slice(0, 8)}…)`;
                 } else {
-                  displayName = "Guest User";
+                  displayName = "ไม่ระบุตัวตน";
                 }
 
                 // 2. Role / Position badge text
@@ -256,12 +256,10 @@ function RecentActivityDetailModal({
   let displayName = "";
   if (isEmployee && employee?.name) {
     displayName = employee.name;
-  } else if (log.display_name) {
-    displayName = log.display_name;
   } else if (rawLineId) {
-    displayName = rawLineId;
+    displayName = `ไม่ระบุตัวตน (${rawLineId})`;
   } else {
-    displayName = "Guest User";
+    displayName = "ไม่ระบุตัวตน";
   }
 
   let badgeClass = "border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800";

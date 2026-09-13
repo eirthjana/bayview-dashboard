@@ -11,8 +11,9 @@ import { SYSTEM_HEALTH_REFRESH } from "@/lib/system-health-events";
 interface Health {
   overall: "up" | "degraded" | "down";
   database: "up" | "down" | "unknown";
+  ngrok: "up" | "down" | "unknown";
   n8n: "up" | "down" | "unknown";
-  n8nReason: string;
+  probeReason: string;
   aiEnabled: boolean | null;
   checkedAt: string;
 }
@@ -48,7 +49,10 @@ const TONE = {
 
 function label(h: Health): string {
   if (h.database === "down") return "Database ขัดข้อง";
-  if (h.n8n === "down") return "n8n ขัดข้อง";
+  // ngrok first: when the tunnel is out n8n reads "unknown" only because there
+  // is no route to reach it, and naming the tunnel points at the actual fix
+  if (h.ngrok !== "up") return "Ngrok ขัดข้อง";
+  if (h.n8n !== "up") return "n8n ขัดข้อง";
   if (h.aiEnabled === false) return "AI ปิดใช้งาน";
   return "System Online";
 }
@@ -59,7 +63,8 @@ function label(h: Health): string {
 function rowsFor(h: Health) {
   return [
     { label: "Database", online: h.database === "up" },
-    { label: "N8N/Line", online: h.n8n === "up" },
+    { label: "Ngrok", online: h.ngrok === "up" },
+    { label: "n8n", online: h.n8n === "up" },
     { label: "AI ตอบอัตโนมัติ", online: h.aiEnabled === true },
   ];
 }

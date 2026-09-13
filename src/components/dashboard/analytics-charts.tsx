@@ -12,83 +12,16 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { FaqItem, HourlyUsage, DeptActivity } from "@/lib/types";
-import { HelpCircle, Clock, Building2 } from "lucide-react";
-
-// ─── Top FAQs Card ─────────────────────────────────────────────────────────
-
-const RANK_COLORS = [
-  "bg-[#0C645B] dark:bg-emerald-600",
-  "bg-[#8B5E3C] dark:bg-[#8B5E3C]",
-  "bg-zinc-700 dark:bg-zinc-600",
-];
-
-export function TopFaqsCard({ items }: { items: FaqItem[] }) {
-  return (
-    <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
-      <CardHeader className="py-3.5 px-5 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 shrink-0">
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
-              <HelpCircle className="w-4 h-4" />
-            </span>
-            คำถามยอดนิยม (Top FAQs & User Inquiries)
-          </CardTitle>
-          <Badge variant="secondary" className="text-[0.6875rem] font-semibold shrink-0">
-            Top {items.length} คำถาม
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="p-4 pt-3 space-y-3">
-        {items.length === 0 ? (
-          <div className="py-10 flex flex-col items-center justify-center gap-2 text-center">
-            <HelpCircle className="w-8 h-8 text-zinc-300 dark:text-zinc-600" />
-            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">ยังไม่มีข้อมูลคำถาม</p>
-          </div>
-        ) : (
-          items.map((item, i) => (
-            <div
-              key={`${item.question}-${i}`}
-              className="rounded-xl border border-zinc-200 dark:border-zinc-800/60 bg-zinc-50/60 dark:bg-zinc-800/30 p-3.5"
-            >
-              <div className="flex items-start gap-3">
-                <span
-                  className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.6875rem] font-bold text-white ${
-                    RANK_COLORS[i] ?? "bg-zinc-300 dark:bg-zinc-700"
-                  }`}
-                >
-                  {i + 1}
-                </span>
-                <p className="flex-1 text-sm font-semibold text-zinc-800 dark:text-zinc-200 leading-snug">
-                  {item.question}
-                </p>
-                <div className="shrink-0 flex items-center gap-1.5">
-                  <Badge variant="outline" className="text-[0.625rem]">
-                    {item.tag}
-                  </Badge>
-                  <Badge variant="secondary" className="text-[0.625rem] whitespace-nowrap">
-                    {item.count} ครั้ง
-                  </Badge>
-                </div>
-              </div>
-              <div className="mt-2.5 flex items-center gap-3">
-                <div className="flex-1 h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-[#0C645B] dark:bg-emerald-500"
-                    style={{ width: `${Math.max(item.percentage, 2)}%` }}
-                  />
-                </div>
-                <span className="shrink-0 text-[0.6875rem] text-zinc-400 dark:text-zinc-500">
-                  สัดส่วนการถามคำถามนี้: {item.percentage.toFixed(1)}%
-                </span>
-              </div>
-            </div>
-          ))
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useState } from "react";
+import type { HourlyUsage, DeptActivity } from "@/lib/types";
+import { Clock, Building2, Users } from "lucide-react";
 
 // ─── Peak Usage Hours Chart ─────────────────────────────────────────────────
 
@@ -210,6 +143,8 @@ function DeptActivityTooltip({ active, payload }: any) {
 }
 
 export function DeptActivityChart({ data }: { data: DeptActivity[] }) {
+  const [openDept, setOpenDept] = useState<DeptActivity | null>(null);
+
   const sorted = [...data]
     .sort((a, b) => b.count - a.count)
     .map((d, i) => ({ ...d, _colorIdx: i }));
@@ -263,7 +198,16 @@ export function DeptActivityChart({ data }: { data: DeptActivity[] }) {
                   width={160}
                 />
                 <Tooltip content={<DeptActivityTooltip />} cursor={{ fill: "rgba(147, 173, 168, 0.08)" }} />
-                <Bar dataKey="count" maxBarSize={22} radius={[0, 6, 6, 0]}>
+                <Bar
+                  dataKey="count"
+                  maxBarSize={22}
+                  radius={[0, 6, 6, 0]}
+                  cursor="pointer"
+                  onClick={(entry: unknown) => {
+                    const dept = (entry as { payload?: DeptActivity })?.payload;
+                    if (dept?.users?.length) setOpenDept(dept);
+                  }}
+                >
                   {sorted.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={DEPT_PALETTE[index % DEPT_PALETTE.length]} />
                   ))}
@@ -272,7 +216,57 @@ export function DeptActivityChart({ data }: { data: DeptActivity[] }) {
             </ResponsiveContainer>
           </div>
         )}
+
+        {sorted.length > 0 && (
+          <p className="text-[0.6875rem] text-zinc-500 dark:text-zinc-400 text-center mt-1">
+            คลิกที่แท่งกราฟเพื่อดูว่าใครในแผนกนั้นใช้งานไปกี่ครั้ง
+          </p>
+        )}
       </CardContent>
+
+      <Dialog open={!!openDept} onOpenChange={(o) => !o && setOpenDept(null)}>
+        <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-h-[85vh] overflow-y-auto custom-scrollbar">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              {openDept?.department}
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500 dark:text-zinc-400">
+              {openDept?.users.length} คน · {openDept?.count.toLocaleString()} ข้อความรวม
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            {openDept?.users.map((u, i) => {
+              const share = openDept.count > 0 ? (u.count / openDept.count) * 100 : 0;
+              return (
+                <div key={u.lineUserId || i} className="flex items-center gap-3 py-2.5">
+                  <span className="w-6 text-xs font-bold text-zinc-400 dark:text-zinc-500 tabular-nums shrink-0">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">{u.name}</p>
+                    <div className="h-1.5 mt-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[#0C645B] dark:bg-emerald-500"
+                        style={{ width: `${share}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
+                      {u.count.toLocaleString()}
+                    </p>
+                    <p className="text-[0.6875rem] text-zinc-500 dark:text-zinc-400 tabular-nums">
+                      {share.toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

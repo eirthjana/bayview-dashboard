@@ -60,16 +60,19 @@ export interface DashboardStats {
   totalUsers: number;
   activeUsersToday: number;
   totalMessages: number;
-  errorRate: number;
+  /** success / (success + not_found), as a percentage — how often a question
+   *  the bot was asked actually got an answer out of the knowledge base. */
+  answerAccuracy: number;
   totalTokensUsed: number;
 }
 
+/** Per-day counts for the usage chart. "error" is deliberately absent: failed
+ *  requests stay in chat_logs but are filtered out before reaching the UI. */
 export interface DailyUsage {
   date: string;
   success: number;
   not_found: number;
   unauthorized: number;
-  error: number;
 }
 
 export interface DailyTokenUsage {
@@ -93,43 +96,25 @@ export interface AnalyticsSummary {
   mostActiveDept: string;
 }
 
-export interface FaqItem {
-  question: string;
-  count: number;
-  percentage: number;
-  tag: string;
-}
-
 export interface HourlyUsage {
   hour: string;
   count: number;
   tier: "peak" | "high" | "regular";
 }
 
-export interface DeptActivity {
-  department: string;
+export interface DeptUserActivity {
+  lineUserId: string;
+  name: string;
   count: number;
 }
 
-// ==========================================
-// API Request/Response Types
-// ==========================================
-
-export interface BroadcastRequest {
-  message: string;
-  target?: "all" | "active";
+export interface DeptActivity {
+  department: string;
+  count: number;
+  /** Per-person breakdown behind `count`, busiest first. */
+  users: DeptUserActivity[];
 }
 
-export interface SendMessageRequest {
-  lineUserId: string;
-  message: string;
-}
-
-export interface N8nWebhookResponse {
-  success: boolean;
-  message?: string;
-  error?: string;
-}
 // ==========================================
 // เพิ่มเข้าไปใน src/lib/types.ts (ต่อท้ายไฟล์เดิม)
 // ==========================================
@@ -173,7 +158,7 @@ export const DEPARTMENTS: Record<string, string[]> = {
     "Purchasing Officer",
   ],
   "Front Office": [
-    "Room Division Manager",
+    "Front Office Manager",
     "Asst. Front Office Manger",
     "Duty Manager",
     "Night Manager",

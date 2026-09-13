@@ -458,7 +458,7 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
 
       {/* View details dialog */}
       <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
-        <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-h-[85vh] overflow-y-auto custom-scrollbar">
+        <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 sm:max-w-2xl max-h-[85vh] overflow-y-auto custom-scrollbar">
           <DialogHeader>
             <DialogTitle>รายละเอียดพนักงาน</DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400">
@@ -502,12 +502,15 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
                 <DetailRow label="ตำแหน่ง" value={viewing.position} />
               </div>
 
-              <div className="border-t border-zinc-200 dark:border-zinc-800/50 pt-3 grid grid-cols-2 gap-x-4 gap-y-3">
+              {/* Email and LINE User ID are long, unbreakable single values —
+                  a corporate address runs to name.surna@sukosol.local — so each
+                  takes a full row instead of being squeezed into half of one. */}
+              <div className="border-t border-zinc-200 dark:border-zinc-800/50 pt-3 space-y-3">
                 <DetailRow label="อีเมล" value={viewing.email} copyable />
                 <DetailRow label="เบอร์โทร" value={viewing.phone_number} copyable />
               </div>
 
-              <div className="border-t border-zinc-200 dark:border-zinc-800/50 pt-3 grid grid-cols-2 gap-x-4 gap-y-3">
+              <div className="border-t border-zinc-200 dark:border-zinc-800/50 pt-3 space-y-3">
                 <DetailRow label="LINE User ID" value={viewing.line_user_id} mono copyable />
                 <DetailRow label="Line Name" value={viewing.line_name} />
               </div>

@@ -25,10 +25,8 @@ function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
 
   // payload only contains the currently-visible (non-hidden) series, in
-  // whatever order recharts stacked them — re-sort to the app-wide status
-  // order and sum them for a total line at the bottom.
+  // whatever order recharts drew them — re-sort to the app-wide status order.
   const byKey = new Map<string, number>(payload.map((p: { dataKey: string; value: number }) => [p.dataKey, p.value]));
-  const total = payload.reduce((sum: number, p: { value: number }) => sum + p.value, 0);
 
   return (
     <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-700 rounded-xl p-3.5 shadow-xl min-w-[10rem]">
@@ -45,12 +43,6 @@ function CustomTooltip({ active, payload, label }: any) {
             </span>
           </div>
         ))}
-        {payload.length > 1 && (
-          <div className="flex items-center justify-between gap-3 text-xs pt-1 mt-1 border-t border-zinc-200 dark:border-zinc-700">
-            <span className="text-zinc-500 dark:text-zinc-400 font-semibold">รวม</span>
-            <span className="font-bold text-zinc-800 dark:text-zinc-200">{total.toLocaleString()}</span>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -144,7 +136,10 @@ export function UsageChart({ data, title = "การใช้งานย้อ
                   key={key}
                   type="monotone"
                   dataKey={key}
-                  stackId="1"
+                  // deliberately not stacked: stacking drew each series on top
+                  // of the ones before it, so a status with 1 event sat higher
+                  // on the axis than one with 10. Every line now starts at zero
+                  // and can be read against the Y axis on its own.
                   stroke={STATUS_META[key].hex}
                   strokeWidth={2}
                   fillOpacity={1}

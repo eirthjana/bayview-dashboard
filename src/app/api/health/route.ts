@@ -12,24 +12,28 @@ const PROBE_CACHE_MS = 3000;
 
 type Check = "up" | "down" | "unknown";
 
-type N8nResult = { status: Check; reason: string };
+type ProbeResult = { ngrok: Check; n8n: Check; reason: string };
 
-let cachedN8n: { at: number; result: N8nResult } | null = null;
+let cachedProbe: { at: number; result: ProbeResult } | null = null;
 
 /**
- * Liveness probe for n8n behind the ngrok tunnel.
+ * One request tells us about two hops: the ngrok tunnel, and n8n behind it.
  *
- * A plain "did it answer with any HTTP status" test is not enough here: when the
- * tunnel itself is offline ngrok answers 404 too — the same status n8n returns
- * for an unregistered webhook path — so an offline bot would read as healthy.
- * The two are told apart by who actually answered:
+ * A plain "did it answer with any HTTP status" test cannot separate them — when
+ * the tunnel is offline ngrok answers 404, the same status n8n returns for an
+ * unregistered webhook path. Who actually answered is what distinguishes them:
  *   - ngrok sets an `ngrok-error-code` header on its own error pages
  *   - n8n answers this path as application/json
  * Both signals live in the headers, so HEAD is enough and no body crosses the
  * tunnel — which is what makes it affordable to probe every few seconds.
+ *
+ * When the tunnel is out, n8n is reported "unknown" rather than down: it may
+ * well be running, we simply have no route to ask it.
  */
-async function probeN8n(): Promise<N8nResult> {
-  if (!N8N_WEBHOOK_URL) return { status: "unknown", reason: "ยังไม่ได้ตั้งค่า N8N_WEBHOOK_URL" };
+async function probe(): Promise<ProbeResult> {
+  if (!N8N_WEBHOOK_URL) {
+    return { ngrok: "unknown", n8n: "unknown", reason: "ยังไม่ได้ตั้งค่า N8N_WEBHOOK_URL" };
+  }
 
   let res: Response;
   try {
@@ -39,26 +43,28 @@ async function probeN8n(): Promise<N8nResult> {
       cache: "no-store",
     });
   } catch {
-    return { status: "down", reason: "ต่อไม่ติด / หมดเวลารอ" };
+    return { ngrok: "down", n8n: "unknown", reason: "ต่อ tunnel ไม่ติด / หมดเวลารอ" };
   }
 
   if (res.headers.get("ngrok-error-code")) {
-    return { status: "down", reason: "ngrok tunnel ออฟไลน์" };
+    return { ngrok: "down", n8n: "unknown", reason: "ngrok tunnel ออฟไลน์" };
   }
+
+  // Past this point the tunnel answered, so anything wrong is behind it.
   if (res.status === 502 || res.status === 503 || res.status === 504) {
-    return { status: "down", reason: `n8n ไม่ตอบหลัง tunnel (${res.status})` };
+    return { ngrok: "up", n8n: "down", reason: `n8n ไม่ตอบหลัง tunnel (${res.status})` };
   }
   if (!(res.headers.get("content-type") || "").includes("application/json")) {
-    return { status: "down", reason: `ตอบกลับไม่ใช่ n8n (${res.status})` };
+    return { ngrok: "up", n8n: "down", reason: `ตอบกลับไม่ใช่ n8n (${res.status})` };
   }
 
-  return { status: "up", reason: `n8n ตอบกลับ (${res.status})` };
+  return { ngrok: "up", n8n: "up", reason: `n8n ตอบกลับ (${res.status})` };
 }
 
-async function checkN8n(): Promise<N8nResult> {
-  if (cachedN8n && Date.now() - cachedN8n.at < PROBE_CACHE_MS) return cachedN8n.result;
-  const result = await probeN8n();
-  cachedN8n = { at: Date.now(), result };
+async function checkTunnelAndN8n(): Promise<ProbeResult> {
+  if (cachedProbe && Date.now() - cachedProbe.at < PROBE_CACHE_MS) return cachedProbe.result;
+  const result = await probe();
+  cachedProbe = { at: Date.now(), result };
   return result;
 }
 
@@ -80,8 +86,8 @@ async function readAiEnabled(supabase: Awaited<ReturnType<typeof createClient>>)
 }
 
 export async function GET() {
-  const [n8n, dbProbe] = await Promise.all([
-    checkN8n(),
+  const [tunnel, dbProbe] = await Promise.all([
+    checkTunnelAndN8n(),
     (async () => {
       try {
         const supabase = await createClient();
@@ -118,15 +124,16 @@ export async function GET() {
   }
 
   const database: Check = dbProbe.reachable ? "up" : "down";
-  const down = database === "down" || n8n.status === "down";
-  const degraded = down || dbProbe.aiEnabled === false || n8n.status === "unknown";
+  const down = database === "down" || tunnel.ngrok !== "up" || tunnel.n8n !== "up";
+  const degraded = down || dbProbe.aiEnabled === false;
 
   return NextResponse.json({
     success: true,
     overall: down ? "down" : degraded ? "degraded" : "up",
     database,
-    n8n: n8n.status,
-    n8nReason: n8n.reason,
+    ngrok: tunnel.ngrok,
+    n8n: tunnel.n8n,
+    probeReason: tunnel.reason,
     aiEnabled: dbProbe.aiEnabled,
     checkedAt: new Date().toISOString(),
   });

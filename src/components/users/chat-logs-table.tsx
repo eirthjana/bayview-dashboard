@@ -60,7 +60,6 @@ const STATUS_FILTER_LABELS: Record<string, string> = {
   success: "Success",
   not_found: "Not Found",
   unauthorized: "Unauthorized",
-  error: "Error",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -96,6 +95,12 @@ function shortId(id: string): string {
   return `${clean.slice(0, 6)}…${clean.slice(-4)}`;
 }
 
+/** Label for someone with no employee record — never their LINE display name. */
+function guestLabel(id: string | null | undefined): string {
+  const short = shortId(String(id || ""));
+  return short && short !== "-" ? `ไม่ระบุตัวตน (${short})` : "ไม่ระบุตัวตน";
+}
+
 function formatDateTime(dateStr: string) {
   const d = new Date(dateStr);
   return {
@@ -106,7 +111,9 @@ function formatDateTime(dateStr: string) {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type StatusFilterType = "all" | "success" | "not_found" | "unauthorized" | "error";
+// No "error": failed requests are kept in Supabase but filtered out of
+// every dashboard view, so there is nothing for that option to show.
+type StatusFilterType = "all" | "success" | "not_found" | "unauthorized";
 
 interface EnrichedLog extends ChatLog {
   isStaff: boolean;
@@ -122,11 +129,18 @@ interface EnrichedLog extends ChatLog {
 interface ChatLogsTableProps {
   chatLogs: ChatLog[];
   employees: Employee[];
+  /** Preset filters, so a stat card elsewhere can deep-link into a filtered view. */
+  initialStatus?: StatusFilterType;
+  initialStartDate?: string;
+  initialEndDate?: string;
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
+// ─── Summary strip ────────────────────────────────────────────────────────────
 
-function SummaryMetricCard({
+// These three numbers describe the *current filter result*, not the system as a
+// whole — they change with every filter change. Three page-sized hero cards
+// oversold that and left most of their width empty, so they share one row now.
+function SummaryMetric({
   icon,
   label,
   value,
@@ -139,19 +153,23 @@ function SummaryMetricCard({
   subtext?: string;
   colorClass: string;
 }) {
+  // Same three-line shape and type scale as StatCard on the other pages:
+  // uppercase English label, then the number, then the Thai explanation.
   return (
-    <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl p-5 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
-      <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-xl border ${colorClass} shrink-0`}>{icon}</div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[0.6875rem] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">{label}</p>
-          <p className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight tabular-nums mt-0.5">
-            {typeof value === "number" ? value.toLocaleString() : value}
-          </p>
-          {subtext && <p className="text-[0.6875rem] text-zinc-400 dark:text-zinc-500 mt-0.5 truncate">{subtext}</p>}
-        </div>
+    <div className="flex items-start justify-between gap-3 px-5 py-4 flex-1 min-w-0">
+      <div className="min-w-0 space-y-1.5">
+        <p className="text-[0.6875rem] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+          {label}
+        </p>
+        <p className="text-xl lg:text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight tabular-nums leading-snug">
+          {typeof value === "number" ? value.toLocaleString() : value}
+        </p>
+        {subtext && (
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium truncate">{subtext}</p>
+        )}
       </div>
-    </Card>
+      <div className={`p-3 rounded-xl border shrink-0 ${colorClass}`}>{icon}</div>
+    </div>
   );
 }
 
@@ -161,16 +179,26 @@ function SummaryMetricCard({
 // unbounded — matches the server's initial fetch limit (see users/page.tsx).
 const MAX_LOGS = 500;
 
-export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
+export function ChatLogsTable({
+  chatLogs,
+  employees,
+  initialStatus = "all",
+  initialStartDate = "",
+  initialEndDate = "",
+}: ChatLogsTableProps) {
   // Filter States
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("All Departments");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilterType>("all");
+  const [startDate, setStartDate] = useState(initialStartDate);
+  const [endDate, setEndDate] = useState(initialEndDate);
+  const [statusFilter, setStatusFilter] = useState<StatusFilterType>(initialStatus);
 
   const [selectedLog, setSelectedLog] = useState<EnrichedLog | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // The realtime subscription below is set up once, so it cannot close over the
+  // employee lookup directly — this ref hands it the current one.
+  const empLineIdMapRef = useRef(new Map<string, Employee>());
 
   // Live logs: seeded from the server-rendered initial fetch, then kept
   // current via a Supabase Realtime subscription below — no more needing to
@@ -187,12 +215,19 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
         { event: "INSERT", schema: "public", table: "chat_logs" },
         (payload) => {
           const newLog = payload.new as ChatLog;
+          // Failed requests are never shown in the dashboard — drop them here
+          // too, or a live error row would appear in a table that has no
+          // filter able to hide it again.
+          if (String(newLog.status).toLowerCase() === "error") return;
           if (knownIds.current.has(newLog.id)) return; // dedupe against re-deliveries
           knownIds.current.add(newLog.id);
 
           setLogs((prev) => [newLog, ...prev].slice(0, MAX_LOGS));
 
-          const who = newLog.display_name || "ผู้ใช้ใหม่";
+          // Same rule as the table: registered full name, or the id — the LINE
+          // display name on the log is not used as an identity anywhere.
+          const emp = empLineIdMapRef.current.get(normalizeLineId(newLog.line_user_id));
+          const who = emp?.name?.trim() || guestLabel(newLog.line_user_id);
           const preview = String(newLog.user_message || "").replace(/^=+/, "").trim();
           toast.info(`ข้อความใหม่จาก ${who}`, {
             description: preview ? preview.slice(0, 80) : undefined,
@@ -228,6 +263,10 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
 
     return { empLineIdMap: idMap, empLineNameMap: nameMap };
   }, [employees]);
+
+  useEffect(() => {
+    empLineIdMapRef.current = empLineIdMap;
+  }, [empLineIdMap]);
 
   // Enrich each log
   const enrichedLogs = useMemo<EnrichedLog[]>(() => {
@@ -275,12 +314,11 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
         } else {
           roleType = "staff";
         }
-      } else if (log.display_name) {
-        resolvedName = log.display_name;
-        roleLabel = "Guest";
-        roleType = "guest";
       } else {
-        resolvedName = shortId(displayId) || "Guest User";
+        // No employee record, so there is no real name to show. log.display_name
+        // is the LINE name the person chose for themselves ("❅ Jedi ツ ❅") and is
+        // not an identity, so fall back to the id instead.
+        resolvedName = guestLabel(displayId);
         roleLabel = "Guest";
         roleType = "guest";
       }
@@ -356,6 +394,7 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
     return {
       total,
       uniqueUsers,
+      successCount,
       resolvedRate,
     };
   }, [filteredLogs]);
@@ -383,30 +422,32 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
 
   return (
     <div className="space-y-6">
-      {/* ── Dynamic Summary Metric Cards (Recalculates based on Filter) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <SummaryMetricCard
-          icon={<Database className="w-5 h-5 text-[#0C645B] dark:text-emerald-400" />}
-          label="Total Logs (ผลลัพธ์)"
-          value={dynamicMetrics.total}
-          subtext={`จากทั้งหมด ${logs.length.toLocaleString()} รายการ`}
-          colorClass="bg-[#0C645B]/10 dark:bg-[#17A594]/20 border-[#0C645B]/20 dark:border-emerald-500/30"
-        />
-        <SummaryMetricCard
-          icon={<Users className="w-5 h-5 text-[#8B5E3C] dark:text-[#D4A373]" />}
-          label="Unique Users (ผู้ใช้)"
-          value={dynamicMetrics.uniqueUsers}
-          subtext="จำนวนผู้ใช้ที่ไม่ซ้ำในผลลัพธ์"
-          colorClass="bg-[#8B5E3C]/10 dark:bg-[#8B5E3C]/20 border-[#8B5E3C]/20 dark:border-[#8B5E3C]/40"
-        />
-        <SummaryMetricCard
-          icon={<ShieldCheck className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />}
-          label="Resolved Rate"
-          value={`${dynamicMetrics.resolvedRate.toFixed(1)}%`}
-          subtext="อัตราการตอบสำเร็จในชุดข้อมูลนี้"
-          colorClass="bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/50"
-        />
-      </div>
+      {/* ── Summary of whatever the filters currently match ── */}
+      <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden">
+        <div className="flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-zinc-200 dark:divide-zinc-800">
+          <SummaryMetric
+            icon={<Database className="w-5 h-5 text-[#0C645B] dark:text-emerald-400" />}
+            label="Total Logs"
+            value={dynamicMetrics.total}
+            subtext={`ผลลัพธ์จากทั้งหมด ${logs.length.toLocaleString()} รายการ`}
+            colorClass="bg-[#0C645B]/10 dark:bg-[#17A594]/20 border-[#0C645B]/20 dark:border-emerald-500/30"
+          />
+          <SummaryMetric
+            icon={<Users className="w-5 h-5 text-[#8B5E3C] dark:text-[#D4A373]" />}
+            label="Unique Users"
+            value={dynamicMetrics.uniqueUsers}
+            subtext="จำนวนคนที่ทักเข้ามาในผลลัพธ์นี้"
+            colorClass="bg-[#8B5E3C]/10 dark:bg-[#8B5E3C]/20 border-[#8B5E3C]/20 dark:border-[#8B5E3C]/40"
+          />
+          <SummaryMetric
+            icon={<ShieldCheck className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />}
+            label="Resolved Rate"
+            value={`${dynamicMetrics.resolvedRate.toFixed(1)}%`}
+            subtext={`ตอบได้จริง ${dynamicMetrics.successCount.toLocaleString()} จาก ${dynamicMetrics.total.toLocaleString()} ข้อความ`}
+            colorClass="bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/50"
+          />
+        </div>
+      </Card>
 
       {/* ── Toolbar Filter Bar ── */}
       <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl p-4">
@@ -479,7 +520,6 @@ export function ChatLogsTable({ chatLogs, employees }: ChatLogsTableProps) {
                   <SelectItem value="success">Success</SelectItem>
                   <SelectItem value="not_found">Not Found</SelectItem>
                   <SelectItem value="unauthorized">Unauthorized</SelectItem>
-                  <SelectItem value="error">Error</SelectItem>
                 </SelectContent>
               </Select>
             </div>

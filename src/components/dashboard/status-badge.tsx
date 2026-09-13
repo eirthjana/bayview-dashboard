@@ -45,7 +45,12 @@ export const STATUS_META = {
 export type StatusKey = keyof typeof STATUS_META;
 
 // Fixed display order shared by every status list/legend/chart in the app.
-export const STATUS_ORDER: StatusKey[] = ["success", "not_found", "unauthorized", "error"];
+// "error" is intentionally missing: failed requests are still written to
+// chat_logs and can be inspected in Supabase, but they are filtered out of
+// every dashboard query, so nothing should draw a legend chip or series for
+// them. STATUS_META still carries the error entry because normalizeStatusKey
+// falls back to it for any status string the app does not recognise.
+export const STATUS_ORDER: StatusKey[] = ["success", "not_found", "unauthorized"];
 
 export function getStatusMeta(status: string) {
   return STATUS_META[status.toLowerCase() as StatusKey] ?? STATUS_META.error;

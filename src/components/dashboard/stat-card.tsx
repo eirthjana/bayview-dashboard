@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
@@ -16,6 +17,8 @@ interface StatCardProps {
   };
   color: StatColor;
   badge?: string;
+  /** When set, the whole card becomes a link to this route. */
+  href?: string;
 }
 
 const colorMap: Record<
@@ -73,6 +76,7 @@ export function StatCard({
   trend,
   color,
   badge,
+  href,
 }: StatCardProps) {
   const colors = colorMap[color] || colorMap.emerald;
 
@@ -81,7 +85,7 @@ export function StatCard({
   // height, so every card in a row stays the same size.
   const valueSizeClass = "text-xl lg:text-2xl font-bold";
 
-  return (
+  const card = (
     <Card
       className={`
         group relative overflow-hidden bg-white dark:bg-zinc-900/50
@@ -152,5 +156,15 @@ export function StatCard({
         </div>
       </CardContent>
     </Card>
+  );
+
+  // A plain <a> wrapper keeps the card markup identical whether or not it links,
+  // so the hover lift, accent line and spacing stay exactly the same.
+  return href ? (
+    <Link href={href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F7D72] dark:focus-visible:ring-emerald-500 rounded-2xl">
+      {card}
+    </Link>
+  ) : (
+    card
   );
 }

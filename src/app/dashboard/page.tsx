@@ -17,21 +17,25 @@ function cleanId(id: string | null | undefined): string {
 }
 
 // Generate last 30 days date slots with actual per-status counts from chat
-// logs (success/not_found/unauthorized/error) — matches the same 4 statuses
-// shown everywhere else (StatusBadge, StatusDot) instead of collapsing
-// everything but "error" into an undifferentiated "messages" total.
+// logs (success/not_found/unauthorized) — the same statuses shown everywhere
+// else (StatusBadge, StatusDot). Failed requests never reach here: they are
+// excluded by the query below and would have no series to land in anyway.
 function getDailyUsageFromLogs(logs: ChatLog[]): DailyUsage[] {
   const days = 30;
   const result: DailyUsage[] = [];
   const now = new Date();
 
-  const emptyStats = () => ({ success: 0, not_found: 0, unauthorized: 0, error: 0 });
+  const emptyStats = () => ({ success: 0, not_found: 0, unauthorized: 0 });
   const countMap = new Map<string, ReturnType<typeof emptyStats>>();
 
   logs.forEach((log) => {
+    const key = normalizeStatusKey(log.status);
+    // normalizeStatusKey maps anything unrecognised to "error", which has no
+    // bucket here — skip those rather than crashing on an undefined counter.
+    if (key === "error") return;
     const logDate = new Date(log.created_at).toISOString().split("T")[0];
     const current = countMap.get(logDate) || emptyStats();
-    current[normalizeStatusKey(log.status)] += 1;
+    current[key] += 1;
     countMap.set(logDate, current);
   });
 
@@ -82,7 +86,7 @@ export default async function DashboardPage() {
     totalUsers: 0,
     activeUsersToday: 0,
     totalMessages: 0,
-    errorRate: 0,
+    answerAccuracy: 0,
     totalTokensUsed: 0,
   };
   let dailyUsage: DailyUsage[] = [];
@@ -97,39 +101,58 @@ export default async function DashboardPage() {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     // Fetch all data in parallel from employee_test and chat_logs
+    // Failed requests stay in chat_logs for troubleshooting in Supabase, but
+    // the dashboard never shows them — so every query below excludes them.
+    // Leaving them in would inflate Total Messages and put a series on the
+    // usage chart and rows in Recent Activity that nothing else displays.
     const [
       allLineIdsResult, // for distinct user count
       activeResult,
       messagesResult,
-      errorsResult,
+      successResult,
+      notFoundResult,
       logsResult,
       thirtyDaysLogsResult,
       tokenSumResult,
       employeeTestResult,
     ] = await Promise.all([
       // Unique users from chat_logs
-      supabase.from("chat_logs").select("line_user_id"),
+      supabase.from("chat_logs").select("line_user_id").neq("status", "error"),
       // Active today from chat_logs
       supabase
         .from("chat_logs")
         .select("line_user_id")
-        .gte("created_at", today),
-      supabase.from("chat_logs").select("id", { count: "exact", head: true }),
+        .gte("created_at", today)
+        .neq("status", "error"),
       supabase
         .from("chat_logs")
         .select("id", { count: "exact", head: true })
-        .eq("status", "error"),
+        .neq("status", "error"),
+      // Answer accuracy is success measured against not_found — of the
+      // questions the bot actually tried to answer, how many it could.
+      // unauthorized is left out: being denied by the access rules is the
+      // system working, not a failure to find an answer.
+      supabase
+        .from("chat_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "success"),
+      supabase
+        .from("chat_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "not_found"),
       supabase
         .from("chat_logs")
         .select("*")
+        .neq("status", "error")
         .order("created_at", { ascending: false })
         .limit(10),
       supabase
         .from("chat_logs")
         .select("created_at, status, tokens_used, line_user_id")
-        .gte("created_at", thirtyDaysAgo.toISOString()),
+        .gte("created_at", thirtyDaysAgo.toISOString())
+        .neq("status", "error"),
       // Total tokens sum across all time
-      supabase.from("chat_logs").select("tokens_used"),
+      supabase.from("chat_logs").select("tokens_used").neq("status", "error"),
       // Fetch employee list directly from employee_test
       supabase.from("employee_test").select("*"),
     ]);
@@ -168,7 +191,9 @@ export default async function DashboardPage() {
     ).size;
 
     const totalMessages = messagesResult.count || 0;
-    const totalErrors = errorsResult.count || 0;
+    const successCount = successResult.count || 0;
+    const notFoundCount = notFoundResult.count || 0;
+    const answered = successCount + notFoundCount;
 
     // Sum total tokens
     const allTokens = tokenSumResult.data || [];
@@ -181,8 +206,8 @@ export default async function DashboardPage() {
       totalUsers,
       activeUsersToday,
       totalMessages,
-      errorRate:
-        totalMessages > 0 ? Number(((totalErrors / totalMessages) * 100).toFixed(1)) : 0,
+      answerAccuracy:
+        answered > 0 ? Number(((successCount / answered) * 100).toFixed(1)) : 0,
       totalTokensUsed,
     };
 

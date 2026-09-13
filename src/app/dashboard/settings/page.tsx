@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { SettingsClient } from "./settings-client";
+import { fetchAvailableModels } from "@/lib/gemini-models";
 
 export const dynamic = "force-dynamic";
 
@@ -118,5 +119,9 @@ export default async function SettingsPage() {
     // Use defaults if Supabase is not configured
   }
 
-  return <SettingsClient initialSettings={settings} />;
+  // Read straight from Google so a model released after this was written shows
+  // up as a choice without anyone editing a list here.
+  const models = await fetchAvailableModels();
+
+  return <SettingsClient initialSettings={settings} models={models} />;
 }

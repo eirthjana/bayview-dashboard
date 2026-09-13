@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,11 @@ import {
   Lock,
 } from "lucide-react";
 
+interface AiModelOption {
+  value: string;
+  label: string;
+}
+
 interface SettingsClientProps {
   initialSettings: {
     ai_enabled: boolean;
@@ -53,24 +58,11 @@ interface SettingsClientProps {
     retrieval_model: string;
     system_message: string;
   };
+  /** Live from Google's ListModels — see src/lib/gemini-models.ts */
+  models: AiModelOption[];
 }
 
-// รายชื่อโมเดล Gemini ทั้งหมดที่ยิงทดสอบ generateContent จริงกับ Google API แล้วว่าใช้งานได้
-// (ดึงจาก ListModels ของคีย์นี้ ตัดตัวที่ Google เลิกให้บริการแล้ว เช่น gemini-2.5-flash-lite/-pro
-// ที่ตอบ 404 "no longer available to new users", ตัวที่ตอบ 503 "high demand" ซ้ำๆ อย่าง
-// gemini-3.7-flash, และ alias แบบ "-latest" ที่อาจสลับโมเดลจริงข้างหลังได้โดยไม่แจ้งล่วงหน้า)
-// ใช้ลิสต์เดียวกันทั้ง 2 ช่อง (โมเดลหลัก / โมเดลค้นหาเอกสาร) เพื่อให้เลือกได้ครบทุกตัวที่ใช้งานได้จริง
-const AI_MODELS = [
-  { value: "models/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-  { value: "models/gemini-3-flash-preview", label: "Gemini 3 Flash Preview" },
-  { value: "models/gemini-3.1-flash-lite", label: "Gemini 3.1 Flash-Lite" },
-  { value: "models/gemini-3.1-flash-lite-preview", label: "Gemini 3.1 Flash-Lite Preview" },
-  { value: "models/gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite" },
-  { value: "models/gemini-3.5-flash", label: "Gemini 3.5 Flash" },
-  { value: "models/gemini-3.6-flash", label: "Gemini 3.6 Flash" },
-];
-
-export function SettingsClient({ initialSettings }: SettingsClientProps) {
+export function SettingsClient({ initialSettings, models }: SettingsClientProps) {
   const [aiEnabled, setAiEnabled] = useState(initialSettings.ai_enabled);
   const [savedPrompt, setSavedPrompt] = useState(initialSettings.system_prompt);
   const [systemPrompt, setSystemPrompt] = useState(initialSettings.system_prompt);
@@ -90,6 +82,22 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
   const [editingSystemMessage, setEditingSystemMessage] = useState(false);
   const [confirmSystemMessageSaveOpen, setConfirmSystemMessageSaveOpen] = useState(false);
   const [savingSystemMessage, setSavingSystemMessage] = useState(false);
+
+  // A model saved earlier may no longer be listed — Google retires models, and
+  // one can also be excluded on our side. Keep it as an option anyway, so the
+  // dropdown shows what the bot is actually running on instead of a blank box.
+  const modelOptions = useMemo(() => {
+    const list = [...models];
+    for (const saved of [savedSelectedModel, savedRetrievalModel]) {
+      if (saved && !list.some((m) => m.value === saved)) {
+        list.push({
+          value: saved,
+          label: `${saved.replace("models/", "")} (ไม่อยู่ในรายการแล้ว)`,
+        });
+      }
+    }
+    return list;
+  }, [models, savedSelectedModel, savedRetrievalModel]);
 
   async function saveSetting(key: string, value: unknown, silent = false) {
     try {
@@ -342,11 +350,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
             <Select value={selectedModel} onValueChange={handleModelChange} disabled={!editingModel}>
               <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
                 <SelectValue placeholder="เลือกโมเดล">
-                  {(value: string) => AI_MODELS.find((m) => m.value === value)?.label || value}
+                  {(value: string) => modelOptions.find((m) => m.value === value)?.label || value}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-                {AI_MODELS.map((model) => (
+                {modelOptions.map((model) => (
                   <SelectItem
                     key={model.value}
                     value={model.value}
@@ -371,11 +379,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
             <Select value={retrievalModel} onValueChange={handleRetrievalModelChange} disabled={!editingModel}>
               <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
                 <SelectValue placeholder="เลือกโมเดล">
-                  {(value: string) => AI_MODELS.find((m) => m.value === value)?.label || value}
+                  {(value: string) => modelOptions.find((m) => m.value === value)?.label || value}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-                {AI_MODELS.map((model) => (
+                {modelOptions.map((model) => (
                   <SelectItem
                     key={model.value}
                     value={model.value}
