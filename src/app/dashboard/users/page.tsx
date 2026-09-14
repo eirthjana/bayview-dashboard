@@ -22,6 +22,10 @@ function bangkokToday(): string {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+/** How many of the newest logs the table loads. Anything older stays in
+ *  Supabase and is reflected only in the totals on the summary cards. */
+const PAGE_LIMIT = 500;
+
 interface UsersPageProps {
   // Stat cards on other pages deep-link here with the view already narrowed,
   // e.g. Answer Accuracy -> ?status=not_found, Active Today -> ?range=today.
@@ -43,18 +47,25 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
 
   let chatLogs: ChatLog[] = [];
   let employees: Employee[] = [];
+  let totalLogsInDb = 0;
+  let totalUsersInDb = 0;
 
   try {
     const supabase = await createClient();
 
-    const [logsResult, employeeTestResult] = await Promise.all([
-      // Latest 500 logs for display, failed requests excluded
+    const [logsResult, allIdsResult, employeeTestResult] = await Promise.all([
+      // Newest logs for display, failed requests excluded. The cap exists so a
+      // year of history does not have to cross the wire on every page load —
+      // the summary cards say so when it bites, instead of presenting the
+      // capped slice as if it were everything.
       supabase
         .from("chat_logs")
         .select("*")
         .neq("status", "error")
         .order("created_at", { ascending: false })
-        .limit(500),
+        .limit(PAGE_LIMIT),
+      // Ids only, no cap — just enough to state the true totals honestly.
+      supabase.from("chat_logs").select("line_user_id").neq("status", "error"),
       // Employee list directly from employee_test
       supabase
         .from("employee_test")
@@ -63,6 +74,15 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
 
     if (!logsResult.error && logsResult.data) {
       chatLogs = logsResult.data as ChatLog[];
+    }
+
+    // True totals, so the cards can say how much of the history they cover.
+    if (!allIdsResult.error && allIdsResult.data) {
+      const ids = allIdsResult.data as { line_user_id: string | null }[];
+      totalLogsInDb = ids.length;
+      totalUsersInDb = new Set(
+        ids.map((r) => String(r.line_user_id || "").replace(/["'=]/g, "").trim().toLowerCase()).filter(Boolean)
+      ).size;
     }
 
     if (!employeeTestResult.error && employeeTestResult.data) {
@@ -92,6 +112,8 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
         initialStatus={initialStatus}
         initialStartDate={initialStartDate}
         initialEndDate={initialEndDate}
+        totalLogsInDb={totalLogsInDb}
+        totalUsersInDb={totalUsersInDb}
       />
     </div>
   );

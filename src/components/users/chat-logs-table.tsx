@@ -133,6 +133,10 @@ interface ChatLogsTableProps {
   initialStatus?: StatusFilterType;
   initialStartDate?: string;
   initialEndDate?: string;
+  /** True row/user counts across all of chat_logs, so the summary cards can
+   *  say when the table is only showing the newest slice of the history. */
+  totalLogsInDb?: number;
+  totalUsersInDb?: number;
 }
 
 // ─── Summary strip ────────────────────────────────────────────────────────────
@@ -185,6 +189,8 @@ export function ChatLogsTable({
   initialStatus = "all",
   initialStartDate = "",
   initialEndDate = "",
+  totalLogsInDb = 0,
+  totalUsersInDb = 0,
 }: ChatLogsTableProps) {
   // Filter States
   const [search, setSearch] = useState("");
@@ -399,6 +405,10 @@ export function ChatLogsTable({
     };
   }, [filteredLogs]);
 
+  // The table only holds the newest slice; say so rather than letting the
+  // cards read as if that slice were the whole history.
+  const capped = totalLogsInDb > logs.length;
+
   // Reset all filters
   function handleResetFilters() {
     setSearch("");
@@ -429,14 +439,22 @@ export function ChatLogsTable({
             icon={<Database className="w-5 h-5 text-[#0C645B] dark:text-emerald-400" />}
             label="Total Logs"
             value={dynamicMetrics.total}
-            subtext={`ผลลัพธ์จากทั้งหมด ${logs.length.toLocaleString()} รายการ`}
+            subtext={
+              capped
+                ? `จาก ${logs.length.toLocaleString()} รายการล่าสุดที่โหลดมา · ทั้งระบบมี ${totalLogsInDb.toLocaleString()} รายการ`
+                : `จากทั้งหมด ${logs.length.toLocaleString()} รายการ`
+            }
             colorClass="bg-[#0C645B]/10 dark:bg-[#17A594]/20 border-[#0C645B]/20 dark:border-emerald-500/30"
           />
           <SummaryMetric
             icon={<Users className="w-5 h-5 text-[#8B5E3C] dark:text-[#D4A373]" />}
             label="Unique Users"
             value={dynamicMetrics.uniqueUsers}
-            subtext="จำนวนคนที่ทักเข้ามาในผลลัพธ์นี้"
+            subtext={
+              capped && totalUsersInDb > dynamicMetrics.uniqueUsers
+                ? `คนที่ทักเข้ามาในผลลัพธ์นี้ · ทั้งระบบมี ${totalUsersInDb.toLocaleString()} คน`
+                : "จำนวนคนที่ทักเข้ามาในผลลัพธ์นี้"
+            }
             colorClass="bg-[#8B5E3C]/10 dark:bg-[#8B5E3C]/20 border-[#8B5E3C]/20 dark:border-[#8B5E3C]/40"
           />
           <SummaryMetric
