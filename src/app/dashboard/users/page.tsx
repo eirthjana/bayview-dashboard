@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { ChatLogsTable } from "@/components/users/chat-logs-table";
 import type { ChatLog, Employee } from "@/lib/types";
+import { correctStatus } from "@/lib/answer-status";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +66,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
     ]);
 
     if (!logsResult.error && logsResult.data) {
-      chatLogs = logsResult.data as ChatLog[];
+      chatLogs = (logsResult.data as ChatLog[]).map(correctStatus);
       totalLogsInDb = chatLogs.length;
     }
 

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import type { ChatLog, Employee } from "@/lib/types";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { correctStatus } from "@/lib/answer-status";
 import {
   Search,
   Eye,
@@ -224,12 +225,12 @@ export function ChatLogsTable({
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "chat_logs" },
         (payload) => {
-          const newLog = payload.new as ChatLog;
+          const newLog = correctStatus(payload.new as ChatLog);
           if (String(newLog.status).toLowerCase() === "error") return;
           if (knownIds.current.has(newLog.id)) return;
           knownIds.current.add(newLog.id);
 
-          setLogs((prev) => [newLog, ...prev]);
+          setLogs((prev) => [newLog, ...prev].slice(0, MAX_LOGS));
 
           const emp = empLineIdMapRef.current.get(normalizeLineId(newLog.line_user_id));
           const who = emp?.name?.trim() || guestLabel(newLog.line_user_id);
@@ -383,11 +384,6 @@ export function ChatLogsTable({
     });
   }, [enrichedLogs, search, deptFilter, startDate, endDate, statusFilter]);
 
-  // Reset page when filter or pageSize changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, deptFilter, startDate, endDate, statusFilter, pageSize]);
-
   // Pagination computations
   const totalItems = filteredLogs.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -443,6 +439,12 @@ export function ChatLogsTable({
     Boolean(endDate) ||
     statusFilter !== "all";
 
+  // The table only holds the newest PAGE_LIMIT rows, so logs.length is not the
+  // size of the history. totalLogsInDb is counted on the server at page load;
+  // live rows can push logs past it before the next reload, hence the max.
+  const systemTotal = Math.max(totalLogsInDb, logs.length);
+  const capped = systemTotal > logs.length;
+
   function openDetail(log: EnrichedLog) {
     setSelectedLog(log);
     setDialogOpen(true);
@@ -459,8 +461,11 @@ export function ChatLogsTable({
             value={dynamicMetrics.total}
             subtext={
               isFiltered
-                ? `จากผลการกรอง (${dynamicMetrics.total.toLocaleString()} / ${logs.length.toLocaleString()} รายการ)`
-                : `จากทั้งหมด ${logs.length.toLocaleString()} รายการในระบบ`
+                ? `จากผลการกรอง (${dynamicMetrics.total.toLocaleString()} / ${logs.length.toLocaleString()} รายการ)` +
+                  (capped ? ` · ทั้งระบบมี ${systemTotal.toLocaleString()} รายการ` : "")
+                : capped
+                  ? `${logs.length.toLocaleString()} รายการล่าสุดที่โหลดมา · ทั้งระบบมี ${systemTotal.toLocaleString()} รายการ`
+                  : `จากทั้งหมด ${logs.length.toLocaleString()} รายการในระบบ`
             }
             colorClass="bg-[#0C645B]/10 dark:bg-[#17A594]/20 border-[#0C645B]/20 dark:border-emerald-500/30"
           />
@@ -515,14 +520,20 @@ export function ChatLogsTable({
               <Input
                 placeholder="ค้นหาชื่อผู้ส่ง..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="pl-9 bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800 transition-colors"
               />
             </div>
 
             {/* 2. Department Dropdown */}
             <div className="lg:col-span-3">
-              <Select value={deptFilter} onValueChange={(v) => setDeptFilter(v || "All Departments")}>
+              <Select value={deptFilter} onValueChange={(v) => {
+                  setDeptFilter(v || "All Departments");
+                  setCurrentPage(1);
+                }}>
                 <SelectTrigger className="w-full bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800">
                   <SelectValue placeholder="เลือกแผนก" />
                 </SelectTrigger>
@@ -538,14 +549,29 @@ export function ChatLogsTable({
 
             {/* 3. Date Range Picker (Start & End) */}
             <div className="lg:col-span-3 flex items-center gap-1.5">
-              <DateInput value={startDate} onChange={setStartDate} />
+              <DateInput
+                value={startDate}
+                onChange={(v) => {
+                  setStartDate(v);
+                  setCurrentPage(1);
+                }}
+              />
               <span className="text-zinc-400 text-xs shrink-0">-</span>
-              <DateInput value={endDate} onChange={setEndDate} />
+              <DateInput
+                value={endDate}
+                onChange={(v) => {
+                  setEndDate(v);
+                  setCurrentPage(1);
+                }}
+              />
             </div>
 
             {/* 4. Status Dropdown */}
             <div className="lg:col-span-2">
-              <Select value={statusFilter} onValueChange={(v) => setStatusFilter((v || "all") as StatusFilterType)}>
+              <Select value={statusFilter} onValueChange={(v) => {
+                  setStatusFilter((v || "all") as StatusFilterType);
+                  setCurrentPage(1);
+                }}>
                 <SelectTrigger className="w-full bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800">
                   <SelectValue placeholder="สถานะ">
                     {(value: string) => STATUS_FILTER_LABELS[value] || value}

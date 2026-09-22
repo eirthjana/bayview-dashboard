@@ -93,6 +93,7 @@ export default async function DashboardPage() {
   let recentLogs: ChatLog[] = [];
   let dailyMessageUsage: DailyMessageUsage[] = [];
   let deptMessageUsage: DeptMessageUsage[] = [];
+  let rawLogs: { created_at: string }[] = [];
 
   try {
     const supabase = await createClient();
@@ -264,34 +265,26 @@ export default async function DashboardPage() {
       }));
     }
 
-    return (
-      <DashboardClient
-        data={{
-          stats,
-          dailyUsage,
-          recentLogs,
-          dailyMessageUsage,
-          deptMessageUsage,
-          rawLogs: allLogs.map((l) => ({ created_at: l.created_at })),
-        }}
-      />
-    );
+    rawLogs = allLogs.map((l) => ({ created_at: l.created_at }));
   } catch (error) {
     console.error("Failed to fetch dashboard data from Supabase:", error);
     dailyUsage = getDailyUsageFromLogs([]);
     dailyMessageUsage = getDailyMessageUsage([]);
-
-    return (
-      <DashboardClient
-        data={{
-          stats,
-          dailyUsage,
-          recentLogs,
-          dailyMessageUsage,
-          deptMessageUsage,
-          rawLogs: [],
-        }}
-      />
-    );
   }
+
+  // Rendered once, outside the try: the try only guards the data fetch, and a
+  // second copy of this element in the catch drifts out of step the first time
+  // someone adds a prop to one and not the other.
+  return (
+    <DashboardClient
+      data={{
+        stats,
+        dailyUsage,
+        recentLogs,
+        dailyMessageUsage,
+        deptMessageUsage,
+        rawLogs,
+      }}
+    />
+  );
 }
