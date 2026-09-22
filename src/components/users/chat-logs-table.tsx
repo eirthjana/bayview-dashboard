@@ -30,7 +30,6 @@ import {
   Bot,
   Briefcase,
   UserCircle,
-  Zap,
   Calendar,
   MessageSquare,
   Database,
@@ -39,6 +38,8 @@ import {
   Crown,
   RotateCcw,
   Filter,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 // Real Hotel Departments List
@@ -199,6 +200,10 @@ export function ChatLogsTable({
   const [endDate, setEndDate] = useState(initialEndDate);
   const [statusFilter, setStatusFilter] = useState<StatusFilterType>(initialStatus);
 
+  // Pagination States
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
   const [selectedLog, setSelectedLog] = useState<EnrichedLog | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -207,8 +212,7 @@ export function ChatLogsTable({
   const empLineIdMapRef = useRef(new Map<string, Employee>());
 
   // Live logs: seeded from the server-rendered initial fetch, then kept
-  // current via a Supabase Realtime subscription below — no more needing to
-  // hit F5 to see the newest question a user just asked the bot.
+  // current via a Supabase Realtime subscription below
   const [logs, setLogs] = useState<ChatLog[]>(chatLogs);
   const knownIds = useRef(new Set(chatLogs.map((l) => l.id)));
 
@@ -221,17 +225,12 @@ export function ChatLogsTable({
         { event: "INSERT", schema: "public", table: "chat_logs" },
         (payload) => {
           const newLog = payload.new as ChatLog;
-          // Failed requests are never shown in the dashboard — drop them here
-          // too, or a live error row would appear in a table that has no
-          // filter able to hide it again.
           if (String(newLog.status).toLowerCase() === "error") return;
-          if (knownIds.current.has(newLog.id)) return; // dedupe against re-deliveries
+          if (knownIds.current.has(newLog.id)) return;
           knownIds.current.add(newLog.id);
 
-          setLogs((prev) => [newLog, ...prev].slice(0, MAX_LOGS));
+          setLogs((prev) => [newLog, ...prev]);
 
-          // Same rule as the table: registered full name, or the id — the LINE
-          // display name on the log is not used as an identity anywhere.
           const emp = empLineIdMapRef.current.get(normalizeLineId(newLog.line_user_id));
           const who = emp?.name?.trim() || guestLabel(newLog.line_user_id);
           const preview = String(newLog.user_message || "").replace(/^=+/, "").trim();
@@ -321,9 +320,6 @@ export function ChatLogsTable({
           roleType = "staff";
         }
       } else {
-        // No employee record, so there is no real name to show. log.display_name
-        // is the LINE name the person chose for themselves ("❅ Jedi ツ ❅") and is
-        // not an identity, so fall back to the id instead.
         resolvedName = guestLabel(displayId);
         roleLabel = "Guest";
         roleType = "guest";
@@ -375,10 +371,7 @@ export function ChatLogsTable({
         if (logDateStr > endDate) return false;
       }
 
-      // 4. Search Bar Filter — sender name only.
-      // Deliberately excludes message/response text: a name mentioned inside
-      // an AI reply (e.g. a contact-lookup answer) used to make unrelated
-      // rows match a search for that name, which read as broken filtering.
+      // 4. Search Bar Filter — sender name only
       if (q) {
         const nameMatch = String(log.resolvedName || "").toLowerCase().includes(q);
         if (!nameMatch) {
@@ -389,6 +382,34 @@ export function ChatLogsTable({
       return true;
     });
   }, [enrichedLogs, search, deptFilter, startDate, endDate, statusFilter]);
+
+  // Reset page when filter or pageSize changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, deptFilter, startDate, endDate, statusFilter, pageSize]);
+
+  // Pagination computations
+  const totalItems = filteredLogs.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedLogs = useMemo(() => {
+    const startIndex = (safePage - 1) * pageSize;
+    return filteredLogs.slice(startIndex, startIndex + pageSize);
+  }, [filteredLogs, safePage, pageSize]);
+
+  const paginationPages = useMemo(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (safePage <= 4) {
+      return [1, 2, 3, 4, 5, "...", totalPages];
+    }
+    if (safePage >= totalPages - 3) {
+      return [1, "...", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    return [1, "...", safePage - 1, safePage, safePage + 1, "...", totalPages];
+  }, [safePage, totalPages]);
 
   // Dynamic Summary Metrics based on filtered results
   const dynamicMetrics = useMemo(() => {
@@ -405,10 +426,6 @@ export function ChatLogsTable({
     };
   }, [filteredLogs]);
 
-  // The table only holds the newest slice; say so rather than letting the
-  // cards read as if that slice were the whole history.
-  const capped = totalLogsInDb > logs.length;
-
   // Reset all filters
   function handleResetFilters() {
     setSearch("");
@@ -416,6 +433,7 @@ export function ChatLogsTable({
     setStartDate("");
     setEndDate("");
     setStatusFilter("all");
+    setCurrentPage(1);
   }
 
   const isFiltered =
@@ -440,9 +458,9 @@ export function ChatLogsTable({
             label="Total Logs"
             value={dynamicMetrics.total}
             subtext={
-              capped
-                ? `จาก ${logs.length.toLocaleString()} รายการล่าสุดที่โหลดมา · ทั้งระบบมี ${totalLogsInDb.toLocaleString()} รายการ`
-                : `จากทั้งหมด ${logs.length.toLocaleString()} รายการ`
+              isFiltered
+                ? `จากผลการกรอง (${dynamicMetrics.total.toLocaleString()} / ${logs.length.toLocaleString()} รายการ)`
+                : `จากทั้งหมด ${logs.length.toLocaleString()} รายการในระบบ`
             }
             colorClass="bg-[#0C645B]/10 dark:bg-[#17A594]/20 border-[#0C645B]/20 dark:border-emerald-500/30"
           />
@@ -451,7 +469,7 @@ export function ChatLogsTable({
             label="Unique Users"
             value={dynamicMetrics.uniqueUsers}
             subtext={
-              capped && totalUsersInDb > dynamicMetrics.uniqueUsers
+              totalUsersInDb > dynamicMetrics.uniqueUsers
                 ? `คนที่ทักเข้ามาในผลลัพธ์นี้ · ทั้งระบบมี ${totalUsersInDb.toLocaleString()} คน`
                 : "จำนวนคนที่ทักเข้ามาในผลลัพธ์นี้"
             }
@@ -550,30 +568,21 @@ export function ChatLogsTable({
         <div className="overflow-x-auto">
           <table className="w-full table-fixed text-xs">
             <colgroup>
-              <col style={{ width: "110px" }} />
-              <col style={{ width: "200px" }} />
-              {/* Questions are short ("What is GSA"); answers are paragraphs.
-                  Leaving both columns auto split the space 50/50 and left a wide
-                  blank run after every question, so the question column is capped
-                  and the answer column absorbs what is left. */}
-              <col style={{ width: "25%" }} />
+              <col style={{ width: "125px" }} />
+              <col style={{ width: "210px" }} />
+              <col style={{ width: "38%" }} />
               <col />
-              <col style={{ width: "115px" }} />
-              <col style={{ width: "90px" }} />
+              <col style={{ width: "120px" }} />
               <col style={{ width: "48px" }} />
             </colgroup>
 
             <thead>
-              {/* no uppercase/tracking here: letter-spacing pulls Thai glyphs
-                  and their vowel marks apart, which is what made these headings
-                  read as gappy next to the tight rows below them */}
               <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 font-bold">
                 <th className="px-3.5 py-3 text-left whitespace-nowrap">วันที่และเวลา</th>
                 <th className="px-3.5 py-3 text-left whitespace-nowrap">ชื่อผู้ใช้ / แผนก</th>
                 <th className="px-3.5 py-3 text-left">คำถามผู้ใช้</th>
                 <th className="px-3.5 py-3 text-left">คำตอบ AI</th>
                 <th className="px-3.5 py-3 text-center whitespace-nowrap">สถานะ</th>
-                <th className="px-3.5 py-3 text-right whitespace-nowrap">TOKENS</th>
                 <th className="px-2 py-3 text-center"></th>
               </tr>
             </thead>
@@ -581,14 +590,14 @@ export function ChatLogsTable({
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 font-medium">
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center text-zinc-500 dark:text-zinc-400 py-16">
+                  <td colSpan={6} className="text-center text-zinc-500 dark:text-zinc-400 py-16">
                     <MessageSquare className="w-8 h-8 mx-auto mb-2 text-zinc-300 dark:text-zinc-600" />
                     <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</p>
                     <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">ลองปรับตัวกรองค้นหา หรือกด Reset ตัวกรอง</p>
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log) => {
+                paginatedLogs.map((log) => {
                   const { date, time } = formatDateTime(log.created_at);
 
                   let badgeClass = "border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800";
@@ -662,18 +671,6 @@ export function ChatLogsTable({
                         <StatusBadge status={log.status} />
                       </td>
 
-                      {/* Tokens used for this exchange */}
-                      <td className="px-3.5 py-3 align-middle text-right">
-                        {log.tokens_used > 0 ? (
-                          <span className="inline-flex items-center gap-1 font-mono text-[#8B5E3C] dark:text-[#D4A373] font-semibold whitespace-nowrap">
-                            <Zap className="w-3 h-3" />
-                            {log.tokens_used.toLocaleString()}
-                          </span>
-                        ) : (
-                          <span className="text-zinc-400 dark:text-zinc-500">—</span>
-                        )}
-                      </td>
-
                       {/* Eye button */}
                       <td className="px-2 py-3 align-middle text-center" onClick={(e) => e.stopPropagation()}>
                         <Button
@@ -691,6 +688,106 @@ export function ChatLogsTable({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* ── Pagination Bar ── */}
+        <div className="border-t border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-800/30 px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          {/* Rows per page selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-zinc-500 dark:text-zinc-400 font-medium whitespace-nowrap">
+              แสดงแถวต่อหน้า:
+            </span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                setPageSize(Number(v));
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="h-8 w-[5rem] bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg text-xs font-semibold focus:ring-1 focus:ring-[#0C645B]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-[#27211C] border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs min-w-[5rem]">
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Summary text */}
+          <div className="text-zinc-600 dark:text-zinc-400 font-medium text-center">
+            {totalItems === 0 ? (
+              "แสดง 0 รายการ"
+            ) : (
+              <>
+                แสดง{" "}
+                <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                  {((safePage - 1) * pageSize + 1).toLocaleString()}
+                </span>{" "}
+                -{" "}
+                <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                  {Math.min(safePage * pageSize, totalItems).toLocaleString()}
+                </span>{" "}
+                จากทั้งหมด{" "}
+                <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                  {totalItems.toLocaleString()}
+                </span>{" "}
+                รายการ
+              </>
+            )}
+          </div>
+
+          {/* Page navigation buttons */}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={safePage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-30 disabled:pointer-events-none"
+              title="หน้าก่อนหน้า"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+
+            {paginationPages.map((pageItem, idx) =>
+              pageItem === "..." ? (
+                <span
+                  key={`dots-${idx}`}
+                  className="px-1.5 py-1 text-zinc-400 dark:text-zinc-500 font-medium select-none text-xs"
+                >
+                  ...
+                </span>
+              ) : (
+                <Button
+                  key={`page-${pageItem}`}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentPage(pageItem as number)}
+                  className={`h-8 min-w-[2rem] px-2 text-xs font-bold rounded-lg transition-all ${
+                    safePage === pageItem
+                      ? "bg-[#0C645B] hover:bg-[#0A524A] text-white shadow-sm"
+                      : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
+                  }`}
+                >
+                  {pageItem}
+                </Button>
+              )
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={safePage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-30 disabled:pointer-events-none"
+              title="หน้าถัดไป"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -765,16 +862,6 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
               {date} {time}
             </span>
           </div>
-
-          {log.tokens_used > 0 && (
-            <>
-              <span className="text-zinc-300 dark:text-zinc-600 hidden sm:inline">|</span>
-              <div className="flex items-center gap-1 font-mono text-[#8B5E3C] dark:text-[#D4A373] font-bold">
-                <Zap className="w-3.5 h-3.5" />
-                <span>{log.tokens_used.toLocaleString()} tokens</span>
-              </div>
-            </>
-          )}
 
           <span className="text-zinc-300 dark:text-zinc-600 hidden sm:inline">|</span>
           <StatusBadge status={log.status} />

@@ -15,7 +15,6 @@ import {
   Clock,
   Briefcase,
   UserCircle,
-  Zap,
   Calendar,
   MessageSquare,
   Bot,
@@ -203,17 +202,11 @@ export function RecentActivity({ logs }: RecentActivityProps) {
                         )}
                       </p>
 
-                      {/* Meta: Time & Tokens */}
-                      <div className="flex items-center justify-between text-[0.625rem] text-zinc-400 dark:text-zinc-500 pt-0.5">
+                      {/* Meta: Time */}
+                      <div className="flex items-center text-[0.625rem] text-zinc-400 dark:text-zinc-500 pt-0.5">
                         <span className="font-medium">
                           {dateStr} {timeStr}
                         </span>
-                        {log.tokens_used > 0 && (
-                          <span className="flex items-center gap-0.5 font-mono text-[#8B5E3C] dark:text-[#D4A373] font-semibold">
-                            <Zap className="w-2.5 h-2.5" />
-                            {log.tokens_used.toLocaleString()} tokens
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -343,13 +336,6 @@ function RecentActivityDetailModal({
               {logDate.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })}
             </span>
           </div>
-
-          {log.tokens_used > 0 && (
-            <div className="flex items-center gap-1 font-mono text-[#8B5E3C] dark:text-[#D4A373] font-semibold">
-              <Zap className="w-3.5 h-3.5" />
-              <span>{log.tokens_used.toLocaleString()} tokens</span>
-            </div>
-          )}
         </div>
 
         {/* Conversation Stream */}

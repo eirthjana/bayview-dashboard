@@ -60,10 +60,11 @@ export interface DashboardStats {
   totalUsers: number;
   activeUsersToday: number;
   totalMessages: number;
+  messagesToday: number;
   /** success / (success + not_found), as a percentage — how often a question
    *  the bot was asked actually got an answer out of the knowledge base. */
   answerAccuracy: number;
-  totalTokensUsed: number;
+  totalTokensUsed?: number;
 }
 
 /** Per-day counts for the usage chart. "error" is deliberately absent: failed
@@ -73,6 +74,16 @@ export interface DailyUsage {
   success: number;
   not_found: number;
   unauthorized: number;
+}
+
+export interface DailyMessageUsage {
+  date: string;
+  messages: number;
+}
+
+export interface DeptMessageUsage {
+  department: string;
+  messages: number;
 }
 
 export interface DailyTokenUsage {
@@ -91,7 +102,8 @@ export interface DeptTokenUsage {
 
 export interface AnalyticsSummary {
   totalInquiries: number;
-  avgTokensPerQuery: number;
+  estimatedTimeSaved: string;
+  avgTokensPerQuery?: number;
   peakTrafficTime: string;
   mostActiveDept: string;
 }

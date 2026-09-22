@@ -18,7 +18,7 @@
    hue therefore flips between 400 and 500, where the two modes hand off.
    blue becomes the lagoon teal used for primary actions, links and focus. */
 @theme {
-  --color-zinc-50: #EFF7F6;
+  --color-zinc-50: #E5F4F0;
   --color-zinc-100: #DEEFEC;
   --color-zinc-200: #C6E1DD;
   --color-zinc-300: #A6CAC5;
@@ -89,7 +89,7 @@
 
 :root {
   /* Driftwood and Lagoon — light mode: pale lagoon ground, driftwood ink */
-  --background: #EFF7F6;
+  --background: #E5F4F0;
   --foreground: #27211C;
   --card: #FFFFFF;
   --card-foreground: #27211C;
@@ -156,6 +156,16 @@
   --sidebar-accent-foreground: #5FCBB8;
   --sidebar-border: #322B25;
   --sidebar-ring: #1BAE9C;
+}
+
+::selection {
+  background-color: #9FD3C7;
+  color: #0B3B2E;
+}
+
+::-moz-selection {
+  background-color: #9FD3C7;
+  color: #0B3B2E;
 }
 
 @layer base {

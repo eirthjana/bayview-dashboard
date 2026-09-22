@@ -9,7 +9,7 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci || npm install
 
 # ---- builder: build the Next.js app ----
 FROM node:20-alpine AS builder

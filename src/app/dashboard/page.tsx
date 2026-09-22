@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { DashboardClient } from "./dashboard-client";
 import { normalizeStatusKey } from "@/components/dashboard/status-badge";
-import type { DailyUsage, ChatLog, DailyTokenUsage, DeptTokenUsage, Employee } from "@/lib/types";
+import type { DailyUsage, ChatLog, DailyMessageUsage, DeptMessageUsage, Employee } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -54,18 +54,18 @@ function getDailyUsageFromLogs(logs: ChatLog[]): DailyUsage[] {
   return result;
 }
 
-// Build daily token usage for last 30 days
-function getDailyTokenUsage(
-  logs: Array<{ created_at: string; tokens_used: number }>
-): DailyTokenUsage[] {
+// Build daily message usage for last 30 days
+function getDailyMessageUsage(
+  logs: Array<{ created_at: string }>
+): DailyMessageUsage[] {
   const days = 30;
-  const result: DailyTokenUsage[] = [];
+  const result: DailyMessageUsage[] = [];
   const now = new Date();
 
-  const tokenMap = new Map<string, number>();
+  const countMap = new Map<string, number>();
   logs.forEach((log) => {
     const date = new Date(log.created_at).toISOString().split("T")[0];
-    tokenMap.set(date, (tokenMap.get(date) || 0) + (log.tokens_used || 0));
+    countMap.set(date, (countMap.get(date) || 0) + 1);
   });
 
   for (let i = days - 1; i >= 0; i--) {
@@ -74,7 +74,7 @@ function getDailyTokenUsage(
     const key = d.toISOString().split("T")[0];
     result.push({
       date: d.toLocaleDateString("th-TH", { day: "2-digit", month: "short" }),
-      tokens: tokenMap.get(key) || 0,
+      messages: countMap.get(key) || 0,
     });
   }
 
@@ -86,13 +86,13 @@ export default async function DashboardPage() {
     totalUsers: 0,
     activeUsersToday: 0,
     totalMessages: 0,
+    messagesToday: 0,
     answerAccuracy: 0,
-    totalTokensUsed: 0,
   };
   let dailyUsage: DailyUsage[] = [];
   let recentLogs: ChatLog[] = [];
-  let dailyTokenUsage: DailyTokenUsage[] = [];
-  let deptTokenUsage: DeptTokenUsage[] = [];
+  let dailyMessageUsage: DailyMessageUsage[] = [];
+  let deptMessageUsage: DeptMessageUsage[] = [];
 
   try {
     const supabase = await createClient();
@@ -109,11 +109,11 @@ export default async function DashboardPage() {
       allLineIdsResult, // for distinct user count
       activeResult,
       messagesResult,
+      messagesTodayResult,
       successResult,
       notFoundResult,
       logsResult,
-      thirtyDaysLogsResult,
-      tokenSumResult,
+      allLogsResult,
       employeeTestResult,
     ] = await Promise.all([
       // Unique users from chat_logs
@@ -124,14 +124,19 @@ export default async function DashboardPage() {
         .select("line_user_id")
         .gte("created_at", today)
         .neq("status", "error"),
+      // Total messages across all time
       supabase
         .from("chat_logs")
         .select("id", { count: "exact", head: true })
         .neq("status", "error"),
+      // Messages today
+      supabase
+        .from("chat_logs")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", today)
+        .neq("status", "error"),
       // Answer accuracy is success measured against not_found — of the
       // questions the bot actually tried to answer, how many it could.
-      // unauthorized is left out: being denied by the access rules is the
-      // system working, not a failure to find an answer.
       supabase
         .from("chat_logs")
         .select("id", { count: "exact", head: true })
@@ -148,11 +153,9 @@ export default async function DashboardPage() {
         .limit(10),
       supabase
         .from("chat_logs")
-        .select("created_at, status, tokens_used, line_user_id")
-        .gte("created_at", thirtyDaysAgo.toISOString())
-        .neq("status", "error"),
-      // Total tokens sum across all time
-      supabase.from("chat_logs").select("tokens_used").neq("status", "error"),
+        .select("created_at, status, line_user_id, display_name")
+        .neq("status", "error")
+        .order("created_at", { ascending: true }),
       // Fetch employee list directly from employee_test
       supabase.from("employee_test").select("*"),
     ]);
@@ -191,24 +194,18 @@ export default async function DashboardPage() {
     ).size;
 
     const totalMessages = messagesResult.count || 0;
+    const messagesToday = messagesTodayResult.count || 0;
     const successCount = successResult.count || 0;
     const notFoundCount = notFoundResult.count || 0;
     const answered = successCount + notFoundCount;
-
-    // Sum total tokens
-    const allTokens = tokenSumResult.data || [];
-    const totalTokensUsed = allTokens.reduce(
-      (sum: number, row: { tokens_used: number }) => sum + (row.tokens_used || 0),
-      0
-    );
 
     stats = {
       totalUsers,
       activeUsersToday,
       totalMessages,
+      messagesToday,
       answerAccuracy:
         answered > 0 ? Number(((successCount / answered) * 100).toFixed(1)) : 0,
-      totalTokensUsed,
     };
 
     // Enrich recent logs with matched employee from employee_test and clean messages
@@ -230,48 +227,71 @@ export default async function DashboardPage() {
       };
     });
 
-    dailyUsage = getDailyUsageFromLogs((thirtyDaysLogsResult.data as ChatLog[]) || []);
-    dailyTokenUsage = getDailyTokenUsage(thirtyDaysLogsResult.data || []);
+    const allLogs = (allLogsResult.data as ChatLog[]) || [];
+    dailyUsage = getDailyUsageFromLogs(allLogs);
+    dailyMessageUsage = getDailyMessageUsage(allLogs);
 
-    // Build department token usage by joining employee_test with chat logs
+    // Build department message usage by joining employee_test with chat logs
     if (allEmployees.length > 0) {
       const deptMap = new Map<string, number>();
       const lineIdToDept = new Map<string, string>();
+      const lineNameToDept = new Map<string, string>();
       allEmployees.forEach((e) => {
         if (e.line_user_id && e.department) {
           const idKey = cleanId(e.line_user_id);
           lineIdToDept.set(idKey, e.department);
         }
-      });
-
-      (thirtyDaysLogsResult.data || []).forEach((log: { line_user_id: string; tokens_used: number }) => {
-        const idKey = cleanId(log.line_user_id);
-        const dept = lineIdToDept.get(idKey);
-        if (dept) {
-          deptMap.set(dept, (deptMap.get(dept) || 0) + (log.tokens_used || 0));
+        if (e.line_name && e.department) {
+          const nameKey = cleanId(e.line_name);
+          lineNameToDept.set(nameKey, e.department);
         }
       });
 
-      deptTokenUsage = Array.from(deptMap.entries()).map(([department, tokens]) => ({
+      allLogs.forEach((log) => {
+        const idKey = cleanId(log.line_user_id);
+        let dept = lineIdToDept.get(idKey);
+        if (!dept && log.display_name) {
+          dept = lineNameToDept.get(cleanId(log.display_name));
+        }
+        if (dept) {
+          deptMap.set(dept, (deptMap.get(dept) || 0) + 1);
+        }
+      });
+
+      deptMessageUsage = Array.from(deptMap.entries()).map(([department, messages]) => ({
         department,
-        tokens,
+        messages,
       }));
     }
+
+    return (
+      <DashboardClient
+        data={{
+          stats,
+          dailyUsage,
+          recentLogs,
+          dailyMessageUsage,
+          deptMessageUsage,
+          rawLogs: allLogs.map((l) => ({ created_at: l.created_at })),
+        }}
+      />
+    );
   } catch (error) {
     console.error("Failed to fetch dashboard data from Supabase:", error);
     dailyUsage = getDailyUsageFromLogs([]);
-    dailyTokenUsage = getDailyTokenUsage([]);
-  }
+    dailyMessageUsage = getDailyMessageUsage([]);
 
-  return (
-    <DashboardClient
-      data={{
-        stats,
-        dailyUsage,
-        recentLogs,
-        dailyTokenUsage,
-        deptTokenUsage,
-      }}
-    />
-  );
+    return (
+      <DashboardClient
+        data={{
+          stats,
+          dailyUsage,
+          recentLogs,
+          dailyMessageUsage,
+          deptMessageUsage,
+          rawLogs: [],
+        }}
+      />
+    );
+  }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -13,8 +14,8 @@ import {
   Cell,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { DailyTokenUsage, DeptTokenUsage } from "@/lib/types";
-import { Zap, Building2 } from "lucide-react";
+import type { DailyMessageUsage, DeptMessageUsage, DailyTokenUsage, DeptTokenUsage } from "@/lib/types";
+import { Send, Building2 } from "lucide-react";
 
 // ─── Shared Formatter ─────────────────────────────────────────────────────────
 
@@ -24,10 +25,155 @@ function fmtK(v: number): string {
   return String(v);
 }
 
-// ─── Daily Token Chart ───────────────────────────────────────────────────────
+// ─── Daily Messages Chart ───────────────────────────────────────────────────────
+
+type DateFilterKey = "today" | "7d" | "30d" | "year" | "all";
+
+interface FilterOption {
+  value: DateFilterKey;
+  label: string;
+}
+
+const FILTER_OPTIONS: FilterOption[] = [
+  { value: "today", label: "วันนี้" },
+  { value: "7d", label: "7 วัน" },
+  { value: "30d", label: "30 วัน" },
+  { value: "year", label: "ปีนี้" },
+  { value: "all", label: "ทั้งหมด" },
+];
+
+function computeFilteredChartData(
+  filter: DateFilterKey,
+  rawLogs?: Array<{ created_at: string }>,
+  fallbackData?: (DailyMessageUsage | DailyTokenUsage)[]
+): { date: string; messages: number }[] {
+  const now = new Date();
+
+  if (!rawLogs || rawLogs.length === 0) {
+    const defaultData = (fallbackData || []).map((d) => ({
+      date: d.date,
+      messages: "messages" in d ? d.messages : ("tokens" in d ? d.tokens : 0),
+    }));
+    if (filter === "7d") return defaultData.slice(-7);
+    return defaultData;
+  }
+
+  if (filter === "today") {
+    const todayStr = now.toISOString().split("T")[0];
+    const hourMap = new Map<number, number>();
+    for (let h = 0; h < 24; h++) hourMap.set(h, 0);
+
+    rawLogs.forEach((log) => {
+      const d = new Date(log.created_at);
+      if (d.toISOString().split("T")[0] === todayStr) {
+        const hour = d.getHours();
+        hourMap.set(hour, (hourMap.get(hour) || 0) + 1);
+      }
+    });
+
+    return Array.from({ length: 24 }, (_, h) => ({
+      date: `${String(h).padStart(2, "0")}:00`,
+      messages: hourMap.get(h) || 0,
+    }));
+  }
+
+  if (filter === "7d") {
+    const countMap = new Map<string, number>();
+    rawLogs.forEach((log) => {
+      const date = new Date(log.created_at).toISOString().split("T")[0];
+      countMap.set(date, (countMap.get(date) || 0) + 1);
+    });
+
+    const result: { date: string; messages: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split("T")[0];
+      result.push({
+        date: d.toLocaleDateString("th-TH", { day: "2-digit", month: "short" }),
+        messages: countMap.get(key) || 0,
+      });
+    }
+    return result;
+  }
+
+  if (filter === "30d") {
+    const countMap = new Map<string, number>();
+    rawLogs.forEach((log) => {
+      const date = new Date(log.created_at).toISOString().split("T")[0];
+      countMap.set(date, (countMap.get(date) || 0) + 1);
+    });
+
+    const result: { date: string; messages: number }[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split("T")[0];
+      result.push({
+        date: d.toLocaleDateString("th-TH", { day: "2-digit", month: "short" }),
+        messages: countMap.get(key) || 0,
+      });
+    }
+    return result;
+  }
+
+  if (filter === "year") {
+    const currentYear = now.getFullYear();
+    const monthMap = new Map<number, number>();
+    for (let m = 0; m < 12; m++) monthMap.set(m, 0);
+
+    rawLogs.forEach((log) => {
+      const d = new Date(log.created_at);
+      if (d.getFullYear() === currentYear) {
+        const m = d.getMonth();
+        monthMap.set(m, (monthMap.get(m) || 0) + 1);
+      }
+    });
+
+    return Array.from({ length: 12 }, (_, m) => {
+      const tempDate = new Date(currentYear, m, 1);
+      return {
+        date: tempDate.toLocaleDateString("th-TH", { month: "short" }),
+        messages: monthMap.get(m) || 0,
+      };
+    });
+  }
+
+  if (filter === "all") {
+    const monthCountMap = new Map<string, number>();
+    let minTime = now.getTime();
+
+    rawLogs.forEach((log) => {
+      const d = new Date(log.created_at);
+      const t = d.getTime();
+      if (t < minTime) minTime = t;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      monthCountMap.set(key, (monthCountMap.get(key) || 0) + 1);
+    });
+
+    const startDate = new Date(minTime);
+    startDate.setDate(1);
+    const result: { date: string; messages: number }[] = [];
+
+    const cursor = new Date(startDate);
+    while (cursor <= now || result.length < 6) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+      result.push({
+        date: cursor.toLocaleDateString("th-TH", { month: "short", year: "2-digit" }),
+        messages: monthCountMap.get(key) || 0,
+      });
+      cursor.setMonth(cursor.getMonth() + 1);
+      if (result.length > 60) break;
+    }
+
+    return result;
+  }
+
+  return [];
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function DailyTokenTooltip({ active, payload, label }: any) {
+function DailyMessageTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200 dark:border-zinc-700 rounded-xl p-3.5 shadow-xl min-w-[8.75rem]">
@@ -36,31 +182,71 @@ function DailyTokenTooltip({ active, payload, label }: any) {
         <span className="w-2.5 h-2.5 rounded-full bg-[#8B5E3C] dark:bg-[#D4A373]" />
         <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
           {payload[0].value.toLocaleString()}
-          <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400 ml-1">tokens</span>
+          <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400 ml-1">ข้อความ</span>
         </p>
       </div>
     </div>
   );
 }
 
-export function DailyTokenChart({ data }: { data: DailyTokenUsage[] }) {
+export function DailyMessageChart({
+  data,
+  rawLogs,
+}: {
+  data?: (DailyMessageUsage | DailyTokenUsage)[];
+  rawLogs?: Array<{ created_at: string }>;
+}) {
+  const [filter, setFilter] = useState<DateFilterKey>("30d");
+
+  const chartData = useMemo(() => {
+    return computeFilteredChartData(filter, rawLogs, data);
+  }, [filter, rawLogs, data]);
+
+  const xAxisInterval = useMemo(() => {
+    if (filter === "today") return 3;
+    if (filter === "7d") return 0;
+    if (filter === "30d") return 4;
+    if (filter === "year") return 0;
+    return chartData.length > 12 ? Math.ceil(chartData.length / 8) : 0;
+  }, [filter, chartData.length]);
+
   return (
     <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-300">
-      <CardHeader className="py-3.5 px-5 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 shrink-0">
-        <CardTitle className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+      <CardHeader className="py-3 px-5 border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-800/30 shrink-0 flex flex-row items-center justify-between gap-3">
+        <CardTitle className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 whitespace-nowrap shrink-0">
           <span className="p-1.5 rounded-lg bg-[#8B5E3C]/10 dark:bg-[#8B5E3C]/20 text-[#8B5E3C] dark:text-[#D4A373]">
-            <Zap className="w-4 h-4" />
+            <Send className="w-4 h-4" />
           </span>
-          Token Usage รายวัน (Daily Tokens)
-          <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400 ml-1">(30 วัน)</span>
+          ปริมาณการแชท (Messages)
         </CardTitle>
+
+        {/* Segmented Pills Filter */}
+        <div className="ml-auto flex items-center gap-1 p-1 bg-[#DEEFEC]/70 dark:bg-zinc-800/80 rounded-xl border border-[#0C645B]/15 dark:border-zinc-700/60 shadow-inner shrink-0">
+          {FILTER_OPTIONS.map((opt) => {
+            const isActive = filter === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setFilter(opt.value)}
+                className={`whitespace-nowrap text-xs md:text-sm px-2.5 py-1 font-semibold rounded-lg transition-all duration-200 ${
+                  isActive
+                    ? "bg-[#8B5E3C] text-white shadow-sm font-bold scale-[1.02]"
+                    : "text-[#0C645B] dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-white/60 dark:hover:bg-zinc-700/50"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
       </CardHeader>
       <CardContent className="p-4 pt-2">
         <div className="h-[16.25rem] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 15, right: 10, left: -20, bottom: 0 }}>
               <defs>
-                <linearGradient id="gradTokens" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="gradMessages" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#8B5E3C" stopOpacity={0.3} />
                   <stop offset="100%" stopColor="#8B5E3C" stopOpacity={0.01} />
                 </linearGradient>
@@ -71,7 +257,7 @@ export function DailyTokenChart({ data }: { data: DailyTokenUsage[] }) {
                 tick={{ fontSize: 10, fill: "#93ADA8" }}
                 axisLine={{ stroke: "rgba(147, 173, 168, 0.2)" }}
                 tickLine={false}
-                interval={4}
+                interval={xAxisInterval}
               />
               <YAxis
                 tick={{ fontSize: 10, fill: "#93ADA8" }}
@@ -79,16 +265,16 @@ export function DailyTokenChart({ data }: { data: DailyTokenUsage[] }) {
                 tickLine={false}
                 tickFormatter={fmtK}
               />
-              <Tooltip content={<DailyTokenTooltip />} />
+              <Tooltip content={<DailyMessageTooltip />} />
               <Area
                 type="monotone"
-                dataKey="tokens"
+                dataKey="messages"
                 stroke="#8B5E3C"
                 strokeWidth={2.5}
                 dot={false}
                 activeDot={{ r: 5, fill: "#8B5E3C", stroke: "#FFFFFF", strokeWidth: 2 }}
                 fillOpacity={1}
-                fill="url(#gradTokens)"
+                fill="url(#gradMessages)"
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -98,7 +284,7 @@ export function DailyTokenChart({ data }: { data: DailyTokenUsage[] }) {
   );
 }
 
-// ─── Department Token Chart ───────────────────────────────────────────────────
+// ─── Department Message Chart ───────────────────────────────────────────────────
 
 const DEPT_PALETTE = [
   { fill: "#0C645B", bg: "#DEEFEC" },
@@ -112,10 +298,10 @@ const DEPT_PALETTE = [
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function DeptTokenTooltip({ active, payload }: any) {
+function DeptMessageTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
   const dept = payload[0].payload.department as string;
-  const tokens = payload[0].value as number;
+  const messages = payload[0].value as number;
   const colorIdx = (payload[0].payload._colorIdx as number) ?? 0;
   const color = DEPT_PALETTE[colorIdx % DEPT_PALETTE.length].fill;
 
@@ -125,17 +311,22 @@ function DeptTokenTooltip({ active, payload }: any) {
       <div className="flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
         <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-          {tokens.toLocaleString()}
-          <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400 ml-1">tokens</span>
+          {messages.toLocaleString()}
+          <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400 ml-1">ข้อความ</span>
         </p>
       </div>
     </div>
   );
 }
 
-export function DeptTokenChart({ data }: { data: DeptTokenUsage[] }) {
-  const sorted = [...data]
-    .sort((a, b) => b.tokens - a.tokens)
+export function DeptMessageChart({ data }: { data: (DeptMessageUsage | DeptTokenUsage)[] }) {
+  const normalizedData = data.map((d) => ({
+    department: d.department,
+    messages: "messages" in d ? d.messages : ("tokens" in d ? d.tokens : 0),
+  }));
+
+  const sorted = [...normalizedData]
+    .sort((a, b) => b.messages - a.messages)
     .slice(0, 8)
     .map((d, i) => ({ ...d, _colorIdx: i }));
 
@@ -148,7 +339,7 @@ export function DeptTokenChart({ data }: { data: DeptTokenUsage[] }) {
           <span className="p-1.5 rounded-lg bg-[#0C645B]/10 dark:bg-[#17A594]/20 text-[#0C645B] dark:text-emerald-400">
             <Building2 className="w-4 h-4" />
           </span>
-          Token Usage แยกตามแผนก (Department Breakdown)
+          ปริมาณการแชทแยกตามแผนก
           {sorted.length > 0 && (
             <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400 ml-1">
               ({sorted.length} แผนก)
@@ -160,7 +351,7 @@ export function DeptTokenChart({ data }: { data: DeptTokenUsage[] }) {
         {sorted.length === 0 ? (
           <div className="h-[16.25rem] flex flex-col items-center justify-center gap-2 text-center">
             <Building2 className="w-8 h-8 text-zinc-300 dark:text-zinc-600" />
-            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">ยังไม่มีข้อมูล Token แยกตามแผนก</p>
+            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">ยังไม่มีข้อมูลข้อความแยกตามแผนก</p>
           </div>
         ) : (
           <div style={{ height: `${chartHeight + 20}px`, width: "100%" }}>
@@ -187,8 +378,8 @@ export function DeptTokenChart({ data }: { data: DeptTokenUsage[] }) {
                   tickLine={false}
                   width={110}
                 />
-                <Tooltip content={<DeptTokenTooltip />} />
-                <Bar dataKey="tokens" maxBarSize={28} radius={[0, 6, 6, 0]}>
+                <Tooltip content={<DeptMessageTooltip />} />
+                <Bar dataKey="messages" maxBarSize={28} radius={[0, 6, 6, 0]}>
                   {sorted.map((_, index) => (
                     <Cell
                       key={`cell-${index}`}
@@ -204,3 +395,8 @@ export function DeptTokenChart({ data }: { data: DeptTokenUsage[] }) {
     </Card>
   );
 }
+
+// Aliases for backwards compatibility
+export const DailyTokenChart = DailyMessageChart;
+export const DeptTokenChart = DeptMessageChart;
+

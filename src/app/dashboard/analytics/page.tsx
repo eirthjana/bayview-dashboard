@@ -34,7 +34,6 @@ function bangkokHour(iso: string): number {
 
 interface ChatLogRow {
   user_message: string | null;
-  tokens_used: number | null;
   created_at: string;
   line_user_id: string | null;
 }
@@ -49,7 +48,7 @@ interface EmployeeDeptRow {
 export default async function AnalyticsPage() {
   let summary: AnalyticsSummary = {
     totalInquiries: 0,
-    avgTokensPerQuery: 0,
+    estimatedTimeSaved: "0 นาที",
     peakTrafficTime: "-",
     mostActiveDept: "-",
   };
@@ -66,7 +65,7 @@ export default async function AnalyticsPage() {
       // traffic the rest of the UI does not show.
       supabase
         .from("chat_logs")
-        .select("user_message, tokens_used, created_at, line_user_id")
+        .select("user_message, created_at, line_user_id")
         .neq("status", "error"),
       supabase
         .from("employee_test")
@@ -89,7 +88,6 @@ export default async function AnalyticsPage() {
     });
 
     const total = logs.length;
-    const totalTokens = logs.reduce((sum, l) => sum + (l.tokens_used || 0), 0);
 
     // Hour-of-day histogram across all history (not per-calendar-day) — a
     // "typical daily pattern" view, tiered by share of the busiest hour.
@@ -154,9 +152,17 @@ export default async function AnalyticsPage() {
         ? [...deptActivity].sort((a, b) => b.count - a.count)[0].department
         : "-";
 
+    const minutesSaved = total * 3;
+    const estimatedTimeSaved =
+      total === 0
+        ? "0 นาที"
+        : minutesSaved < 60
+        ? `${minutesSaved} นาที`
+        : `~${(minutesSaved / 60).toFixed(1)} ชม.`;
+
     summary = {
       totalInquiries: total,
-      avgTokensPerQuery: total > 0 ? Math.round(totalTokens / total) : 0,
+      estimatedTimeSaved,
       peakTrafficTime,
       mostActiveDept,
     };
