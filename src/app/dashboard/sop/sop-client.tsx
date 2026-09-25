@@ -162,6 +162,7 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
                 title: data.title,
                 chunk_count: data.chunk_count,
                 updated_at: new Date().toISOString(),
+                uploaded_by: data.uploaded_by ?? null,
                 view_url: data.view_url ?? null,
               },
               ...withoutOld,
@@ -327,6 +328,7 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
             <TableRow className="border-zinc-200 dark:border-zinc-800/50 hover:bg-transparent">
               <TableHead className="text-zinc-500 dark:text-zinc-400">ชื่อไฟล์</TableHead>
               <TableHead className="text-zinc-500 dark:text-zinc-400">จำนวนส่วน</TableHead>
+              <TableHead className="text-zinc-500 dark:text-zinc-400">นำเข้าโดย</TableHead>
               <TableHead className="text-zinc-500 dark:text-zinc-400">อัปเดตล่าสุด</TableHead>
               <TableHead className="text-zinc-500 dark:text-zinc-400 text-right">จัดการ</TableHead>
             </TableRow>
@@ -334,7 +336,7 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
           <TableBody>
             {documents.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-zinc-500 dark:text-zinc-400 py-12">
+                <TableCell colSpan={5} className="text-center text-zinc-500 dark:text-zinc-400 py-12">
                   ยังไม่มีเอกสาร SOP ในฐานความรู้
                 </TableCell>
               </TableRow>
@@ -358,6 +360,9 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
                   </TableCell>
                   <TableCell className="text-sm text-zinc-600 dark:text-zinc-400">
                     {doc.chunk_count}
+                  </TableCell>
+                  <TableCell className="text-sm text-zinc-700 dark:text-zinc-300">
+                    {doc.uploaded_by || <span className="text-xs italic text-zinc-500 dark:text-zinc-400">ไม่ได้บันทึกไว้</span>}
                   </TableCell>
                   <TableCell className="text-xs text-zinc-500 dark:text-zinc-400">
                     {new Date(doc.updated_at).toLocaleString("th-TH")}

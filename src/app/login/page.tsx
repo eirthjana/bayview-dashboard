@@ -15,6 +15,7 @@ import {
 import { Suspense } from "react";
 import { AlertTriangle, AlertCircle, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { markTabLoggedIn } from "@/components/tab-session-guard";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -68,23 +69,28 @@ function LoginForm() {
           console.error("Admin check error:", adminErr);
         }
 
-        // If not admin, warn user
+        // Admin accounts are created by other admins (Admin Accounts page);
+        // any other login is refused here rather than bounced by the middleware.
         if (!adminUser) {
-          // Check if admin_users is empty, if so allow auto-insert
-          const { count } = await supabase
-            .from("admin_users")
-            .select("*", { count: "exact", head: true });
-
-          if (count === 0) {
-            await supabase.from("admin_users").insert({
-              user_id: data.user.id,
-              email: data.user.email || cleanEmail,
-            });
-          }
+          await supabase.auth.signOut();
+          setError("คุณไม่มีสิทธิ์เข้าถึง Dashboard");
+          setLoading(false);
+          return;
         }
       }
 
-      router.push("/dashboard");
+      // This tab has now logged in itself; pages behind login check for it.
+      markTabLoggedIn();
+
+      // ทุกบัญชีต้องผ่าน 2FA (TOTP) — เช็คว่าเคยตั้งค่าไว้หรือยัง
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const hasVerifiedFactor = (factors?.totp || []).length > 0;
+
+      if (hasVerifiedFactor) {
+        router.push("/mfa/verify");
+      } else {
+        router.push("/mfa/enroll");
+      }
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
@@ -190,7 +196,7 @@ function LoginForm() {
           </form>
 
           <p className="mt-6 text-center text-xs text-zinc-500">
-            สำหรับผู้ดูแลระบบเท่านั้น
+            สำหรับผู้ดูแลระบบเท่านั้น ขอบัญชีได้จากแอดมินที่มีอยู่
           </p>
         </CardContent>
       </Card>

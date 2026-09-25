@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SystemStatus } from "@/components/dashboard/system-status";
+import { CurrentAdmin } from "@/components/dashboard/current-admin";
 import {
   Tooltip,
   TooltipContent,
@@ -26,6 +27,8 @@ import {
   IdCard,
   UploadCloud,
   BarChart3,
+  MessageSquareReply,
+  UserCog,
 } from "lucide-react";
 
 const navItems = [
@@ -45,6 +48,10 @@ const navItems = [
     icon: Users,
   },
   {
+    label: "Pending Replies",
+    href: "/dashboard/replies",
+    icon: MessageSquareReply,
+  },  {
     label: "Employees Management",
     href: "/dashboard/employees",
     icon: IdCard,
@@ -53,6 +60,11 @@ const navItems = [
     label: "SOP Documents",
     href: "/dashboard/sop",
     icon: UploadCloud,
+  },
+  {
+    label: "Admin Accounts",
+    href: "/dashboard/admins",
+    icon: UserCog,
   },
   {
     label: "Settings",
@@ -207,6 +219,7 @@ export default function DashboardLayout({
 
             {/* Right side */}
             <div className="flex items-center gap-2">
+              <CurrentAdmin />
               <SystemStatus />
               <ThemeToggle />
             </div>

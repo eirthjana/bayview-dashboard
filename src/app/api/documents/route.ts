@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requireMfa } from "@/lib/require-mfa";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SOP_STORAGE_BUCKET, sopStoragePath } from "@/lib/documents";
 
@@ -10,6 +11,8 @@ export interface SopDocumentSummary {
   title: string;
   chunk_count: number;
   updated_at: string;
+  /** Admin who uploaded the current version; null for files from before this was recorded. */
+  uploaded_by: string | null;
   view_url: string | null;
 }
 
@@ -34,10 +37,13 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
+    const mfaBlocked = await requireMfa(supabase);
+    if (mfaBlocked) return mfaBlocked;
+
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("documents1")
-      .select("title, metadata, created_at, updated_at")
+      .select("title, metadata, created_at, updated_at, uploaded_by")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -52,13 +58,17 @@ export async function GET() {
       const existing = byFile.get(fileId);
       if (existing) {
         existing.chunk_count += 1;
-        if (row.updated_at > existing.updated_at) existing.updated_at = row.updated_at;
+        if (row.updated_at > existing.updated_at) {
+          existing.updated_at = row.updated_at;
+          existing.uploaded_by = row.uploaded_by ?? null;
+        }
       } else {
         byFile.set(fileId, {
           file_id: fileId,
           title: row.title || fileId,
           chunk_count: 1,
           updated_at: row.updated_at || row.created_at,
+          uploaded_by: row.uploaded_by ?? null,
           view_url: null,
         });
       }

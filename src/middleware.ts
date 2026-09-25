@@ -35,11 +35,36 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Protected routes - redirect to login if not authenticated
-  if (request.nextUrl.pathname.startsWith("/dashboard")) {
+  if (
+    request.nextUrl.pathname.startsWith("/dashboard") ||
+    request.nextUrl.pathname.startsWith("/mfa") ||
+    request.nextUrl.pathname === "/change-password"
+  ) {
     if (!user) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       return NextResponse.redirect(url);
+    }
+
+    // Accounts added from Admin Accounts start with a temporary password and
+    // must replace it before anything else, 2FA setup included.
+    const mustChangePassword = user.app_metadata?.must_change_password === true;
+    const onChangePassword = request.nextUrl.pathname === "/change-password";
+    if (mustChangePassword !== onChangePassword) {
+      const url = request.nextUrl.clone();
+      url.pathname = mustChangePassword ? "/change-password" : "/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    // 2FA already passed: the /mfa pages have nothing left to do, and their
+    // per-tab guard would sign a finished login out if opened in a new tab.
+    if (request.nextUrl.pathname.startsWith("/mfa")) {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.currentLevel === "aal2") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/dashboard";
+        return NextResponse.redirect(url);
+      }
     }
   }
 
@@ -58,6 +83,27 @@ export async function middleware(request: NextRequest) {
       url.pathname = "/login";
       url.searchParams.set("error", "unauthorized");
       return NextResponse.redirect(url);
+    }
+
+    // บังคับ 2FA (TOTP) ทุกบัญชี — เช็คระดับการยืนยันตัวตนปัจจุบัน
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+    if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+      // มี factor ที่ตั้งค่าไว้แล้ว แต่ session นี้ยังไม่ได้ยืนยัน 2FA
+      const url = request.nextUrl.clone();
+      url.pathname = "/mfa/verify";
+      return NextResponse.redirect(url);
+    }
+
+    if (aal?.currentLevel === "aal1" && aal.nextLevel === "aal1") {
+      // ยังไม่เคยตั้งค่า 2FA เลย — บังคับตั้งค่าก่อนใช้งาน
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const hasVerifiedFactor = (factors?.totp || []).length > 0;
+      if (!hasVerifiedFactor) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/mfa/enroll";
+        return NextResponse.redirect(url);
+      }
     }
   }
 
@@ -80,5 +126,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/login", "/mfa/:path*", "/change-password"],
 };

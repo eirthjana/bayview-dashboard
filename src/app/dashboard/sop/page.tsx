@@ -15,7 +15,7 @@ export default async function SopPage() {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("documents1")
-      .select("title, metadata, created_at, updated_at")
+      .select("title, metadata, created_at, updated_at, uploaded_by")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -30,13 +30,17 @@ export default async function SopPage() {
       const existing = byFile.get(fileId);
       if (existing) {
         existing.chunk_count += 1;
-        if (row.updated_at > existing.updated_at) existing.updated_at = row.updated_at;
+        if (row.updated_at > existing.updated_at) {
+          existing.updated_at = row.updated_at;
+          existing.uploaded_by = row.uploaded_by ?? null;
+        }
       } else {
         byFile.set(fileId, {
           file_id: fileId,
           title: row.title || fileId,
           chunk_count: 1,
           updated_at: row.updated_at || row.created_at,
+          uploaded_by: row.uploaded_by ?? null,
           view_url: null,
         });
       }

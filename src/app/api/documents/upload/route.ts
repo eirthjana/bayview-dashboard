@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requireMfa } from "@/lib/require-mfa";
+import type { AdminProfile } from "@/lib/admin-reply";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   SOP_STORAGE_BUCKET,
@@ -29,13 +31,20 @@ export async function POST(request: NextRequest) {
 
     const { data: adminUser } = await supabase
       .from("admin_users")
-      .select("id")
+      .select("email, emp_id, name, name_th, position, department")
       .eq("user_id", user.id)
       .single();
 
     if (!adminUser) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
+
+    const mfaBlocked = await requireMfa(supabase);
+    if (mfaBlocked) return mfaBlocked;
+
+    // Shown in the SOP list as who brought the file in.
+    const uploader = adminUser as AdminProfile;
+    const uploadedBy = uploader.name_th?.trim() || uploader.name?.trim() || uploader.email;
 
     const formData = await request.formData();
     const file = formData.get("file");
@@ -108,6 +117,8 @@ export async function POST(request: NextRequest) {
           content: chunks[i],
           embedding,
           metadata: { file_id: fileId, title: file.name, chunk_index: i },
+          uploaded_by: uploadedBy,
+          uploaded_by_user_id: user.id,
           created_at: now,
           updated_at: now,
         });
@@ -127,6 +138,7 @@ export async function POST(request: NextRequest) {
       file_id: fileId,
       title: file.name,
       chunk_count: chunks.length,
+      uploaded_by: uploadedBy,
       view_url: signedUrlData?.signedUrl ?? null,
     });
   } catch (error) {

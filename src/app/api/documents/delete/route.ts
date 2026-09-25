@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requireMfa } from "@/lib/require-mfa";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SOP_STORAGE_BUCKET } from "@/lib/documents";
 
@@ -23,6 +24,9 @@ export async function POST(request: NextRequest) {
     if (!adminUser) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
+
+    const mfaBlocked = await requireMfa(supabase);
+    if (mfaBlocked) return mfaBlocked;
 
     const body = await request.json();
     const { file_id: fileId } = body;
