@@ -4,8 +4,10 @@
 // alongside documents ingested via the Google Drive flow.
 
 const EMBEDDING_MODEL = "gemini-embedding-001";
-const CHUNK_SIZE = 1000;
-const CHUNK_OVERLAP = 150;
+// 900 / 180 per the RAG brief (26 Sep 2026): smaller pieces with more
+// overlap, so an answer that straddles a cut still lands whole in one chunk.
+const CHUNK_SIZE = 900;
+const CHUNK_OVERLAP = 180;
 
 // Private Storage bucket holding the original uploaded files, so admins can
 // open/preview a SOP doc straight from the browser instead of only having
