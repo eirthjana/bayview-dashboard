@@ -24,8 +24,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { UploadCloud, FileText, Trash2, Loader2, AlertTriangle, X } from "lucide-react";
-import type { SopDocumentSummary } from "@/app/api/documents/route";
+import { UploadCloud, FileText, Trash2, Loader2, AlertTriangle, X, FolderOpen } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  MAX_TOPIC_LENGTH,
+  SOP_DEPARTMENTS,
+  type SopAccess,
+  type SopDocumentSummary,
+} from "@/lib/sop-groups";
 
 interface SopClientProps {
   initialDocuments: SopDocumentSummary[];
@@ -33,6 +40,31 @@ interface SopClientProps {
 }
 
 const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"];
+
+// Sentinel for the "อื่นๆ" choice: files every employee may read, filed under a typed topic.
+const OTHER = "__other__";
+
+const selectClass =
+  "w-full h-9 rounded-md border border-zinc-300 dark:border-zinc-700/50 bg-white dark:bg-zinc-900 px-3 text-sm text-zinc-800 dark:text-zinc-200";
+
+const ACCESS_LABEL: Record<SopAccess, string> = {
+  department: "เฉพาะแผนก",
+  all: "พนักงานทุกคน",
+};
+
+/** Department groups first (A-Z), then the "อื่นๆ" topics (A-Z), then anything unfiled. */
+function groupDocuments(docs: SopDocumentSummary[]) {
+  const groups = new Map<string, { name: string; type: SopDocumentSummary["sop_group_type"]; docs: SopDocumentSummary[] }>();
+  for (const doc of docs) {
+    const name = doc.sop_group || "ยังไม่ระบุแผนก";
+    const key = `${doc.sop_group_type || "none"}:${name}`;
+    const g = groups.get(key) || { name, type: doc.sop_group_type, docs: [] };
+    g.docs.push(doc);
+    groups.set(key, g);
+  }
+  const rank = (t: SopDocumentSummary["sop_group_type"]) => (t === "department" ? 0 : t === "other" ? 1 : 2);
+  return Array.from(groups.values()).sort((a, b) => rank(a.type) - rank(b.type) || a.name.localeCompare(b.name));
+}
 
 function fileExtension(fileName: string): string {
   return fileName.toLowerCase().split(".").pop() || "";
@@ -46,6 +78,16 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Required before upload: whose file it is, and who may read it.
+  const [groupChoice, setGroupChoice] = useState("");
+  const [topic, setTopic] = useState("");
+  const [access, setAccess] = useState<SopAccess | "">("");
+  const isOther = groupChoice === OTHER;
+  const groupReady = isOther ? topic.trim().length > 0 : SOP_DEPARTMENTS.includes(groupChoice) && access !== "";
+  const existingTopics = Array.from(
+    new Set(documents.filter((d) => d.sop_group_type === "other" && d.sop_group).map((d) => d.sop_group as string))
+  );
 
   const [previewDoc, setPreviewDoc] = useState<SopDocumentSummary | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -134,6 +176,10 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
 
   async function handleUpload() {
     if (pendingFiles.length === 0) return;
+    if (!groupReady) {
+      toast.error(isOther ? "กรุณาพิมพ์ชื่อหัวข้อของไฟล์" : "กรุณาเลือกแผนกและสิทธิ์การเข้าถึงก่อนอัปโหลด");
+      return;
+    }
     setUploading(true);
     const total = pendingFiles.length;
     let successCount = 0;
@@ -145,6 +191,9 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
       try {
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("group_type", isOther ? "other" : "department");
+        formData.append("group", isOther ? topic.trim() : groupChoice);
+        formData.append("access", isOther ? "all" : access);
 
         const res = await fetch("/api/documents/upload", {
           method: "POST",
@@ -163,6 +212,9 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
                 chunk_count: data.chunk_count,
                 updated_at: new Date().toISOString(),
                 uploaded_by: data.uploaded_by ?? null,
+                sop_group: data.sop_group ?? null,
+                sop_group_type: data.sop_group_type ?? null,
+                sop_access: data.sop_access ?? null,
                 view_url: data.view_url ?? null,
               },
               ...withoutOld,
@@ -301,9 +353,74 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
             )}
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-zinc-700 dark:text-zinc-300">
+                แผนกเจ้าของไฟล์ <span className="text-rose-500">*</span>
+              </Label>
+              <select
+                value={groupChoice}
+                onChange={(e) => {
+                  setGroupChoice(e.target.value);
+                  setAccess("");
+                }}
+                disabled={uploading}
+                className={selectClass}
+              >
+                <option value="">— เลือกแผนก —</option>
+                {SOP_DEPARTMENTS.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+                <option value={OTHER}>อื่นๆ (พนักงานทุกคนเข้าถึงได้)</option>
+              </select>
+            </div>
+
+            {isOther ? (
+              <div className="space-y-1.5">
+                <Label className="text-zinc-700 dark:text-zinc-300">
+                  ชื่อหัวข้อ <span className="text-rose-500">*</span>
+                </Label>
+                <Input
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  maxLength={MAX_TOPIC_LENGTH}
+                  list="sop-topics"
+                  placeholder="เช่น Baan Sukee"
+                  disabled={uploading}
+                />
+                <datalist id="sop-topics">
+                  {existingTopics.map((t) => (
+                    <option key={t} value={t} />
+                  ))}
+                </datalist>
+              </div>
+            ) : groupChoice ? (
+              <div className="space-y-1.5">
+                <Label className="text-zinc-700 dark:text-zinc-300">
+                  สิทธิ์การเข้าถึง <span className="text-rose-500">*</span>
+                </Label>
+                <select
+                  value={access}
+                  onChange={(e) => setAccess(e.target.value as SopAccess | "")}
+                  disabled={uploading}
+                  className={selectClass}
+                >
+                  <option value="">— เลือกสิทธิ์ —</option>
+                  <option value="department">เฉพาะพนักงานแผนก {groupChoice}</option>
+                  <option value="all">พนักงานทุกคน</option>
+                </select>
+              </div>
+            ) : null}
+          </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            ไฟล์ทั้งหมดที่เลือกไว้จะใช้แผนกและสิทธิ์เดียวกัน · พนักงานระดับ Manager เข้าถึงได้ทุกไฟล์เสมอ
+          </p>
+
           <Button
             onClick={handleUpload}
-            disabled={pendingFiles.length === 0 || uploading}
+            disabled={pendingFiles.length === 0 || uploading || !groupReady}
             className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white items-center gap-2"
           >
             {uploading ? (
@@ -321,76 +438,90 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
         </CardContent>
       </Card>
 
-      {/* Document List */}
-      <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/50 backdrop-blur-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-zinc-200 dark:border-zinc-800/50 hover:bg-transparent">
-              <TableHead className="text-zinc-500 dark:text-zinc-400">ชื่อไฟล์</TableHead>
-              <TableHead className="text-zinc-500 dark:text-zinc-400">จำนวนส่วน</TableHead>
-              <TableHead className="text-zinc-500 dark:text-zinc-400">นำเข้าโดย</TableHead>
-              <TableHead className="text-zinc-500 dark:text-zinc-400">อัปเดตล่าสุด</TableHead>
-              <TableHead className="text-zinc-500 dark:text-zinc-400 text-right">จัดการ</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {documents.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-zinc-500 dark:text-zinc-400 py-12">
-                  ยังไม่มีเอกสาร SOP ในฐานความรู้
-                </TableCell>
-              </TableRow>
-            ) : (
-              documents.map((doc) => (
-                <TableRow
-                  key={doc.file_id}
-                  onClick={() => doc.view_url && openPreview(doc)}
-                  title={doc.view_url ? `ดู ${doc.title}` : doc.title}
-                  className={`border-zinc-200 dark:border-zinc-800/50 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/30 ${
-                    doc.view_url ? "cursor-pointer" : ""
-                  }`}
-                >
-                  <TableCell className="max-w-[20rem]">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-400 shrink-0" />
-                      <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">
-                        {doc.title}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm text-zinc-600 dark:text-zinc-400">
-                    {doc.chunk_count}
-                  </TableCell>
-                  <TableCell className="text-sm text-zinc-700 dark:text-zinc-300">
-                    {doc.uploaded_by || <span className="text-xs italic text-zinc-500 dark:text-zinc-400">ไม่ได้บันทึกไว้</span>}
-                  </TableCell>
-                  <TableCell className="text-xs text-zinc-500 dark:text-zinc-400">
-                    {new Date(doc.updated_at).toLocaleString("th-TH")}
-                  </TableCell>
-                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(doc)}
-                        disabled={deletingId === doc.file_id}
-                        className="text-zinc-500 dark:text-zinc-400 hover:text-rose-500 h-8 px-2 items-center gap-1.5"
-                      >
-                        {deletingId === doc.file_id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-3.5 h-3.5" />
-                        )}
-                        ลบ
-                      </Button>
-                    </div>
-                  </TableCell>
+      {/* Document List, one section per department / topic */}
+      {documents.length === 0 ? (
+        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/50 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+          ยังไม่มีเอกสาร SOP ในฐานความรู้
+        </div>
+      ) : (
+        groupDocuments(documents).map((group) => (
+          <div
+            key={`${group.type}:${group.name}`}
+            className="rounded-xl border border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/50 backdrop-blur-sm overflow-hidden"
+          >
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-200 dark:border-zinc-800/50">
+              <FolderOpen className="w-4 h-4 text-[#0C645B] dark:text-emerald-400" />
+              <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{group.name}</h3>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                {group.type === "department" ? "แผนก" : group.type === "other" ? "อื่นๆ" : ""} · {group.docs.length} ไฟล์
+              </span>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow className="border-zinc-200 dark:border-zinc-800/50 hover:bg-transparent">
+                  <TableHead className="text-zinc-500 dark:text-zinc-400">ชื่อไฟล์</TableHead>
+                  <TableHead className="text-zinc-500 dark:text-zinc-400">สิทธิ์การเข้าถึง</TableHead>
+                  <TableHead className="text-zinc-500 dark:text-zinc-400">จำนวนส่วน</TableHead>
+                  <TableHead className="text-zinc-500 dark:text-zinc-400">นำเข้าโดย</TableHead>
+                  <TableHead className="text-zinc-500 dark:text-zinc-400">อัปเดตล่าสุด</TableHead>
+                  <TableHead className="text-zinc-500 dark:text-zinc-400 text-right">จัดการ</TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableHeader>
+              <TableBody>
+                {group.docs.map((doc) => (
+                  <TableRow
+                    key={doc.file_id}
+                    onClick={() => doc.view_url && openPreview(doc)}
+                    title={doc.view_url ? `ดู ${doc.title}` : doc.title}
+                    className={`border-zinc-200 dark:border-zinc-800/50 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/30 ${
+                      doc.view_url ? "cursor-pointer" : ""
+                    }`}
+                  >
+                    <TableCell className="max-w-[20rem]">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText className="w-4 h-4 text-zinc-500 dark:text-zinc-400 shrink-0" />
+                        <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">
+                          {doc.title}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-zinc-600 dark:text-zinc-400">
+                      {doc.sop_access ? ACCESS_LABEL[doc.sop_access] : "-"}
+                    </TableCell>
+                    <TableCell className="text-sm text-zinc-600 dark:text-zinc-400">
+                      {doc.chunk_count}
+                    </TableCell>
+                    <TableCell className="text-sm text-zinc-700 dark:text-zinc-300">
+                      {doc.uploaded_by || <span className="text-xs italic text-zinc-500 dark:text-zinc-400">ไม่ได้บันทึกไว้</span>}
+                    </TableCell>
+                    <TableCell className="text-xs text-zinc-500 dark:text-zinc-400">
+                      {new Date(doc.updated_at).toLocaleString("th-TH")}
+                    </TableCell>
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(doc)}
+                          disabled={deletingId === doc.file_id}
+                          className="text-zinc-500 dark:text-zinc-400 hover:text-rose-500 h-8 px-2 items-center gap-1.5"
+                        >
+                          {deletingId === doc.file_id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                          ลบ
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ))
+      )}
 
       {/* Preview Dialog */}
       <Dialog open={!!previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)}>
