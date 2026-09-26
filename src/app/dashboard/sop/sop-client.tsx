@@ -20,11 +20,13 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { UploadCloud, FileText, Trash2, Loader2, AlertTriangle, X, FolderOpen } from "lucide-react";
+import { UploadCloud, FileText, Trash2, Loader2, AlertTriangle, X, FolderOpen, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -70,6 +72,99 @@ function fileExtension(fileName: string): string {
   return fileName.toLowerCase().split(".").pop() || "";
 }
 
+/** True once the choice is complete: a department plus access, or "อื่นๆ" plus a topic. */
+function isGroupReady(groupChoice: string, topic: string, access: SopAccess | "") {
+  return groupChoice === OTHER ? topic.trim().length > 0 : SOP_DEPARTMENTS.includes(groupChoice) && access !== "";
+}
+
+/** Department / topic / access picker, shared by the upload form and the edit dialog. */
+function SopGroupFields({
+  groupChoice,
+  onGroupChoice,
+  topic,
+  onTopic,
+  access,
+  onAccess,
+  existingTopics,
+  disabled,
+  idPrefix,
+}: {
+  groupChoice: string;
+  onGroupChoice: (v: string) => void;
+  topic: string;
+  onTopic: (v: string) => void;
+  access: SopAccess | "";
+  onAccess: (v: SopAccess | "") => void;
+  existingTopics: string[];
+  disabled?: boolean;
+  idPrefix: string;
+}) {
+  const isOther = groupChoice === OTHER;
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="space-y-1.5">
+        <Label className="text-zinc-700 dark:text-zinc-300">
+          แผนกเจ้าของไฟล์ <span className="text-rose-500">*</span>
+        </Label>
+        <select
+          value={groupChoice}
+          onChange={(e) => {
+            onGroupChoice(e.target.value);
+            onAccess("");
+          }}
+          disabled={disabled}
+          className={selectClass}
+        >
+          <option value="">— เลือกแผนก —</option>
+          {SOP_DEPARTMENTS.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+          <option value={OTHER}>อื่นๆ (พนักงานทุกคนเข้าถึงได้)</option>
+        </select>
+      </div>
+
+      {isOther ? (
+        <div className="space-y-1.5">
+          <Label className="text-zinc-700 dark:text-zinc-300">
+            ชื่อหัวข้อ <span className="text-rose-500">*</span>
+          </Label>
+          <Input
+            value={topic}
+            onChange={(e) => onTopic(e.target.value)}
+            maxLength={MAX_TOPIC_LENGTH}
+            list={`${idPrefix}-topics`}
+            placeholder="เช่น Baan Sukee"
+            disabled={disabled}
+          />
+          <datalist id={`${idPrefix}-topics`}>
+            {existingTopics.map((t) => (
+              <option key={t} value={t} />
+            ))}
+          </datalist>
+        </div>
+      ) : groupChoice ? (
+        <div className="space-y-1.5">
+          <Label className="text-zinc-700 dark:text-zinc-300">
+            สิทธิ์การเข้าถึง <span className="text-rose-500">*</span>
+          </Label>
+          <select
+            value={access}
+            onChange={(e) => onAccess(e.target.value as SopAccess | "")}
+            disabled={disabled}
+            className={selectClass}
+          >
+            <option value="">— เลือกสิทธิ์ —</option>
+            <option value="department">เฉพาะพนักงานแผนก {groupChoice}</option>
+            <option value="all">พนักงานทุกคน</option>
+          </select>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function SopClient({ initialDocuments, configError }: SopClientProps) {
   const [documents, setDocuments] = useState(initialDocuments);
   const [uploading, setUploading] = useState(false);
@@ -84,7 +179,14 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
   const [topic, setTopic] = useState("");
   const [access, setAccess] = useState<SopAccess | "">("");
   const isOther = groupChoice === OTHER;
-  const groupReady = isOther ? topic.trim().length > 0 : SOP_DEPARTMENTS.includes(groupChoice) && access !== "";
+  const groupReady = isGroupReady(groupChoice, topic, access);
+  // Edit an uploaded file's department / access without re-uploading it.
+  const [editingDoc, setEditingDoc] = useState<SopDocumentSummary | null>(null);
+  const [editGroupChoice, setEditGroupChoice] = useState("");
+  const [editTopic, setEditTopic] = useState("");
+  const [editAccess, setEditAccess] = useState<SopAccess | "">("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
   const existingTopics = Array.from(
     new Set(documents.filter((d) => d.sop_group_type === "other" && d.sop_group).map((d) => d.sop_group as string))
   );
@@ -239,6 +341,47 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  function openEdit(doc: SopDocumentSummary) {
+    const other = doc.sop_group_type === "other";
+    setEditGroupChoice(other ? OTHER : doc.sop_group && SOP_DEPARTMENTS.includes(doc.sop_group) ? doc.sop_group : "");
+    setEditTopic(other ? doc.sop_group || "" : "");
+    setEditAccess(other ? "" : doc.sop_access || "");
+    setEditingDoc(doc);
+  }
+
+  async function saveEdit() {
+    if (!editingDoc || !isGroupReady(editGroupChoice, editTopic, editAccess)) return;
+    const other = editGroupChoice === OTHER;
+    setSavingEdit(true);
+    try {
+      const res = await fetch("/api/documents/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          file_id: editingDoc.file_id,
+          group_type: other ? "other" : "department",
+          group: other ? editTopic.trim() : editGroupChoice,
+          access: other ? "all" : editAccess,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "บันทึกไม่สำเร็จ");
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.file_id === editingDoc.file_id
+            ? { ...d, sop_group: data.sop_group, sop_group_type: data.sop_group_type, sop_access: data.sop_access }
+            : d
+        )
+      );
+      toast.success(`บันทึกแผนกและสิทธิ์ของ "${editingDoc.title}" แล้ว`);
+      setEditingDoc(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "บันทึกไม่สำเร็จ");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
   async function handleDelete(doc: SopDocumentSummary) {
     if (!confirm(`ลบเอกสาร "${doc.title}" ออกจากฐานความรู้ของ AI ใช่หรือไม่?`)) return;
     setDeletingId(doc.file_id);
@@ -353,67 +496,17 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-zinc-700 dark:text-zinc-300">
-                แผนกเจ้าของไฟล์ <span className="text-rose-500">*</span>
-              </Label>
-              <select
-                value={groupChoice}
-                onChange={(e) => {
-                  setGroupChoice(e.target.value);
-                  setAccess("");
-                }}
-                disabled={uploading}
-                className={selectClass}
-              >
-                <option value="">— เลือกแผนก —</option>
-                {SOP_DEPARTMENTS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-                <option value={OTHER}>อื่นๆ (พนักงานทุกคนเข้าถึงได้)</option>
-              </select>
-            </div>
-
-            {isOther ? (
-              <div className="space-y-1.5">
-                <Label className="text-zinc-700 dark:text-zinc-300">
-                  ชื่อหัวข้อ <span className="text-rose-500">*</span>
-                </Label>
-                <Input
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  maxLength={MAX_TOPIC_LENGTH}
-                  list="sop-topics"
-                  placeholder="เช่น Baan Sukee"
-                  disabled={uploading}
-                />
-                <datalist id="sop-topics">
-                  {existingTopics.map((t) => (
-                    <option key={t} value={t} />
-                  ))}
-                </datalist>
-              </div>
-            ) : groupChoice ? (
-              <div className="space-y-1.5">
-                <Label className="text-zinc-700 dark:text-zinc-300">
-                  สิทธิ์การเข้าถึง <span className="text-rose-500">*</span>
-                </Label>
-                <select
-                  value={access}
-                  onChange={(e) => setAccess(e.target.value as SopAccess | "")}
-                  disabled={uploading}
-                  className={selectClass}
-                >
-                  <option value="">— เลือกสิทธิ์ —</option>
-                  <option value="department">เฉพาะพนักงานแผนก {groupChoice}</option>
-                  <option value="all">พนักงานทุกคน</option>
-                </select>
-              </div>
-            ) : null}
-          </div>
+          <SopGroupFields
+            groupChoice={groupChoice}
+            onGroupChoice={setGroupChoice}
+            topic={topic}
+            onTopic={setTopic}
+            access={access}
+            onAccess={setAccess}
+            existingTopics={existingTopics}
+            disabled={uploading}
+            idPrefix="upload"
+          />
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
             ไฟล์ทั้งหมดที่เลือกไว้จะใช้แผนกและสิทธิ์เดียวกัน · พนักงานระดับ Manager เข้าถึงได้ทุกไฟล์เสมอ
           </p>
@@ -502,6 +595,15 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => openEdit(doc)}
+                          className="text-zinc-500 dark:text-zinc-400 hover:text-blue-500 h-8 px-2 items-center gap-1.5"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          แก้ไข
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleDelete(doc)}
                           disabled={deletingId === doc.file_id}
                           className="text-zinc-500 dark:text-zinc-400 hover:text-rose-500 h-8 px-2 items-center gap-1.5"
@@ -522,6 +624,41 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
           </div>
         ))
       )}
+
+      {/* Edit department / access */}
+      <Dialog open={!!editingDoc} onOpenChange={(open) => !open && !savingEdit && setEditingDoc(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>แก้ไขแผนกและสิทธิ์การเข้าถึง</DialogTitle>
+            <DialogDescription className="truncate">{editingDoc?.title}</DialogDescription>
+          </DialogHeader>
+          <SopGroupFields
+            groupChoice={editGroupChoice}
+            onGroupChoice={setEditGroupChoice}
+            topic={editTopic}
+            onTopic={setEditTopic}
+            access={editAccess}
+            onAccess={setEditAccess}
+            existingTopics={existingTopics}
+            disabled={savingEdit}
+            idPrefix="edit"
+          />
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            มีผลกับคำถามถัดไปของบอททันที ไม่ต้องอัปโหลดไฟล์ใหม่ · พนักงานระดับ Manager เข้าถึงได้ทุกไฟล์เสมอ
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditingDoc(null)} disabled={savingEdit}>
+              ยกเลิก
+            </Button>
+            <Button
+              onClick={saveEdit}
+              disabled={savingEdit || !isGroupReady(editGroupChoice, editTopic, editAccess)}
+            >
+              {savingEdit ? "กำลังบันทึก..." : "บันทึก"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Preview Dialog */}
       <Dialog open={!!previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)}>

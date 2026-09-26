@@ -21,6 +21,31 @@ export const SOP_DEPARTMENTS: string[] = Array.from(
 
 export const MAX_TOPIC_LENGTH = 100;
 
+export type SopGroupChoice =
+  | { ok: true; groupType: SopGroupType; group: string; access: SopAccess }
+  | { ok: false; error: string };
+
+/**
+ * Validates the department/topic + access picked for a file (upload and edit
+ * share this). A department file is readable by that department only or by
+ * everyone; "อื่นๆ" (other) needs a topic name and is always everyone.
+ */
+export function parseSopGroup(input: { groupType: unknown; group: unknown; access: unknown }): SopGroupChoice {
+  const groupType = String(input.groupType || "");
+  const group = String(input.group || "").trim().slice(0, MAX_TOPIC_LENGTH);
+  const access = String(input.access || "");
+  if (groupType === "department") {
+    if (!SOP_DEPARTMENTS.includes(group)) return { ok: false, error: "กรุณาเลือกแผนกของไฟล์" };
+    if (access !== "all" && access !== "department") return { ok: false, error: "กรุณาเลือกสิทธิ์การเข้าถึงไฟล์" };
+    return { ok: true, groupType, group, access };
+  }
+  if (groupType === "other") {
+    if (!group) return { ok: false, error: "กรุณาพิมพ์ชื่อหัวข้อของไฟล์" };
+    return { ok: true, groupType, group, access: "all" };
+  }
+  return { ok: false, error: "กรุณาเลือกแผนกของไฟล์" };
+}
+
 export interface SopDocumentSummary {
   file_id: string;
   title: string;

@@ -12,7 +12,7 @@ import {
   fileIdFromName,
   sopStoragePath,
 } from "@/lib/documents";
-import { MAX_TOPIC_LENGTH, SOP_DEPARTMENTS, type SopAccess, type SopGroupType } from "@/lib/sop-groups";
+import { parseSopGroup } from "@/lib/sop-groups";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
@@ -50,27 +50,17 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get("file");
 
-    // Every file must say whose it is. A department file is readable by that
-    // department only or by everyone; "อื่นๆ" (other) is always everyone and
-    // needs a topic name instead of a department. match_documents enforces it.
-    const groupType = String(formData.get("group_type") || "") as SopGroupType;
-    const group = String(formData.get("group") || "").trim().slice(0, MAX_TOPIC_LENGTH);
-    let access = String(formData.get("access") || "") as SopAccess;
-    if (groupType === "department") {
-      if (!SOP_DEPARTMENTS.includes(group)) {
-        return NextResponse.json({ success: false, error: "กรุณาเลือกแผนกของไฟล์" }, { status: 400 });
-      }
-      if (access !== "all" && access !== "department") {
-        return NextResponse.json({ success: false, error: "กรุณาเลือกสิทธิ์การเข้าถึงไฟล์" }, { status: 400 });
-      }
-    } else if (groupType === "other") {
-      if (!group) {
-        return NextResponse.json({ success: false, error: "กรุณาพิมพ์ชื่อหัวข้อของไฟล์" }, { status: 400 });
-      }
-      access = "all";
-    } else {
-      return NextResponse.json({ success: false, error: "กรุณาเลือกแผนกของไฟล์" }, { status: 400 });
+    // Every file must say whose it is and who may read it; match_documents
+    // enforces the access when the bot searches.
+    const choice = parseSopGroup({
+      groupType: formData.get("group_type"),
+      group: formData.get("group"),
+      access: formData.get("access"),
+    });
+    if (!choice.ok) {
+      return NextResponse.json({ success: false, error: choice.error }, { status: 400 });
     }
+    const { groupType, group, access } = choice;
 
     if (!(file instanceof File)) {
       return NextResponse.json({ success: false, error: "ไม่พบไฟล์ที่อัปโหลด" }, { status: 400 });
