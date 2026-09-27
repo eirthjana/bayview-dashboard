@@ -1,18 +1,19 @@
 -- ==============================================================================
--- 🏨 The Bayview Pattaya — LIFF authentication (Phase 1)
--- ยืนยันตัวตนผ่านหน้า LIFF: เก็บ OTP แบบ hash, เก็บรูป LINE, และบันทึกคำขอ OTP
--- ไว้ทำ rate limit — เพิ่มคอลัมน์/ตารางอย่างเดียว ไม่แตะข้อมูลเดิม
+-- 🏨 The Bayview Pattaya — 08_liff_otp_hardening
+-- RECORD ONLY — already applied to Supabase as migration version 20260927083611.
+-- Do not run again. Copied verbatim from supabase_migrations.schema_migrations.
+--
+-- LIFF registration: OTP stored as an HMAC hash, LINE picture, and a log of
+-- OTP requests for rate limiting. Adds columns/table only; no data touched.
+-- pending_otp_code stays until the old n8n chat OTP flow is removed (Phase 4).
 -- ==============================================================================
 
--- เก็บ OTP แบบ hash (HMAC-SHA256) แทน plaintext
 ALTER TABLE public.employee_test     ADD COLUMN IF NOT EXISTS pending_otp_hash TEXT;
 ALTER TABLE public.employee_registry ADD COLUMN IF NOT EXISTS pending_otp_hash TEXT;
 
--- รูปโปรไฟล์ LINE (ได้จาก ID token ตอนลงทะเบียน)
 ALTER TABLE public.employee_test     ADD COLUMN IF NOT EXISTS line_picture_url TEXT;
 ALTER TABLE public.employee_registry ADD COLUMN IF NOT EXISTS line_picture_url TEXT;
 
--- บันทึกการขอ OTP สำหรับ rate limit
 CREATE TABLE IF NOT EXISTS public.otp_requests (
   id           BIGSERIAL PRIMARY KEY,
   emp_id       INTEGER,
@@ -22,7 +23,4 @@ CREATE TABLE IF NOT EXISTS public.otp_requests (
 CREATE INDEX IF NOT EXISTS idx_otp_requests_line_user ON public.otp_requests (line_user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_otp_requests_emp       ON public.otp_requests (emp_id, created_at DESC);
 
--- เปิด RLS โดยไม่มี policy = เข้าถึงได้เฉพาะ service role เท่านั้น
 ALTER TABLE public.otp_requests ENABLE ROW LEVEL SECURITY;
-
--- pending_otp_code ยังห้ามลบ: n8n flow OTP แบบแชทเดิมยังใช้อยู่ (ลบใน Phase 4)
