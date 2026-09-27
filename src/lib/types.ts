@@ -141,6 +141,8 @@ export interface EmployeeRegistry {
   position: string | null;
   line_user_id: string | null;
   line_name: string | null;
+  /** LINE profile picture saved at LIFF registration (migration 08); absent before that. */
+  line_picture_url?: string | null;
   email: string | null;
   phone_number: string | null;
   status: "unlinked" | "linked" | "disabled" | null;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin-auth";
 import { isLineUserId } from "@/lib/line/verify-id-token";
-import { linkVerifiedMenu, unlinkRichMenu } from "@/lib/line/richmenu";
+import { linkVerifiedMenu, RichMenuNotConfigured, unlinkRichMenu } from "@/lib/line/richmenu";
 
 /**
  * Dashboard-only: give an employee the full menu ("link") or send them back to
@@ -27,6 +27,12 @@ export async function POST(request: NextRequest) {
     else await unlinkRichMenu(lineUserId);
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof RichMenuNotConfigured) {
+      return NextResponse.json(
+        { success: false, error: `ยังไม่ได้ตั้งค่า ${error.message} บน Vercel` },
+        { status: 503 }
+      );
+    }
     console.error(`Rich menu ${action} failed:`, error);
     const message = error instanceof Error ? error.message : "LINE API error";
     return NextResponse.json({ success: false, error: message }, { status: 502 });

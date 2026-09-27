@@ -1,11 +1,16 @@
 import "server-only";
 
-// Per-user rich menus (Messaging API). A user-level link overrides the default
-// menu, so unlinking drops the user back to the small "not verified" menu.
+// Per-user rich menus (Messaging API). The default "not verified" menu is set
+// in LINE Official Account Manager and must not be replaced through the API.
+// A menu linked to one user shows instead of that default, so linking gives a
+// verified employee the full menu and unlinking drops them back to the default.
+
+/** A required env var is missing — a setup problem rather than a LINE error. */
+export class RichMenuNotConfigured extends Error {}
 
 async function lineBot(path: string, method: "POST" | "DELETE"): Promise<void> {
   const token = (process.env.LINE_CHANNEL_ACCESS_TOKEN || "").trim();
-  if (!token) throw new Error("LINE_CHANNEL_ACCESS_TOKEN is not configured");
+  if (!token) throw new RichMenuNotConfigured("LINE_CHANNEL_ACCESS_TOKEN");
   const res = await fetch(`https://api.line.me/v2/bot${path}`, {
     method,
     headers: { Authorization: `Bearer ${token}` },
@@ -29,6 +34,6 @@ export async function unlinkRichMenu(userId: string): Promise<void> {
 /** Gives a verified employee the full menu. Needs RICHMENU_ID_LINKED (from scripts/richmenu/setup.mjs). */
 export async function linkVerifiedMenu(userId: string): Promise<void> {
   const richMenuId = (process.env.RICHMENU_ID_LINKED || "").trim();
-  if (!richMenuId) throw new Error("RICHMENU_ID_LINKED is not configured");
+  if (!richMenuId) throw new RichMenuNotConfigured("RICHMENU_ID_LINKED");
   await linkRichMenu(userId, richMenuId);
 }

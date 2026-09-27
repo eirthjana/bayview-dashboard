@@ -50,6 +50,46 @@ function deriveAccessLevel(position: string): EmployeeRegistry["access_level"] {
   return (position || "").toLowerCase().includes("manager") ? "manager" : "staff";
 }
 
+// Keeps the employee's LINE menu in step with their link: "link" gives the full
+// menu, "unlink" drops them back to the default menu set in LINE OA Manager.
+// The database change has already been saved, so a failure here only warns.
+async function syncRichMenu(lineUserId: string, action: "link" | "unlink", name: string) {
+  try {
+    const res = await fetch("/api/admin/richmenu", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lineUserId, action }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.success) throw new Error(data?.error || `HTTP ${res.status}`);
+  } catch (err) {
+    toast.warning(
+      action === "link"
+        ? `บันทึกแล้ว แต่เปลี่ยนเป็นเมนูพนักงานให้ ${name} ไม่สำเร็จ`
+        : `บันทึกแล้ว แต่เปลี่ยนเมนูของ ${name} กลับเป็นเมนูเริ่มต้นไม่สำเร็จ`,
+      { description: err instanceof Error ? err.message : undefined }
+    );
+  }
+}
+
+function LineAvatar({ url, name, size = "sm" }: { url?: string | null; name: string; size?: "sm" | "lg" }) {
+  const box = size === "lg" ? "h-14 w-14 text-lg" : "h-9 w-9 text-sm";
+  if (url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={url} alt="" className={`${box} shrink-0 rounded-full object-cover ring-1 ring-zinc-200 dark:ring-zinc-700`} />
+    );
+  }
+  return (
+    <div
+      aria-hidden
+      className={`${box} shrink-0 rounded-full flex items-center justify-center font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400`}
+    >
+      {(name.trim()[0] || "?").toUpperCase()}
+    </div>
+  );
+}
+
 async function copyText(text: string, label: string) {
   try {
     await navigator.clipboard.writeText(text);
@@ -206,6 +246,16 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
         )
       );
       toast.success(`บันทึกข้อมูลของ ${editing.name} แล้ว`);
+
+      // A removed or replaced LINE ID goes back to the default menu; a newly
+      // entered one on an active employee gets the full menu.
+      const previousLineId = editing.line_user_id;
+      if (previousLineId && previousLineId !== trimmedLineId) {
+        void syncRichMenu(previousLineId, "unlink", editing.name);
+      }
+      if (trimmedLineId && trimmedLineId !== previousLineId && nextStatus === "linked") {
+        void syncRichMenu(trimmedLineId, "link", editing.name);
+      }
       setEditing(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
@@ -316,6 +366,10 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       toast.success(
         nextStatus === "disabled" ? `ปิดใช้งาน ${emp.name} แล้ว` : `เปิดใช้งาน ${emp.name} แล้ว`
       );
+      // Disabled employees lose the full menu; re-enabling a linked one gives it back.
+      if (emp.line_user_id) {
+        void syncRichMenu(emp.line_user_id, nextStatus === "disabled" ? "unlink" : "link", emp.name);
+      }
     } catch {
       toast.error("ทำรายการไม่สำเร็จ");
     }
@@ -397,9 +451,14 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
                 >
                   <TableCell className="px-4 py-4 font-mono text-sm text-zinc-500 dark:text-zinc-400">{emp.emp_id}</TableCell>
                   <TableCell className="px-4 py-4">
-                    <div className="text-[0.9375rem] font-medium text-zinc-800 dark:text-zinc-200">{emp.name}</div>
-                    <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-                      {emp.name_th || <span className="italic">-</span>}
+                    <div className="flex items-center gap-3">
+                      <LineAvatar url={emp.line_picture_url} name={emp.name} />
+                      <div>
+                        <div className="text-[0.9375rem] font-medium text-zinc-800 dark:text-zinc-200">{emp.name}</div>
+                        <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          {emp.name_th || <span className="italic">-</span>}
+                        </div>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="px-4 py-4">
@@ -472,6 +531,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
           {viewing && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
+                <LineAvatar url={viewing.line_picture_url} name={viewing.name} size="lg" />
                 <Badge
                   variant="outline"
                   className={ACCESS_BADGE_CLASS[viewing.access_level] || ACCESS_BADGE_CLASS.staff}
