@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { EMPLOYEE_TABLE } from "@/lib/config";
 import { AnalyticsClient } from "./analytics-client";
 import type { AnalyticsSummary, HourlyUsage, DeptActivity } from "@/lib/types";
 
@@ -68,7 +69,7 @@ export default async function AnalyticsPage() {
         .select("user_message, created_at, line_user_id")
         .neq("status", "error"),
       supabase
-        .from("employee_test")
+        .from(EMPLOYEE_TABLE)
         .select("line_user_id, department, name, name_th"),
     ]);
 

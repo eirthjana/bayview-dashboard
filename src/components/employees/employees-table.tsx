@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import type { EmployeeRegistry } from "@/lib/types";
+import type { EmployeeTable } from "@/lib/config";
 import { DEPARTMENTS, ACCESS_LEVELS } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -36,6 +37,8 @@ import { Copy } from "lucide-react";
 
 interface EmployeesTableProps {
   employees: EmployeeRegistry[];
+  /** EMPLOYEE_TABLE from the server (src/lib/config.ts) — client code can't read that env var. */
+  table: EmployeeTable;
 }
 
 const ACCESS_BADGE_CLASS: Record<string, string> = {
@@ -91,7 +94,7 @@ function DetailRow({
   );
 }
 
-export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
+export function EmployeesTable({ employees: initial, table }: EmployeesTableProps) {
   const [employees, setEmployees] = useState(initial);
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState<string>("__all__");
@@ -170,7 +173,7 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
 
       const supabase = createClient();
       const { error } = await supabase
-        .from("employee_test")
+        .from(table)
         .update({
           department: editDept,
           position: editPos,
@@ -247,7 +250,7 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
       const trimmedNicknameTh = addNicknameTh.trim() || null;
 
       const supabase = createClient();
-      const { error } = await supabase.from("employee_test").insert({
+      const { error } = await supabase.from(table).insert({
         emp_id: empId,
         name: addName.trim(),
         name_th: trimmedNameTh,
@@ -301,7 +304,7 @@ export function EmployeesTable({ employees: initial }: EmployeesTableProps) {
     try {
       const supabase = createClient();
       const { error } = await supabase
-        .from("employee_test")
+        .from(table)
         .update({ status: nextStatus })
         .eq("emp_id", emp.emp_id);
 

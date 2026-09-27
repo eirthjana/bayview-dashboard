@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { EMPLOYEE_TABLE } from "@/lib/config";
 import { DashboardClient } from "./dashboard-client";
 import { normalizeStatusKey } from "@/components/dashboard/status-badge";
 import type { DailyUsage, ChatLog, DailyMessageUsage, DeptMessageUsage, Employee } from "@/lib/types";
@@ -158,7 +159,7 @@ export default async function DashboardPage() {
         .neq("status", "error")
         .order("created_at", { ascending: true }),
       // Fetch employee list directly from employee_test
-      supabase.from("employee_test").select("*"),
+      supabase.from(EMPLOYEE_TABLE).select("*"),
     ]);
 
     const allEmployees: Employee[] = (!employeeTestResult.error && employeeTestResult.data)
