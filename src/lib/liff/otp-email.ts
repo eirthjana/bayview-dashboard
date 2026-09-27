@@ -18,7 +18,7 @@ export function otpEmailMessage({ to, name, code }: OtpEmail): MailMessage {
     `    ${code}`,
     "",
     `รหัสนี้ใช้ได้ภายใน ${OTP_TTL_MINUTES} นาที`,
-    "ถ้าไม่ได้ทำรายการนี้ กรุณาเพิกเฉยและแจ้ง HR",
+    "ถ้าไม่ได้ทำรายการนี้ กรุณาเพิกเฉยและแจ้งแอดมิน",
     "",
     "The Bayview Pattaya",
   ].join("\n");
@@ -27,7 +27,7 @@ export function otpEmailMessage({ to, name, code }: OtpEmail): MailMessage {
 <p>รหัสยืนยันตัวตนสำหรับผูกบัญชี LINE กับระบบพนักงานของคุณคือ</p>
 <p style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#0f766e;margin:16px 0">${code}</p>
 <p>รหัสนี้ใช้ได้ภายใน ${OTP_TTL_MINUTES} นาที</p>
-<p>ถ้าไม่ได้ทำรายการนี้ กรุณาเพิกเฉยและแจ้ง HR</p>
+<p>ถ้าไม่ได้ทำรายการนี้ กรุณาเพิกเฉยและแจ้งแอดมิน</p>
 <p style="color:#6b7280">The Bayview Pattaya</p>
 </div>`;
   return { to, subject, text, html };

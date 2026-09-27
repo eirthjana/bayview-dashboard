@@ -195,7 +195,7 @@ function RegisterFlow({ liff }: { liff: Liff }) {
               <StepLabel>ขั้นที่ 1 จาก 2</StepLabel>
               <h2 className="text-lg font-semibold">กรอกรหัสพนักงาน</h2>
               <p className="mt-1 text-sm leading-relaxed text-zinc-500">
-                ระบบจะส่งรหัสยืนยัน 6 หลักไปที่อีเมลบริษัทของคุณที่ HR บันทึกไว้
+                ระบบจะส่งรหัสยืนยัน 6 หลักไปที่อีเมลบริษัทของคุณที่บันทึกไว้ในระบบ
               </p>
             </div>
             <label className="flex flex-col gap-1.5">

@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
 /**
  * Employees may change only their phone number. Department, position and
- * access level decide what the bot lets them see, so those stay with HR.
+ * access level decide what the bot lets them see, so only admins change them.
  */
 export async function PATCH(request: NextRequest) {
   const auth = await readLiffRequest(request);

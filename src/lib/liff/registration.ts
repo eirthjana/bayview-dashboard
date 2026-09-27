@@ -11,7 +11,7 @@ import { generateOtp, hashOtp, verifyOtp, OTP_MAX_ATTEMPTS, OTP_TTL_MINUTES } fr
 
 /** The same answer whether or not the employee id exists or can be linked. */
 export const OTP_REQUEST_MESSAGE =
-  "ถ้ารหัสพนักงานนี้อยู่ในระบบและยังไม่ได้ผูกบัญชี ระบบได้ส่งรหัส 6 หลักไปที่อีเมลบริษัทของคุณแล้ว หากไม่ได้รับภายใน 5 นาที กรุณาติดต่อฝ่าย HR";
+  "ถ้ารหัสพนักงานนี้อยู่ในระบบและยังไม่ได้ผูกบัญชี ระบบได้ส่งรหัส 6 หลักไปที่อีเมลบริษัทของคุณแล้ว หากไม่ได้รับภายใน 5 นาที กรุณาติดต่อแอดมิน";
 
 const RESEND_SECONDS = 60;
 const HOURLY_LIMIT = 5;
