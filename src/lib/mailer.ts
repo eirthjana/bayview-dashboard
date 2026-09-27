@@ -8,7 +8,10 @@ function getTransporter(): Transporter {
   const host = (process.env.SMTP_HOST || "").trim();
   const port = Number(process.env.SMTP_PORT || 465);
   const user = (process.env.SMTP_USER || "").trim();
-  const pass = process.env.SMTP_PASS || "";
+  const rawPass = (process.env.SMTP_PASS || "").trim();
+  // Google shows an App Password in four groups ("abcd efgh ijkl mnop"); the
+  // spaces are not part of it, and pasting them in makes Gmail refuse the login.
+  const pass = /(^|\.)gmail\.com$/i.test(host) ? rawPass.replace(/\s+/g, "") : rawPass;
   if (!host || !user || !pass) throw new Error("SMTP_HOST / SMTP_USER / SMTP_PASS are not configured");
   transporter = nodemailer.createTransport({
     host,
