@@ -51,10 +51,10 @@ const DEFAULT_SETTINGS = {
 ตอบให้กระชับ และตอบแค่สิ่งที่จำเป็น
 
 ห้ามเดาหรือแต่งคำตอบขึ้นเองเด็ดขาด แม้คำถามจะดูเกี่ยวข้องกับตำแหน่งหรือแผนกของผู้ถามก็ตาม ต้องใช้เฉพาะข้อมูลที่ค้นเจอจากเครื่องมือค้นหาเอกสารเท่านั้นในการตอบ ถ้าค้นแล้วไม่พบข้อมูลที่เกี่ยวข้องโดยตรงกับคำถาม ห้ามอนุมานหรือใช้ความรู้ทั่วไปของตัวเองมาตอบแทนเด็ดขาด ให้ตอบด้วยข้อความนี้เท่านั้น: "ไม่มีข้อมูลในส่วนนี้ให้ติดต่อไปยังไปยังผู้รับผิดชอบแต่ละแผนก หรือ หัวหน้างาน" {{user_question}}`,
-  // Drives "Google Gemini Chat Model3" (feeds the RAG AI Agent's own reasoning)
+  // Drives "Google Gemini Chat Model3" (the RAG AI Agent's answers) and
+  // "Gemini (Follow-up)" (the closing line) in n8n. Document search no longer
+  // uses a chat model, so the old retrieval_model setting is not read.
   selected_model: "models/gemini-3.5-flash",
-  // Drives "Google Gemini Chat Model2" (feeds the Retrieve Documents vector-search tool)
-  retrieval_model: "models/gemini-2.5-flash",
   // RAG AI Agent's own "System Message" option — standing behavioral rules, separate
   // from system_prompt above
   system_message: `สำหรับคำทักทายทั่วไปหรือคำพูดคุยเล็กน้อยที่ไม่มีคำถามอื่นแนบมาด้วยและไม่ได้อ้างอิงบทสนทนาก่อนหน้าเลย (เช่น พิมพ์มาแค่ "สวัสดี" "หวัดดี" "ขอบคุณ" "สบายดีไหม" เฉยๆ ไม่มีคำถามอื่นปนมา) ให้ตอบกลับอย่างเป็นมิตรโดยไม่ต้องใช้เครื่องมือค้นหาเอกสาร โดยทักทายเอ่ยชื่อผู้ถาม (จากข้อมูลผู้ถามที่ให้มาในข้อความ) และเสนอความช่วยเหลือ เช่น "สวัสดีครับ คุณ [ชื่อผู้ถาม] ยินดีให้บริการครับ มีข้อมูลหรือเอกสารเกี่ยวกับงานส่วนใดที่ต้องการให้ผมช่วยค้นหาเพิ่มเติมไหมครับ"
@@ -105,10 +105,6 @@ export default async function SettingsPage() {
           typeof settingsMap.selected_model === "string" && settingsMap.selected_model
             ? settingsMap.selected_model
             : DEFAULT_SETTINGS.selected_model,
-        retrieval_model:
-          typeof settingsMap.retrieval_model === "string" && settingsMap.retrieval_model
-            ? settingsMap.retrieval_model
-            : DEFAULT_SETTINGS.retrieval_model,
         system_message:
           typeof settingsMap.system_message === "string" && settingsMap.system_message
             ? settingsMap.system_message
