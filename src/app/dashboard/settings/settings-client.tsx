@@ -72,6 +72,10 @@ const MODEL_SETTINGS = [
 ] as const;
 type ModelKey = (typeof MODEL_SETTINGS)[number]["key"];
 
+// Context Window Length of "Simple Memory1": how many past question/answer
+// pairs the RAG AI Agent sees. n8n keeps it to the same 1-10.
+const MEMORY_WINDOW_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
+
 interface SettingsClientProps {
   initialSettings: {
     ai_enabled: boolean;
@@ -79,6 +83,7 @@ interface SettingsClientProps {
     selected_model: string;
     media_analysis_model: string;
     media_reply_model: string;
+    memory_window: number;
     system_message: string;
   };
   /** Live from Google's ListModels — see src/lib/gemini-models.ts */
@@ -98,6 +103,8 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   } satisfies Record<ModelKey, string>;
   const [savedModels, setSavedModels] = useState<Record<ModelKey, string>>(initialModels);
   const [modelValues, setModelValues] = useState<Record<ModelKey, string>>(initialModels);
+  const [savedMemoryWindow, setSavedMemoryWindow] = useState(initialSettings.memory_window);
+  const [memoryWindow, setMemoryWindow] = useState(initialSettings.memory_window);
   const [editingModel, setEditingModel] = useState(false);
   const [confirmModelSaveOpen, setConfirmModelSaveOpen] = useState(false);
   const [savingModel, setSavingModel] = useState(false);
@@ -179,6 +186,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
 
   function handleCancelEditModel() {
     setModelValues(savedModels);
+    setMemoryWindow(savedMemoryWindow);
     setEditingModel(false);
   }
 
@@ -197,12 +205,14 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
     for (const { key } of MODEL_SETTINGS) {
       if (modelValues[key] !== savedModels[key]) ok = (await saveSetting(key, modelValues[key], true)) && ok;
     }
+    if (memoryWindow !== savedMemoryWindow) ok = (await saveSetting("memory_window", memoryWindow, true)) && ok;
     setSavingModel(false);
     setConfirmModelSaveOpen(false);
     if (ok) {
       setSavedModels(modelValues);
+      setSavedMemoryWindow(memoryWindow);
       setEditingModel(false);
-      toast.success("บันทึกโมเดล AI สำเร็จ");
+      toast.success("บันทึกการตั้งค่า AI สำเร็จ");
     }
   }
 
@@ -338,7 +348,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
                 AI Model
               </CardTitle>
               <CardDescription className="text-zinc-500 dark:text-zinc-400 mt-1">
-                เลือกโมเดล AI ที่ต้องการใช้งาน
+                เลือกโมเดล AI และจำนวนบทสนทนาที่ AI จำได้
               </CardDescription>
             </div>
             {!editingModel && (
@@ -360,7 +370,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
           </div>
         </CardHeader>
         <CardContent>
-          {MODEL_SETTINGS.map((setting, index) => (
+          {MODEL_SETTINGS.map((setting) => (
             <div key={setting.key} className="space-y-3">
               <div className="space-y-3">
                 <div>
@@ -390,9 +400,41 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
                   </SelectContent>
                 </Select>
               </div>
-              {index < MODEL_SETTINGS.length - 1 && <Separator className="bg-zinc-100 dark:bg-zinc-800/50" />}
+              <Separator className="bg-zinc-100 dark:bg-zinc-800/50" />
             </div>
           ))}
+
+          <div className="space-y-3">
+            <div>
+              <Label className="text-zinc-700 dark:text-zinc-300">ความจำบทสนทนา (Context Window Length)</Label>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                จำนวนคำถาม-คำตอบก่อนหน้าที่ AI เห็นตอนตอบ — โหนด &quot;Simple Memory1&quot; ใน n8n · ยิ่งมาก
+                ยิ่งตอบต่อเนื่องจากที่คุยไว้ได้ดี แต่ตอบช้าลงและอาจหยิบเรื่องเก่ามาปน
+              </p>
+            </div>
+            <Select
+              value={String(memoryWindow)}
+              onValueChange={(value) => value && setMemoryWindow(Number(value))}
+              disabled={!editingModel}
+            >
+              <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
+                <SelectValue placeholder="เลือกจำนวน">
+                  {(value: string) => `${value} รอบสนทนา`}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+                {MEMORY_WINDOW_OPTIONS.map((n) => (
+                  <SelectItem
+                    key={n}
+                    value={String(n)}
+                    className="text-zinc-800 dark:text-zinc-200 focus:bg-zinc-200 dark:focus:bg-zinc-700 focus:text-zinc-900 dark:focus:text-zinc-100"
+                  >
+                    {n} รอบสนทนา{n === 1 ? " (ค่าเดิม)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {editingModel && (
             <div className="flex items-center justify-end gap-2">
@@ -418,7 +460,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
                 ) : (
                   <>
                     <Save className="w-4 h-4" />
-                    บันทึกโมเดล AI
+                    บันทึกการตั้งค่า AI
                   </>
                 )}
               </Button>
@@ -635,9 +677,9 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
       <Dialog open={confirmModelSaveOpen} onOpenChange={(o) => !savingModel && setConfirmModelSaveOpen(o)}>
         <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100">
           <DialogHeader>
-            <DialogTitle>ยืนยันการเปลี่ยนโมเดล AI</DialogTitle>
+            <DialogTitle>ยืนยันการเปลี่ยนการตั้งค่า AI</DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400">
-              แน่ใจนะว่าจะเปลี่ยนโมเดล AI — บอทจะเริ่มใช้โมเดลนี้ทันทีหลังบันทึก
+              แน่ใจนะว่าจะเปลี่ยนโมเดลหรือความจำบทสนทนา — บอทจะเริ่มใช้ค่าใหม่ทันทีหลังบันทึก
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

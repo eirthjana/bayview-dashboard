@@ -60,6 +60,9 @@ const DEFAULT_SETTINGS = {
   // the models those nodes used before they were made selectable.
   media_analysis_model: "models/gemini-2.5-flash",
   media_reply_model: "models/gemini-3.5-flash-lite",
+  // Context Window Length of "Simple Memory1" (past exchanges the agent sees);
+  // 1 is what the node was set to before it became adjustable.
+  memory_window: 1,
   // RAG AI Agent's own "System Message" option — standing behavioral rules, separate
   // from system_prompt above
   system_message: `สำหรับคำทักทายทั่วไปหรือคำพูดคุยเล็กน้อยที่ไม่มีคำถามอื่นแนบมาด้วยและไม่ได้อ้างอิงบทสนทนาก่อนหน้าเลย (เช่น พิมพ์มาแค่ "สวัสดี" "หวัดดี" "ขอบคุณ" "สบายดีไหม" เฉยๆ ไม่มีคำถามอื่นปนมา) ให้ตอบกลับอย่างเป็นมิตรโดยไม่ต้องใช้เครื่องมือค้นหาเอกสาร โดยทักทายเอ่ยชื่อผู้ถาม (จากข้อมูลผู้ถามที่ให้มาในข้อความ) และเสนอความช่วยเหลือ เช่น "สวัสดีครับ คุณ [ชื่อผู้ถาม] ยินดีให้บริการครับ มีข้อมูลหรือเอกสารเกี่ยวกับงานส่วนใดที่ต้องการให้ผมช่วยค้นหาเพิ่มเติมไหมครับ"
@@ -118,6 +121,9 @@ export default async function SettingsPage() {
           typeof settingsMap.media_reply_model === "string" && settingsMap.media_reply_model
             ? settingsMap.media_reply_model
             : DEFAULT_SETTINGS.media_reply_model,
+        // Same 1-10 range n8n's Parse System Settings keeps it to.
+        memory_window:
+          Math.min(10, Math.max(1, Math.round(Number(settingsMap.memory_window)) || DEFAULT_SETTINGS.memory_window)),
         system_message:
           typeof settingsMap.system_message === "string" && settingsMap.system_message
             ? settingsMap.system_message
