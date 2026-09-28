@@ -68,6 +68,14 @@ export async function POST(request: NextRequest) {
         throw insertError;
       }
 
+      const { logAdminActivity } = await import("@/lib/admin-audit");
+      await logAdminActivity({
+        action_type: "create_admin",
+        target: email,
+        details: `เพิ่มแอดมินใหม่: ${name}${body.name_th ? ` (${text(body.name_th)})` : ""}`,
+        status: "success",
+      });
+
       return NextResponse.json({ success: true, admin: added });
     }
 
@@ -78,7 +86,7 @@ export async function POST(request: NextRequest) {
       }
       const { data: target } = await db
         .from("admin_users")
-        .select("user_id")
+        .select("user_id, email, name, name_th")
         .eq("id", text(body.admin_id, 64))
         .maybeSingle();
       if (!target) {
@@ -90,6 +98,15 @@ export async function POST(request: NextRequest) {
         app_metadata: isSelf ? { must_change_password: false } : { must_change_password: true },
       });
       if (error) throw error;
+
+      const { logAdminActivity } = await import("@/lib/admin-audit");
+      await logAdminActivity({
+        action_type: "reset_password",
+        target: target.email || target.name_th || target.name || "Admin",
+        details: `รีเซ็ตรหัสผ่านแอดมิน: ${target.email}${isSelf ? " (บัญชีตนเอง)" : ""}`,
+        status: "success",
+      });
+
       return NextResponse.json({ success: true });
     }
 
@@ -98,11 +115,26 @@ export async function POST(request: NextRequest) {
       if (!name) {
         return NextResponse.json({ success: false, error: "กรุณากรอกชื่อ-นามสกุล (อังกฤษ)" }, { status: 400 });
       }
+      const { data: targetAdmin } = await db
+        .from("admin_users")
+        .select("email, name, name_th")
+        .eq("id", text(body.admin_id, 64))
+        .maybeSingle();
+
       const { error } = await db
         .from("admin_users")
         .update({ name, name_th: text(body.name_th) || null })
         .eq("id", text(body.admin_id, 64));
       if (error) throw error;
+
+      const { logAdminActivity } = await import("@/lib/admin-audit");
+      await logAdminActivity({
+        action_type: "update_admin",
+        target: targetAdmin?.email || name,
+        details: `แก้ไขข้อมูลชื่อแอดมิน: ${name}${body.name_th ? ` (${text(body.name_th)})` : ""}`,
+        status: "success",
+      });
+
       return NextResponse.json({ success: true });
     }
 
@@ -113,7 +145,7 @@ export async function POST(request: NextRequest) {
 
       const { data: target } = await db
         .from("admin_users")
-        .select("id, user_id, email")
+        .select("id, user_id, email, name, name_th")
         .eq("id", adminId)
         .maybeSingle();
 
@@ -141,6 +173,17 @@ export async function POST(request: NextRequest) {
       // 2. Sync with system_settings and Supabase Auth
       const { setAdminStatus } = await import("@/lib/admin-manage");
       await setAdminStatus(target.id, target.user_id, newStatus);
+
+      const { logAdminActivity } = await import("@/lib/admin-audit");
+      await logAdminActivity({
+        action_type: "toggle_admin_status",
+        target: target.email,
+        details:
+          newStatus === "suspended"
+            ? `ปิดการใช้งานบัญชีแอดมิน (Suspended): ${target.email} (${target.name_th || target.name || "-"})`
+            : `เปิดใช้งานบัญชีแอดมิน (Active): ${target.email} (${target.name_th || target.name || "-"})`,
+        status: "success",
+      });
 
       return NextResponse.json({ success: true, status: newStatus, is_active: isActiveBool });
     }

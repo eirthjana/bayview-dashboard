@@ -36,7 +36,15 @@ export async function POST(request: NextRequest) {
       password,
       app_metadata: { must_change_password: false },
     });
-    if (error) throw error;
+    const { logAdminActivity } = await import("@/lib/admin-audit");
+    await logAdminActivity({
+      action_type: "change_password",
+      target: "บัญชีของตนเอง",
+      details: "เปลี่ยนรหัสผ่านเริ่มต้นสำเร็จ (First Login Password Change)",
+      status: "success",
+      email: user.email || "-",
+      user_id: user.id,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

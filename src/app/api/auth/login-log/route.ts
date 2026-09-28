@@ -29,6 +29,18 @@ export async function POST(request: NextRequest) {
       notes: notes || (status === "success" ? "เข้าสู่ระบบสำเร็จ" : "เข้าสู่ระบบไม่สำเร็จ"),
     });
 
+    const is2fa = typeof notes === "string" && (notes.includes("2FA") || notes.includes("TOTP"));
+    const { logAdminActivity } = await import("@/lib/admin-audit");
+    await logAdminActivity({
+      action_type: is2fa ? "verify_2fa" : "login",
+      target: is2fa ? "2FA Authenticator" : "ระบบแดชบอร์ด (Dashboard)",
+      details: notes || (status === "success" ? "เข้าสู่ระบบสำเร็จ" : "เข้าสู่ระบบไม่สำเร็จ"),
+      status: status === "failed" ? "failed" : "success",
+      email: email || "-",
+      admin_name: admin_name || null,
+      ip_address: ip,
+    });
+
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error logging auth attempt";

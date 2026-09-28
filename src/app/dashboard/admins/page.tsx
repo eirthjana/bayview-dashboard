@@ -1,13 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { AdminsClient, type AdminRow, type EmployeeOption } from "./admins-client";
-import { getAdminStatusMap, getAdminLoginLogs, type AdminLoginLog } from "@/lib/admin-manage";
+import { getAdminStatusMap } from "@/lib/admin-manage";
+import { getAdminAuditLogs, type AdminAuditLog } from "@/lib/admin-audit";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminsPage() {
   let admins: AdminRow[] = [];
   let employees: EmployeeOption[] = [];
-  let loginLogs: AdminLoginLog[] = [];
+  let activityLogs: AdminAuditLog[] = [];
   let currentUserId: string | null = null;
 
   try {
@@ -28,12 +29,15 @@ export default async function AdminsPage() {
         .select("emp_id, name, name_th, email, status")
         .order("emp_id", { ascending: true }),
       getAdminStatusMap(),
-      getAdminLoginLogs(),
+      getAdminAuditLogs(),
     ]);
 
     const rawAdmins = (adminsResult.data as (Omit<AdminRow, "status">)[]) || [];
     admins = rawAdmins.map((a) => {
-      const isActive = a.is_active !== undefined && a.is_active !== null ? a.is_active : statusMap[a.id] !== "suspended";
+      const isActive =
+        a.is_active !== undefined && a.is_active !== null
+          ? a.is_active
+          : statusMap[a.id] !== "suspended";
       return {
         ...a,
         is_active: isActive,
@@ -41,13 +45,13 @@ export default async function AdminsPage() {
       };
     });
 
-    employees = ((employeesResult.data as (EmployeeOption & { status: string | null })[]) || []).filter(
-      (e) => e.status !== "disabled"
-    );
+    employees = (
+      (employeesResult.data as (EmployeeOption & { status: string | null })[]) || []
+    ).filter((e) => e.status !== "disabled");
 
-    loginLogs = logs;
+    activityLogs = logs;
   } catch (error) {
-    console.error("Failed to load admin accounts and logs:", error);
+    console.error("Failed to load admin accounts and activity logs:", error);
   }
 
   return (
@@ -59,7 +63,7 @@ export default async function AdminsPage() {
             Admin Manage
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">
-            จัดการรายชื่อผู้ดูแลระบบ สิทธิ์การเข้าถึง และตรวจสอบประวัติการเข้าสู่ระบบ (Login Logs)
+            จัดการรายชื่อผู้ดูแลระบบ สิทธิ์การเข้าถึง และตรวจสอบบันทึกกิจกรรมระบบ (Activity Logs)
           </p>
         </div>
         <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#0C645B]/10 dark:bg-[#17A594]/20 text-[#0C645B] dark:text-emerald-400 border border-[#0C645B]/20 dark:border-emerald-500/30 shrink-0 w-fit">
@@ -70,7 +74,7 @@ export default async function AdminsPage() {
       <AdminsClient
         admins={admins}
         employees={employees}
-        loginLogs={loginLogs}
+        activityLogs={activityLogs}
         currentUserId={currentUserId}
       />
     </div>

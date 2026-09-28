@@ -122,12 +122,35 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
     }
   }
 
+  async function logAudit(target: string, details: string) {
+    try {
+      await fetch("/api/audit-logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action_type: "update_settings",
+          target,
+          details,
+          status: "success",
+        }),
+      });
+    } catch {
+      // best-effort
+    }
+  }
+
   async function handleToggleAI(checked: boolean) {
     setAiEnabled(checked);
     const saved = await saveSetting("ai_enabled", checked);
     // the header badge reports this same flag — refresh it now instead of
     // leaving it stale until its next poll
-    if (saved) requestSystemHealthRefresh();
+    if (saved) {
+      requestSystemHealthRefresh();
+      void logAudit(
+        "AI System (เปิด/ปิดระบบ)",
+        `เปลี่ยนสถานะระบบ AI เป็น ${checked ? "ONLINE (เปิดใช้งาน)" : "OFFLINE (ปิดชั่วคราว)"}`
+      );
+    }
   }
 
   // AI Model, System Prompt and System Message are read live by the running n8n
@@ -183,6 +206,10 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
       setSavedRetrievalModel(retrievalModel);
       setEditingModel(false);
       toast.success("บันทึกโมเดล AI สำเร็จ");
+      void logAudit(
+        "AI Models (โมเดล AI)",
+        `โมเดลหลัก: ${selectedModel.replace("models/", "")}, โมเดลค้นหาเอกสาร: ${retrievalModel.replace("models/", "")}`
+      );
     }
   }
 
@@ -212,6 +239,10 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
     if (ok) {
       setSavedPrompt(systemPrompt);
       setEditingPrompt(false);
+      void logAudit(
+        "System Prompt (Prompt ผู้ใช้)",
+        `อัปเดต System Prompt (ความยาว ${systemPrompt.length} ตัวอักษร)`
+      );
     }
   }
 
@@ -241,6 +272,10 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
     if (ok) {
       setSavedSystemMessage(systemMessage);
       setEditingSystemMessage(false);
+      void logAudit(
+        "System Message (กฎพฤติกรรม AI)",
+        `อัปเดต System Message (ความยาว ${systemMessage.length} ตัวอักษร)`
+      );
     }
   }
 

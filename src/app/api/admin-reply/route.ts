@@ -177,6 +177,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const { logAdminActivity } = await import("@/lib/admin-audit");
+    await logAdminActivity({
+      action_type: "admin_reply",
+      target: `LINE User (${lineUserId})`,
+      details: `ตอบกลับคำถาม Not Found "${log.user_message.slice(0, 60)}${log.user_message.length > 60 ? "..." : ""}" ด้วยข้อความ: "${reply.slice(0, 80)}${reply.length > 80 ? "..." : ""}"`,
+      status: "success",
+      email: admin.email,
+      admin_name: adminName,
+      user_id: user.id,
+    });
+
     return NextResponse.json({ success: true, admin_replied_at: repliedAt, admin_replied_by: repliedBy });
   } catch (error) {
     console.error("Admin reply API error:", error);

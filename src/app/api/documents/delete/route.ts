@@ -35,7 +35,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "file_id is required" }, { status: 400 });
     }
 
+    const { data: adminProfile } = await supabase
+      .from("admin_users")
+      .select("email, name, name_th, department")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
     const admin = createAdminClient();
+
+    // Query doc title before deletion for audit logging
+    const { data: docInfo } = await admin
+      .from("documents1")
+      .select("title")
+      .eq("metadata->>file_id", fileId)
+      .limit(1)
+      .maybeSingle();
+
+    const docTitle = docInfo?.title || fileId;
+
     const { error } = await admin.from("documents1").delete().eq("metadata->>file_id", fileId);
     if (error) throw error;
 
@@ -48,6 +65,17 @@ export async function POST(request: NextRequest) {
         .from(SOP_STORAGE_BUCKET)
         .remove(objects.map((o) => `${fileId}/${o.name}`));
     }
+
+    const { logAdminActivity } = await import("@/lib/admin-audit");
+    await logAdminActivity({
+      action_type: "delete_sop",
+      target: docTitle,
+      details: `ลบเอกสาร SOP ออกจากระบบและ Storage (รหัส: ${fileId})`,
+      status: "success",
+      email: adminProfile?.email || user.email,
+      admin_name: adminProfile?.name_th || adminProfile?.name || user.email,
+      user_id: user.id,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

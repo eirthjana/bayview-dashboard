@@ -10,6 +10,8 @@ export interface AdminLoginLog {
   notes?: string | null;
 }
 
+export { logAdminActivity, getAdminAuditLogs, getActionMeta, type AdminAuditLog, type LogAdminActivityParams } from "./admin-audit";
+
 const SETTING_KEY_STATUS_MAP = "admin_status_map";
 
 /**

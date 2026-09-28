@@ -20,10 +20,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Globe,
-  Lock,
   User,
   AlertTriangle,
   Filter,
+  Activity,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,7 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { AdminLoginLog } from "@/lib/admin-manage";
+import { getActionMeta, type AdminAuditLog } from "@/lib/admin-audit-types";
 
 export interface AdminRow {
   id: string;
@@ -138,17 +138,17 @@ function PasswordField({
 export function AdminsClient({
   admins: initialAdmins,
   employees,
-  loginLogs: initialLogs,
+  activityLogs: initialLogs,
   currentUserId,
 }: {
   admins: AdminRow[];
   employees: EmployeeOption[];
-  loginLogs: AdminLoginLog[];
+  activityLogs: AdminAuditLog[];
   currentUserId: string | null;
 }) {
   const [activeTab, setActiveTab] = useState<"admins" | "logs">("admins");
   const [admins, setAdmins] = useState<AdminRow[]>(initialAdmins);
-  const [loginLogs, setLoginLogs] = useState<AdminLoginLog[]>(initialLogs);
+  const [activityLogs, setActivityLogs] = useState<AdminAuditLog[]>(initialLogs);
 
   // Sync state if server component revalidates
   useEffect(() => {
@@ -156,7 +156,7 @@ export function AdminsClient({
   }, [initialAdmins]);
 
   useEffect(() => {
-    setLoginLogs(initialLogs);
+    setActivityLogs(initialLogs);
   }, [initialLogs]);
 
   // Tab 1: Admins Search & Filter
@@ -177,10 +177,13 @@ export function AdminsClient({
   const [confirmToggleAdmin, setConfirmToggleAdmin] = useState<AdminRow | null>(null);
   const [togglingStatus, setTogglingStatus] = useState(false);
 
-  // Tab 2: Logs Filters & Pagination
+  // Tab 2: Activity Logs Filters & Pagination
   const [logsSearch, setLogsSearch] = useState("");
   const [logsStartDate, setLogsStartDate] = useState("");
   const [logsEndDate, setLogsEndDate] = useState("");
+  const [logsCategoryFilter, setLogsCategoryFilter] = useState<
+    "all" | "auth" | "sop" | "settings" | "admin" | "reply"
+  >("all");
   const [logsStatusFilter, setLogsStatusFilter] = useState<"all" | "success" | "failed">("all");
   const [logsPageSize, setLogsPageSize] = useState<number>(25);
   const [logsCurrentPage, setLogsCurrentPage] = useState<number>(1);
@@ -213,17 +216,24 @@ export function AdminsClient({
     );
   }, [admins, adminSearch]);
 
-  // Filtered Logs
+  // Filtered Activity Logs
   const filteredLogs = useMemo(() => {
     const q = logsSearch.trim().toLowerCase();
-    return loginLogs.filter((log) => {
-      // 1. Status Filter
+    return activityLogs.filter((log) => {
+      const meta = getActionMeta(log.action_type);
+
+      // 1. Category Filter
+      if (logsCategoryFilter !== "all" && meta.category !== logsCategoryFilter) {
+        return false;
+      }
+
+      // 2. Status Filter
       if (logsStatusFilter !== "all" && log.status !== logsStatusFilter) {
         return false;
       }
 
-      // 2. Date Range Filter
-      const timeString = log.created_at || (log as unknown as { timestamp?: string }).timestamp || "";
+      // 3. Date Range Filter
+      const timeString = log.created_at || "";
       if (logsStartDate && timeString) {
         const logDateStr = new Date(timeString).toISOString().split("T")[0];
         if (logDateStr < logsStartDate) return false;
@@ -233,26 +243,34 @@ export function AdminsClient({
         if (logDateStr > logsEndDate) return false;
       }
 
-      // 3. Search Filter
+      // 4. Search Filter
       if (!q) return true;
       const cleanEmail = (log.email || "").toLowerCase().trim();
       const name = adminNameMap.get(cleanEmail) || log.admin_name || (cleanEmail ? cleanEmail.split("@")[0] : "");
       const email = log.email || "";
-      const ip = log.ip_address || (log as unknown as { ip?: string }).ip || "";
-      const notes = log.notes || (log as unknown as { reason?: string }).reason || "";
+      const actionLabel = meta.label || "";
+      const actionType = log.action_type || "";
+      const target = log.target || "";
+      const details = log.details || "";
+      const ip = log.ip_address || "";
+
       return (
         email.toLowerCase().includes(q) ||
         name.toLowerCase().includes(q) ||
-        ip.toLowerCase().includes(q) ||
-        notes.toLowerCase().includes(q)
+        actionLabel.toLowerCase().includes(q) ||
+        actionType.toLowerCase().includes(q) ||
+        target.toLowerCase().includes(q) ||
+        details.toLowerCase().includes(q) ||
+        ip.toLowerCase().includes(q)
       );
     });
-  }, [loginLogs, logsSearch, logsStartDate, logsEndDate, logsStatusFilter, adminNameMap]);
+  }, [activityLogs, logsSearch, logsStartDate, logsEndDate, logsCategoryFilter, logsStatusFilter, adminNameMap]);
 
   function handleResetLogsFilters() {
     setLogsSearch("");
     setLogsStartDate("");
     setLogsEndDate("");
+    setLogsCategoryFilter("all");
     setLogsStatusFilter("all");
     setLogsCurrentPage(1);
   }
@@ -261,9 +279,10 @@ export function AdminsClient({
     Boolean(logsSearch) ||
     Boolean(logsStartDate) ||
     Boolean(logsEndDate) ||
+    logsCategoryFilter !== "all" ||
     logsStatusFilter !== "all";
 
-  // Paginated Logs
+  // Paginated Activity Logs
   const totalLogsPages = Math.max(1, Math.ceil(filteredLogs.length / logsPageSize));
   const safeLogsPage = Math.min(Math.max(1, logsCurrentPage), totalLogsPages);
   const paginatedLogs = useMemo(() => {
@@ -404,8 +423,8 @@ export function AdminsClient({
               : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
           }`}
         >
-          <History className="w-4 h-4" />
-          <span>ประวัติการเข้าสู่ระบบ (Login Logs)</span>
+          <Activity className="w-4 h-4" />
+          <span>บันทึกกิจกรรมระบบ (Activity Logs)</span>
           <span
             className={`text-[0.6875rem] px-2 py-0.5 rounded-full font-bold ${
               activeTab === "logs"
@@ -413,7 +432,7 @@ export function AdminsClient({
                 : "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
             }`}
           >
-            {loginLogs.length}
+            {activityLogs.length}
           </span>
         </button>
       </div>
@@ -590,7 +609,7 @@ export function AdminsClient({
         </div>
       )}
 
-      {/* ── TAB 2: LOGIN LOGS ── */}
+      {/* ── TAB 2: ACTIVITY LOGS ── */}
       {activeTab === "logs" && (
         <div className="space-y-4">
           <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl p-4">
@@ -615,13 +634,13 @@ export function AdminsClient({
                 )}
               </div>
 
-              {/* Controls Row: Search, Date Range, Status Filter */}
+              {/* Controls Row: Search, Date Range, Category Filter, Status Filter */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
                 {/* 1. Real-time Search */}
-                <div className="lg:col-span-6 relative">
+                <div className="lg:col-span-4 relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
                   <Input
-                    placeholder="ค้นหาชื่อ, อีเมล, หรือ IP Address..."
+                    placeholder="ค้นหาชื่อ, อีเมล, กิจกรรม, หรือ IP..."
                     value={logsSearch}
                     onChange={(e) => {
                       setLogsSearch(e.target.value);
@@ -652,8 +671,33 @@ export function AdminsClient({
                   />
                 </div>
 
-                {/* 3. Status Filter Dropdown */}
+                {/* 3. Action Category Filter */}
                 <div className="lg:col-span-3">
+                  <Select
+                    value={logsCategoryFilter}
+                    onValueChange={(v) => {
+                      setLogsCategoryFilter(
+                        v as "all" | "auth" | "sop" | "settings" | "admin" | "reply"
+                      );
+                      setLogsCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-full bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800">
+                      <SelectValue placeholder="ประเภทกิจกรรม" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-[#27211C] border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs">
+                      <SelectItem value="all">ทุกประเภทกิจกรรม (All)</SelectItem>
+                      <SelectItem value="auth">🔐 เข้าสู่ระบบ & ยืนยัน 2FA</SelectItem>
+                      <SelectItem value="sop">📄 จัดการเอกสาร SOP</SelectItem>
+                      <SelectItem value="settings">⚙️ ตั้งค่าระบบ AI</SelectItem>
+                      <SelectItem value="admin">👥 จัดการบัญชีแอดมิน</SelectItem>
+                      <SelectItem value="reply">💬 ตอบกลับข้อความผู้ใช้</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 4. Status Filter */}
+                <div className="lg:col-span-2">
                   <Select
                     value={logsStatusFilter}
                     onValueChange={(v) => {
@@ -662,7 +706,7 @@ export function AdminsClient({
                     }}
                   >
                     <SelectTrigger className="w-full bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800">
-                      <SelectValue placeholder="สถานะการล็อกอิน" />
+                      <SelectValue placeholder="สถานะ" />
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-[#27211C] border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs">
                       <SelectItem value="all">ทุกสถานะ (All)</SelectItem>
@@ -675,88 +719,106 @@ export function AdminsClient({
             </div>
           </Card>
 
-          {/* Table */}
+          {/* Activity Logs Table */}
           <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/90 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-400 font-bold">
-                    <th className="px-4 py-3 text-left whitespace-nowrap">วันที่และเวลา</th>
-                    <th className="px-4 py-3 text-left whitespace-nowrap">ชื่อแอดมิน</th>
-                    <th className="px-4 py-3 text-left whitespace-nowrap">อีเมล</th>
-                    <th className="px-4 py-3 text-left whitespace-nowrap">IP Address</th>
-                    <th className="px-4 py-3 text-center whitespace-nowrap">สถานะ</th>
-                    <th className="px-4 py-3 text-left w-full min-w-[200px]">รายละเอียด / หมายเหตุ</th>
+                    <th className="px-4 py-3.5 text-left whitespace-nowrap">วันที่และเวลา</th>
+                    <th className="px-4 py-3.5 text-left whitespace-nowrap">ผู้ดำเนินการ</th>
+                    <th className="px-4 py-3.5 text-left whitespace-nowrap">กิจกรรม</th>
+                    <th className="px-4 py-3.5 text-left w-full min-w-[240px]">เป้าหมาย / รายละเอียด</th>
+                    <th className="px-4 py-3.5 text-left whitespace-nowrap">IP Address</th>
                   </tr>
                 </thead>
 
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 font-medium">
                   {paginatedLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center text-zinc-500 dark:text-zinc-400 py-16">
+                      <td colSpan={5} className="text-center text-zinc-500 dark:text-zinc-400 py-16">
                         <History className="w-8 h-8 mx-auto mb-2 text-zinc-300 dark:text-zinc-600" />
-                        <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">ไม่พบประวัติการเข้าสู่ระบบ</p>
+                        <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                          ไม่พบบันทึกกิจกรรมระบบ
+                        </p>
                       </td>
                     </tr>
                   ) : (
                     paginatedLogs.map((log) => {
-                      const timeString = log.created_at || (log as unknown as { timestamp?: string }).timestamp || "";
-                      const { date, time } = formatThaiDateTime(timeString);
+                      const { date, time } = formatThaiDateTime(log.created_at);
                       const isSuccess = log.status === "success";
                       const cleanEmail = (log.email || "").toLowerCase().trim();
-                      const adminName = adminNameMap.get(cleanEmail) || log.admin_name || (cleanEmail ? cleanEmail.split("@")[0] : "-");
-                      const ipAddr = log.ip_address || (log as unknown as { ip?: string }).ip || "-";
-                      const reasonText = log.notes || (log as unknown as { reason?: string }).reason || "-";
+                      const adminName =
+                        adminNameMap.get(cleanEmail) ||
+                        log.admin_name ||
+                        (cleanEmail ? cleanEmail.split("@")[0] : "-");
+                      const ipAddr = log.ip_address || "-";
+                      const meta = getActionMeta(log.action_type);
 
                       return (
                         <tr key={log.id} className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/50 transition-colors">
                           {/* Date / Time */}
-                          <td className="px-4 py-3 align-middle whitespace-nowrap">
+                          <td className="px-4 py-3.5 align-middle whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-zinc-900 dark:text-zinc-100">{date}</span>
                               <span className="text-[0.625rem] text-zinc-400 dark:text-zinc-500">{time} น.</span>
                             </div>
                           </td>
 
-                          {/* Admin Name */}
-                          <td className="px-4 py-3 align-middle whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              <User className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                              <span className="font-bold text-zinc-900 dark:text-zinc-100">{adminName}</span>
+                          {/* Admin Actor */}
+                          <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200 dark:border-zinc-700 shrink-0">
+                                <User className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-bold text-zinc-900 dark:text-zinc-100 text-xs">
+                                  {adminName}
+                                </span>
+                                <span className="font-mono text-[0.625rem] text-zinc-500 dark:text-zinc-400">
+                                  {log.email}
+                                </span>
+                              </div>
                             </div>
                           </td>
 
-                          {/* Email */}
-                          <td className="px-4 py-3 align-middle font-mono text-zinc-600 dark:text-zinc-300 whitespace-nowrap">
-                            {log.email}
+                          {/* Action Badge & Status */}
+                          <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                            <div className="flex flex-col gap-1 items-start">
+                              <span
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[0.6875rem] font-bold shadow-2xs ${meta.badgeColor}`}
+                              >
+                                {meta.label}
+                              </span>
+                              {!isSuccess && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 text-[0.5625rem] font-bold">
+                                  <XCircle className="w-2.5 h-2.5 text-rose-600 dark:text-rose-400" />
+                                  ทำรายการไม่สำเร็จ
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Target & Details */}
+                          <td className="px-4 py-3.5 align-middle">
+                            <div className="space-y-0.5 max-w-xl">
+                              {log.target && (
+                                <div className="font-bold text-zinc-800 dark:text-zinc-200 text-xs">
+                                  {log.target}
+                                </div>
+                              )}
+                              <div className="text-zinc-600 dark:text-zinc-400 text-xs break-words">
+                                {log.details || "-"}
+                              </div>
+                            </div>
                           </td>
 
                           {/* IP Address */}
-                          <td className="px-4 py-3 align-middle whitespace-nowrap">
+                          <td className="px-4 py-3.5 align-middle whitespace-nowrap">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-100/90 dark:bg-zinc-800/90 border border-zinc-200/80 dark:border-zinc-700/60 font-mono text-[0.6875rem] text-zinc-600 dark:text-zinc-300 shadow-2xs">
                               <Globe className="w-2.5 h-2.5 text-zinc-400 shrink-0" />
                               {ipAddr}
                             </span>
-                          </td>
-
-                          {/* Status */}
-                          <td className="px-4 py-3 align-middle text-center whitespace-nowrap">
-                            {isSuccess ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/50 text-[0.625rem] font-bold shadow-2xs">
-                                <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                สำเร็จ
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/70 dark:border-rose-800/50 text-[0.625rem] font-bold shadow-2xs">
-                                <XCircle className="w-2.5 h-2.5 text-rose-600 dark:text-rose-400 shrink-0" />
-                                ไม่สำเร็จ
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Reason */}
-                          <td className="px-4 py-3 align-middle text-zinc-600 dark:text-zinc-400 break-words">
-                            {reasonText}
                           </td>
                         </tr>
                       );

@@ -44,6 +44,18 @@ export async function loginAction(formData: FormData) {
         : error.message,
     });
 
+    const { logAdminActivity } = await import("@/lib/admin-audit");
+    await logAdminActivity({
+      action_type: "login",
+      target: "ระบบแดชบอร์ด (Dashboard)",
+      details: error.message.toLowerCase().includes("invalid login credentials")
+        ? "เข้าสู่ระบบไม่สำเร็จ (รหัสผ่านไม่ถูกต้อง)"
+        : `เข้าสู่ระบบไม่สำเร็จ: ${error.message}`,
+      status: "failed",
+      email,
+      ip_address: ip,
+    });
+
     if (error.message.toLowerCase().includes("email not confirmed")) {
       return {
         error:
@@ -76,6 +88,16 @@ export async function loginAction(formData: FormData) {
           status: "failed",
           notes: "บัญชีถูกปิดการใช้งาน (Account suspended)",
         });
+        const { logAdminActivity } = await import("@/lib/admin-audit");
+        await logAdminActivity({
+          action_type: "login",
+          target: "ระบบแดชบอร์ด (Dashboard)",
+          details: "เข้าสู่ระบบไม่สำเร็จ (บัญชีถูกปิดการใช้งาน / Suspended)",
+          status: "failed",
+          email,
+          admin_name: adminRecord.name_th || adminRecord.name || email,
+          ip_address: ip,
+        });
         return { error: "บัญชีนี้ถูกปิดการใช้งาน (Suspended) กรุณาติดต่อผู้ดูแลระบบ" };
       }
     }
@@ -98,6 +120,17 @@ export async function loginAction(formData: FormData) {
       ip_address: ip,
       status: "success",
       notes: "เข้าสู่ระบบสำเร็จ",
+    });
+
+    const { logAdminActivity } = await import("@/lib/admin-audit");
+    await logAdminActivity({
+      action_type: "login",
+      target: "ระบบแดชบอร์ด (Dashboard)",
+      details: "เข้าสู่ระบบสำเร็จ",
+      status: "success",
+      email,
+      admin_name: adminRecord?.name_th || adminRecord?.name || email,
+      ip_address: ip,
     });
   }
 

@@ -133,6 +133,18 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
+    const dept = adminUser.department ? ` (แผนก: ${adminUser.department})` : "";
+    const { logAdminActivity } = await import("@/lib/admin-audit");
+    await logAdminActivity({
+      action_type: "upload_sop",
+      target: file.name,
+      details: `อัปโหลดเอกสาร SOP จำนวน ${chunks.length} ส่วน${dept} ขนาด ${(file.size / 1024).toFixed(1)} KB`,
+      status: "success",
+      email: adminUser.email,
+      admin_name: uploadedBy,
+      user_id: user.id,
+    });
+
     return NextResponse.json({
       success: true,
       file_id: fileId,
