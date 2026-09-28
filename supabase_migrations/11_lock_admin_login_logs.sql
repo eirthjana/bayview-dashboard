@@ -1,5 +1,5 @@
 -- Migration: 11_lock_admin_login_logs.sql
--- NOT APPLIED YET — run it once in the Supabase SQL editor.
+-- Applied 2026-09-28 via Supabase MCP (migration "11_lock_admin_login_logs"). Do not re-run.
 --
 -- Live policy on admin_login_logs is ALL for anon + authenticated with
 -- USING (true). The anon key ships in the browser bundle, so anyone could read
