@@ -72,14 +72,6 @@ const MODEL_SETTINGS = [
 ] as const;
 type ModelKey = (typeof MODEL_SETTINGS)[number]["key"];
 
-// Set in n8n, not here: search compares against the vectors stored at upload,
-// so it has to stay the model those were made with.
-const EMBEDDING_MODEL = {
-  title: "ค้นหาเอกสาร SOP",
-  model: "gemini-embedding-001",
-  detail: 'โหนด "Embeddings Google Gemini1" ใน n8n · ต้องเป็นตัวเดียวกับตอนอัปโหลดไฟล์ในหน้า SOP Documents จึงเปลี่ยนไม่ได้',
-};
-
 interface SettingsClientProps {
   initialSettings: {
     ai_enabled: boolean;
@@ -368,7 +360,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
           </div>
         </CardHeader>
         <CardContent>
-          {MODEL_SETTINGS.map((setting) => (
+          {MODEL_SETTINGS.map((setting, index) => (
             <div key={setting.key} className="space-y-3">
               <div className="space-y-3">
                 <div>
@@ -398,19 +390,9 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
                   </SelectContent>
                 </Select>
               </div>
-              <Separator className="bg-zinc-100 dark:bg-zinc-800/50" />
+              {index < MODEL_SETTINGS.length - 1 && <Separator className="bg-zinc-100 dark:bg-zinc-800/50" />}
             </div>
           ))}
-
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <Label className="text-zinc-700 dark:text-zinc-300">{EMBEDDING_MODEL.title}</Label>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{EMBEDDING_MODEL.detail}</p>
-            </div>
-            <span className="shrink-0 rounded-md bg-zinc-100 dark:bg-zinc-800/60 px-2 py-1 font-mono text-xs text-zinc-600 dark:text-zinc-300">
-              {EMBEDDING_MODEL.model}
-            </span>
-          </div>
 
           {editingModel && (
             <div className="flex items-center justify-end gap-2">
