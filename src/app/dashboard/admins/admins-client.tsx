@@ -447,7 +447,7 @@ export function AdminsClient({
                     className="pl-8 h-9 text-xs rounded-xl bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 focus:bg-white dark:focus:bg-zinc-800"
                   />
                 </div>
-                <Button size="sm" onClick={openAdd} className="gap-1.5 bg-[#0C645B] hover:bg-[#0a5750] text-white shrink-0">
+                <Button size="sm" onClick={openAdd} className="gap-1.5 bg-blue-600 hover:bg-blue-500 text-white shrink-0">
                   <UserPlus className="w-4 h-4" />
                   เพิ่มแอดมิน
                 </Button>
