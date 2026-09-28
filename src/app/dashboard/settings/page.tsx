@@ -55,6 +55,11 @@ const DEFAULT_SETTINGS = {
   // "Gemini (Follow-up)" (the closing line) in n8n. Document search no longer
   // uses a chat model, so the old retrieval_model setting is not read.
   selected_model: "models/gemini-3.5-flash",
+  // Drives "Analyze image/audio/video" (reading what the user sent) and
+  // "Google Gemini Chat Model" (AI Agent1-3, the reply after it). These match
+  // the models those nodes used before they were made selectable.
+  media_analysis_model: "models/gemini-2.5-flash",
+  media_reply_model: "models/gemini-3.5-flash-lite",
   // RAG AI Agent's own "System Message" option — standing behavioral rules, separate
   // from system_prompt above
   system_message: `สำหรับคำทักทายทั่วไปหรือคำพูดคุยเล็กน้อยที่ไม่มีคำถามอื่นแนบมาด้วยและไม่ได้อ้างอิงบทสนทนาก่อนหน้าเลย (เช่น พิมพ์มาแค่ "สวัสดี" "หวัดดี" "ขอบคุณ" "สบายดีไหม" เฉยๆ ไม่มีคำถามอื่นปนมา) ให้ตอบกลับอย่างเป็นมิตรโดยไม่ต้องใช้เครื่องมือค้นหาเอกสาร โดยทักทายเอ่ยชื่อผู้ถาม (จากข้อมูลผู้ถามที่ให้มาในข้อความ) และเสนอความช่วยเหลือ เช่น "สวัสดีครับ คุณ [ชื่อผู้ถาม] ยินดีให้บริการครับ มีข้อมูลหรือเอกสารเกี่ยวกับงานส่วนใดที่ต้องการให้ผมช่วยค้นหาเพิ่มเติมไหมครับ"
@@ -105,6 +110,14 @@ export default async function SettingsPage() {
           typeof settingsMap.selected_model === "string" && settingsMap.selected_model
             ? settingsMap.selected_model
             : DEFAULT_SETTINGS.selected_model,
+        media_analysis_model:
+          typeof settingsMap.media_analysis_model === "string" && settingsMap.media_analysis_model
+            ? settingsMap.media_analysis_model
+            : DEFAULT_SETTINGS.media_analysis_model,
+        media_reply_model:
+          typeof settingsMap.media_reply_model === "string" && settingsMap.media_reply_model
+            ? settingsMap.media_reply_model
+            : DEFAULT_SETTINGS.media_reply_model,
         system_message:
           typeof settingsMap.system_message === "string" && settingsMap.system_message
             ? settingsMap.system_message

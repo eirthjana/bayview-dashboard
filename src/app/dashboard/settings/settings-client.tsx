@@ -50,33 +50,43 @@ interface AiModelOption {
   label: string;
 }
 
-// Models the n8n workflow sets on its own nodes (n8n-workflows/Main.liff-menu-12.json).
-// Listed for reference only: they are changed in n8n, not from this page. Update
-// this list when those nodes change.
-const FIXED_MODELS = [
+// The models an admin picks on this page. n8n's "Parse System Settings" reads
+// each key from system_settings on every message and hands it to these nodes.
+const MODEL_SETTINGS = [
   {
-    task: "ค้นหาเอกสาร SOP",
-    model: "gemini-embedding-001",
+    key: "selected_model",
+    title: "โมเดลหลัก (RAG AI Agent)",
     detail:
-      'โหนด "Embeddings Google Gemini1" · ต้องเป็นตัวเดียวกับตอนอัปโหลดไฟล์ในหน้า SOP Documents จึงเปลี่ยนไม่ได้',
+      'ใช้ตอบคำถามผู้ใช้ และเขียนประโยคปิดท้ายชวนคุยต่อ — โหนด "Google Gemini Chat Model3" และ "Gemini (Follow-up)" ใน n8n',
   },
   {
-    task: "วิเคราะห์รูป เสียง และวิดีโอ",
-    model: "gemini-2.5-flash",
-    detail: 'โหนด "Analyze image", "Analyze audio", "Analyze video"',
+    key: "media_analysis_model",
+    title: "โมเดลวิเคราะห์รูป เสียง และวิดีโอ",
+    detail: 'อ่านรูป ถอดเสียง และสรุปวิดีโอที่ผู้ใช้ส่งมา — โหนด "Analyze image", "Analyze audio", "Analyze video" ใน n8n',
   },
   {
-    task: "ตอบหลังวิเคราะห์รูป เสียง และวิดีโอ",
-    model: "gemini-3.5-flash-lite",
-    detail: 'โหนด "Google Gemini Chat Model" (ใช้กับ AI Agent1-3)',
+    key: "media_reply_model",
+    title: "โมเดลตอบหลังวิเคราะห์รูป เสียง และวิดีโอ",
+    detail: 'เรียบเรียงคำตอบจากผลวิเคราะห์ — โหนด "Google Gemini Chat Model" (AI Agent1-3) ใน n8n',
   },
-];
+] as const;
+type ModelKey = (typeof MODEL_SETTINGS)[number]["key"];
+
+// Set in n8n, not here: search compares against the vectors stored at upload,
+// so it has to stay the model those were made with.
+const EMBEDDING_MODEL = {
+  title: "ค้นหาเอกสาร SOP",
+  model: "gemini-embedding-001",
+  detail: 'โหนด "Embeddings Google Gemini1" ใน n8n · ต้องเป็นตัวเดียวกับตอนอัปโหลดไฟล์ในหน้า SOP Documents จึงเปลี่ยนไม่ได้',
+};
 
 interface SettingsClientProps {
   initialSettings: {
     ai_enabled: boolean;
     system_prompt: string;
     selected_model: string;
+    media_analysis_model: string;
+    media_reply_model: string;
     system_message: string;
   };
   /** Live from Google's ListModels — see src/lib/gemini-models.ts */
@@ -89,8 +99,13 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   const [systemPrompt, setSystemPrompt] = useState(initialSettings.system_prompt);
   const [editingPrompt, setEditingPrompt] = useState(false);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
-  const [savedSelectedModel, setSavedSelectedModel] = useState(initialSettings.selected_model);
-  const [selectedModel, setSelectedModel] = useState(initialSettings.selected_model);
+  const initialModels = {
+    selected_model: initialSettings.selected_model,
+    media_analysis_model: initialSettings.media_analysis_model,
+    media_reply_model: initialSettings.media_reply_model,
+  } satisfies Record<ModelKey, string>;
+  const [savedModels, setSavedModels] = useState<Record<ModelKey, string>>(initialModels);
+  const [modelValues, setModelValues] = useState<Record<ModelKey, string>>(initialModels);
   const [editingModel, setEditingModel] = useState(false);
   const [confirmModelSaveOpen, setConfirmModelSaveOpen] = useState(false);
   const [savingModel, setSavingModel] = useState(false);
@@ -107,27 +122,27 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   // dropdown shows what the bot is actually running on instead of a blank box.
   const modelOptions = useMemo(() => {
     const list = [...models];
-    if (savedSelectedModel && !list.some((m) => m.value === savedSelectedModel)) {
-      list.push({
-        value: savedSelectedModel,
-        label: `${savedSelectedModel.replace("models/", "")} (ไม่อยู่ในรายการแล้ว)`,
-      });
+    for (const saved of Object.values(savedModels)) {
+      if (saved && !list.some((m) => m.value === saved)) {
+        list.push({
+          value: saved,
+          label: `${saved.replace("models/", "")} (ไม่อยู่ในรายการแล้ว)`,
+        });
+      }
     }
     return list;
-  }, [models, savedSelectedModel]);
+  }, [models, savedModels]);
 
   async function saveSetting(key: string, value: unknown, silent = false) {
     try {
       const supabase = createClient();
       const { error } = await supabase
         .from("system_settings")
-        // `value` is a jsonb column — pass the raw value directly so it's stored
-        // as its real JSON type (boolean/string), not a JSON-encoded string of itself.
-        .update({
-          value,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("key", key);
+        // Upsert, so a setting added later (the media models) is created on its
+        // first save. `value` is a jsonb column — pass the raw value directly so
+        // it's stored as its real JSON type (boolean/string), not a JSON-encoded
+        // string of itself.
+        .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
 
       if (error) throw error;
       setLastSaved(new Date());
@@ -160,9 +175,9 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
     return true;
   }
 
-  function handleModelChange(model: string | null) {
+  function handleModelChange(key: ModelKey, model: string | null) {
     if (!model) return;
-    setSelectedModel(model);
+    setModelValues((prev) => ({ ...prev, [key]: model }));
   }
 
   function handleStartEditModel() {
@@ -171,7 +186,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   }
 
   function handleCancelEditModel() {
-    setSelectedModel(savedSelectedModel);
+    setModelValues(savedModels);
     setEditingModel(false);
   }
 
@@ -185,11 +200,15 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
       return;
     }
     setSavingModel(true);
-    const ok = await saveSetting("selected_model", selectedModel, true);
+    // Only the ones that changed; each is its own row in system_settings.
+    let ok = true;
+    for (const { key } of MODEL_SETTINGS) {
+      if (modelValues[key] !== savedModels[key]) ok = (await saveSetting(key, modelValues[key], true)) && ok;
+    }
     setSavingModel(false);
     setConfirmModelSaveOpen(false);
     if (ok) {
-      setSavedSelectedModel(selectedModel);
+      setSavedModels(modelValues);
       setEditingModel(false);
       toast.success("บันทึกโมเดล AI สำเร็จ");
     }
@@ -349,56 +368,48 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            <div>
-              <Label className="text-zinc-700 dark:text-zinc-300">โมเดลหลัก (RAG AI Agent)</Label>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                ใช้ตอบคำถามผู้ใช้ และเขียนประโยคปิดท้ายชวนคุยต่อ — โหนด &quot;Google Gemini Chat Model3&quot; และ
-                &quot;Gemini (Follow-up)&quot; ใน n8n
-              </p>
+          {MODEL_SETTINGS.map((setting) => (
+            <div key={setting.key} className="space-y-3">
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-zinc-700 dark:text-zinc-300">{setting.title}</Label>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{setting.detail}</p>
+                </div>
+                <Select
+                  value={modelValues[setting.key]}
+                  onValueChange={(model) => handleModelChange(setting.key, model)}
+                  disabled={!editingModel}
+                >
+                  <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
+                    <SelectValue placeholder="เลือกโมเดล">
+                      {(value: string) => modelOptions.find((m) => m.value === value)?.label || value}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+                    {modelOptions.map((model) => (
+                      <SelectItem
+                        key={model.value}
+                        value={model.value}
+                        className="text-zinc-800 dark:text-zinc-200 focus:bg-zinc-200 dark:focus:bg-zinc-700 focus:text-zinc-900 dark:focus:text-zinc-100"
+                      >
+                        {model.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Separator className="bg-zinc-100 dark:bg-zinc-800/50" />
             </div>
-            <Select value={selectedModel} onValueChange={handleModelChange} disabled={!editingModel}>
-              <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
-                <SelectValue placeholder="เลือกโมเดล">
-                  {(value: string) => modelOptions.find((m) => m.value === value)?.label || value}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-                {modelOptions.map((model) => (
-                  <SelectItem
-                    key={model.value}
-                    value={model.value}
-                    className="text-zinc-800 dark:text-zinc-200 focus:bg-zinc-200 dark:focus:bg-zinc-700 focus:text-zinc-900 dark:focus:text-zinc-100"
-                  >
-                    {model.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          ))}
 
-          <Separator className="bg-zinc-100 dark:bg-zinc-800/50" />
-
-          <div className="space-y-3">
-            <div>
-              <Label className="text-zinc-700 dark:text-zinc-300">ส่วนอื่นที่ใช้ AI</Label>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                ตั้งไว้ในโหนดของ n8n โดยตรง แสดงไว้ให้ดูเท่านั้น เปลี่ยนจากหน้านี้ไม่ได้
-              </p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <Label className="text-zinc-700 dark:text-zinc-300">{EMBEDDING_MODEL.title}</Label>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{EMBEDDING_MODEL.detail}</p>
             </div>
-            <ul className="rounded-lg border border-zinc-200 dark:border-zinc-800/60 divide-y divide-zinc-200 dark:divide-zinc-800/60">
-              {FIXED_MODELS.map((item) => (
-                <li key={item.task} className="flex items-start justify-between gap-3 px-3 py-2.5">
-                  <div className="min-w-0">
-                    <p className="text-sm text-zinc-800 dark:text-zinc-200">{item.task}</p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{item.detail}</p>
-                  </div>
-                  <span className="shrink-0 rounded-md bg-zinc-100 dark:bg-zinc-800/60 px-2 py-1 font-mono text-xs text-zinc-600 dark:text-zinc-300">
-                    {item.model}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <span className="shrink-0 rounded-md bg-zinc-100 dark:bg-zinc-800/60 px-2 py-1 font-mono text-xs text-zinc-600 dark:text-zinc-300">
+              {EMBEDDING_MODEL.model}
+            </span>
           </div>
 
           {editingModel && (
