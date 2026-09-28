@@ -78,6 +78,21 @@ const selectClass =
   "w-full h-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-[#0C645B]";
 const blankForm = (): ProfileForm => ({ email: "", name: "", name_th: "", password: "" });
 
+const CATEGORY_FILTER_LABELS: Record<string, string> = {
+  all: "ทุกประเภทกิจกรรม (All)",
+  auth: "🔐 เข้าสู่ระบบ & ยืนยัน 2FA",
+  sop: "📄 จัดการเอกสาร SOP",
+  settings: "⚙️ ตั้งค่าระบบ AI",
+  admin: "👥 จัดการบัญชีแอดมิน",
+  reply: "💬 ตอบกลับข้อความผู้ใช้",
+};
+
+const STATUS_FILTER_LABELS: Record<string, string> = {
+  all: "ทุกสถานะ (All)",
+  success: "สำเร็จ (Success)",
+  failed: "ไม่สำเร็จ (Failed)",
+};
+
 async function callApi(payload: Record<string, unknown>) {
   const res = await fetch("/api/admin-accounts", {
     method: "POST",
@@ -677,13 +692,15 @@ export function AdminsClient({
                     value={logsCategoryFilter}
                     onValueChange={(v) => {
                       setLogsCategoryFilter(
-                        v as "all" | "auth" | "sop" | "settings" | "admin" | "reply"
+                        (v || "all") as "all" | "auth" | "sop" | "settings" | "admin" | "reply"
                       );
                       setLogsCurrentPage(1);
                     }}
                   >
                     <SelectTrigger className="w-full bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800">
-                      <SelectValue placeholder="ประเภทกิจกรรม" />
+                      <SelectValue placeholder="ประเภทกิจกรรม">
+                        {(value: string) => CATEGORY_FILTER_LABELS[value] || value}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-[#27211C] border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs">
                       <SelectItem value="all">ทุกประเภทกิจกรรม (All)</SelectItem>
@@ -701,12 +718,14 @@ export function AdminsClient({
                   <Select
                     value={logsStatusFilter}
                     onValueChange={(v) => {
-                      setLogsStatusFilter(v as "all" | "success" | "failed");
+                      setLogsStatusFilter((v || "all") as "all" | "success" | "failed");
                       setLogsCurrentPage(1);
                     }}
                   >
                     <SelectTrigger className="w-full bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800">
-                      <SelectValue placeholder="สถานะ" />
+                      <SelectValue placeholder="สถานะ">
+                        {(value: string) => STATUS_FILTER_LABELS[value] || value}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-[#27211C] border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs">
                       <SelectItem value="all">ทุกสถานะ (All)</SelectItem>
