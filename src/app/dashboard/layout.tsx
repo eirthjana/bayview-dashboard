@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SystemStatus } from "@/components/dashboard/system-status";
 import { CurrentAdmin } from "@/components/dashboard/current-admin";
+import { RefreshButton } from "@/components/dashboard/refresh-button";
 import {
   Tooltip,
   TooltipContent,
@@ -62,7 +63,7 @@ const navItems = [
     icon: UploadCloud,
   },
   {
-    label: "Admin Accounts",
+    label: "Admin Manage",
     href: "/dashboard/admins",
     icon: UserCog,
   },
@@ -183,7 +184,7 @@ export default function DashboardLayout({
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Top Header */}
           <header className="h-14 border-b border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/70 dark:bg-zinc-900/30 backdrop-blur-sm flex items-center justify-between px-4 lg:px-6">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {/* Mobile menu */}
               <Sheet>
                 <SheetTrigger
@@ -215,10 +216,13 @@ export default function DashboardLayout({
                   <ChevronLeft className="w-4 h-4" />
                 )}
               </Button>
+
+              {/* Refresh Button */}
+              <RefreshButton />
             </div>
 
             {/* Right side */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <CurrentAdmin />
               <SystemStatus />
               <ThemeToggle />

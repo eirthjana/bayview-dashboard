@@ -1,12 +1,26 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { recordAdminLoginLog, getAdminStatusMap } from "@/lib/admin-manage";
+
+async function getClientIp(): Promise<string> {
+  try {
+    const h = await headers();
+    const forwarded = h.get("x-forwarded-for");
+    if (forwarded) return forwarded.split(",")[0].trim();
+    return h.get("x-real-ip") || "127.0.0.1";
+  } catch {
+    return "127.0.0.1";
+  }
+}
 
 export async function loginAction(formData: FormData) {
   const supabase = await createClient();
+  const ip = await getClientIp();
 
-  const email = (formData.get("email") as string)?.trim();
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
   const password = formData.get("password") as string;
 
   if (!email || !password) {
@@ -19,6 +33,17 @@ export async function loginAction(formData: FormData) {
   });
 
   if (error) {
+    // Record failed login log
+    await recordAdminLoginLog({
+      admin_name: email.split("@")[0],
+      email,
+      ip_address: ip,
+      status: "failed",
+      notes: error.message.toLowerCase().includes("invalid login credentials")
+        ? "รหัสผ่านไม่ถูกต้อง (Invalid credentials)"
+        : error.message,
+    });
+
     if (error.message.toLowerCase().includes("email not confirmed")) {
       return {
         error:
@@ -33,6 +58,28 @@ export async function loginAction(formData: FormData) {
 
   // Check if admin_users is empty - if so, auto-register this first user as admin!
   if (data?.user) {
+    const { data: adminRecord } = await supabase
+      .from("admin_users")
+      .select("id, name, name_th, is_active")
+      .eq("user_id", data.user.id)
+      .maybeSingle();
+
+    // Check suspended status
+    if (adminRecord) {
+      const statusMap = await getAdminStatusMap();
+      if (adminRecord.is_active === false || statusMap[adminRecord.id] === "suspended") {
+        await supabase.auth.signOut();
+        await recordAdminLoginLog({
+          admin_name: adminRecord.name_th || adminRecord.name || email,
+          email,
+          ip_address: ip,
+          status: "failed",
+          notes: "บัญชีถูกปิดการใช้งาน (Account suspended)",
+        });
+        return { error: "บัญชีนี้ถูกปิดการใช้งาน (Suspended) กรุณาติดต่อผู้ดูแลระบบ" };
+      }
+    }
+
     const { count } = await supabase
       .from("admin_users")
       .select("*", { count: "exact", head: true });
@@ -43,6 +90,15 @@ export async function loginAction(formData: FormData) {
         email: data.user.email || email,
       });
     }
+
+    // Record successful login log
+    await recordAdminLoginLog({
+      admin_name: adminRecord?.name_th || adminRecord?.name || email,
+      email,
+      ip_address: ip,
+      status: "success",
+      notes: "เข้าสู่ระบบสำเร็จ",
+    });
   }
 
   redirect("/dashboard");

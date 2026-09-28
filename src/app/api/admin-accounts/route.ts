@@ -84,15 +84,10 @@ export async function POST(request: NextRequest) {
       if (!target) {
         return NextResponse.json({ success: false, error: "ไม่พบแอดมินคนนี้" }, { status: 404 });
       }
-      if (target.user_id === check.user.id) {
-        return NextResponse.json(
-          { success: false, error: "รีเซ็ตรหัสผ่านของตัวเองจากหน้านี้ไม่ได้" },
-          { status: 400 }
-        );
-      }
+      const isSelf = target.user_id === check.user.id;
       const { error } = await db.auth.admin.updateUserById(target.user_id, {
         password,
-        app_metadata: { must_change_password: true },
+        app_metadata: isSelf ? { must_change_password: false } : { must_change_password: true },
       });
       if (error) throw error;
       return NextResponse.json({ success: true });
@@ -109,6 +104,45 @@ export async function POST(request: NextRequest) {
         .eq("id", text(body.admin_id, 64));
       if (error) throw error;
       return NextResponse.json({ success: true });
+    }
+
+    if (body.action === "toggle_status") {
+      const adminId = text(body.admin_id, 64);
+      const newStatus = body.status === "suspended" ? "suspended" : "active";
+      const isActiveBool = newStatus === "active";
+
+      const { data: target } = await db
+        .from("admin_users")
+        .select("id, user_id, email")
+        .eq("id", adminId)
+        .maybeSingle();
+
+      if (!target) {
+        return NextResponse.json({ success: false, error: "ไม่พบแอดมินคนนี้" }, { status: 404 });
+      }
+
+      if (target.user_id === check.user.id && newStatus === "suspended") {
+        return NextResponse.json(
+          { success: false, error: "ไม่สามารถปิดการใช้งานบัญชีของตนเองได้" },
+          { status: 400 }
+        );
+      }
+
+      // 1. Update is_active in admin_users table
+      const { error: updateErr } = await db
+        .from("admin_users")
+        .update({ is_active: isActiveBool })
+        .eq("id", target.id);
+
+      if (updateErr) {
+        console.error("Error updating is_active in admin_users:", updateErr);
+      }
+
+      // 2. Sync with system_settings and Supabase Auth
+      const { setAdminStatus } = await import("@/lib/admin-manage");
+      await setAdminStatus(target.id, target.user_id, newStatus);
+
+      return NextResponse.json({ success: true, status: newStatus, is_active: isActiveBool });
     }
 
     return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 });

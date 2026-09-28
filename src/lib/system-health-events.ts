@@ -8,8 +8,14 @@
  * right after the write lands, so the badge re-checks immediately.
  */
 export const SYSTEM_HEALTH_REFRESH = "bayview:system-health-refresh";
+export const DASHBOARD_DATA_REFRESH = "bayview:dashboard-data-refresh";
 
 export function requestSystemHealthRefresh() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(SYSTEM_HEALTH_REFRESH));
+}
+
+export function requestDashboardDataRefresh() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(DASHBOARD_DATA_REFRESH));
 }

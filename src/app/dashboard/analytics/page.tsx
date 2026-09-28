@@ -36,6 +36,9 @@ interface ChatLogRow {
   user_message: string | null;
   created_at: string;
   line_user_id: string | null;
+  response_time?: number | null;
+  response_time_seconds?: number | null;
+  response_time_ms?: number | null;
 }
 
 interface EmployeeDeptRow {
@@ -48,6 +51,7 @@ interface EmployeeDeptRow {
 export default async function AnalyticsPage() {
   let summary: AnalyticsSummary = {
     totalInquiries: 0,
+    avgResponseTime: "-",
     estimatedTimeSaved: "0 นาที",
     peakTrafficTime: "-",
     mostActiveDept: "-",
@@ -65,7 +69,7 @@ export default async function AnalyticsPage() {
       // traffic the rest of the UI does not show.
       supabase
         .from("chat_logs")
-        .select("user_message, created_at, line_user_id")
+        .select("*")
         .neq("status", "error"),
       supabase
         .from("employee_test")
@@ -160,8 +164,29 @@ export default async function AnalyticsPage() {
         ? `${minutesSaved} นาที`
         : `~${(minutesSaved / 60).toFixed(1)} ชม.`;
 
+    // Calculate real average response time only from rows that actually have a response_time recorded
+    const validResponseTimes: number[] = [];
+    logs.forEach((l) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = l as any;
+      if (typeof raw.response_time_seconds === "number" && raw.response_time_seconds > 0) {
+        validResponseTimes.push(raw.response_time_seconds);
+      } else if (typeof raw.response_time === "number" && raw.response_time > 0) {
+        const s = raw.response_time > 50 ? raw.response_time / 1000 : raw.response_time;
+        validResponseTimes.push(s);
+      } else if (typeof raw.response_time_ms === "number" && raw.response_time_ms > 0) {
+        validResponseTimes.push(raw.response_time_ms / 1000);
+      }
+    });
+
+    const avgResponseTime =
+      validResponseTimes.length > 0
+        ? `${(validResponseTimes.reduce((a, b) => a + b, 0) / validResponseTimes.length).toFixed(1)}s`
+        : "-";
+
     summary = {
       totalInquiries: total,
+      avgResponseTime,
       estimatedTimeSaved,
       peakTrafficTime,
       mostActiveDept,
