@@ -46,6 +46,20 @@ function LoginForm() {
       });
 
       if (authError) {
+        // Record failed login attempt
+        await fetch("/api/auth/login-log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: cleanEmail,
+            admin_name: cleanEmail.split("@")[0],
+            status: "failed",
+            notes: authError.message.toLowerCase().includes("invalid login credentials")
+              ? "รหัสผ่านไม่ถูกต้อง (Invalid credentials)"
+              : authError.message,
+          }),
+        }).catch(() => {});
+
         if (authError.message.toLowerCase().includes("email not confirmed")) {
           setError("Email นี้ยังไม่ได้รับการยืนยัน (ไปที่ Supabase -> Authentication -> Users แล้วกด Confirm Email)");
         } else if (authError.message.toLowerCase().includes("invalid login credentials")) {
@@ -61,7 +75,7 @@ function LoginForm() {
       if (data?.user) {
         const { data: adminUser, error: adminErr } = await supabase
           .from("admin_users")
-          .select("id")
+          .select("id, name, name_th, is_active")
           .eq("user_id", data.user.id)
           .maybeSingle();
 
@@ -73,10 +87,57 @@ function LoginForm() {
         // any other login is refused here rather than bounced by the middleware.
         if (!adminUser) {
           await supabase.auth.signOut();
+          await fetch("/api/auth/login-log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: cleanEmail,
+              admin_name: cleanEmail.split("@")[0],
+              status: "failed",
+              notes: "ไม่มีสิทธิ์เข้าถึง Dashboard (Not an admin)",
+            }),
+          }).catch(() => {});
           setError("คุณไม่มีสิทธิ์เข้าถึง Dashboard");
           setLoading(false);
           return;
         }
+
+        // Check if account is suspended
+        if (
+          adminUser.is_active === false ||
+          data.user.app_metadata?.status === "suspended" ||
+          data.user.app_metadata?.is_active === false
+        ) {
+          await supabase.auth.signOut();
+          await fetch("/api/auth/login-log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: cleanEmail,
+              admin_name: adminUser.name_th || adminUser.name || cleanEmail.split("@")[0],
+              status: "failed",
+              notes: "บัญชีถูกปิดการใช้งาน (Account suspended)",
+            }),
+          }).catch(() => {});
+          setError("บัญชีนี้ถูกปิดการใช้งาน (Suspended) กรุณาติดต่อผู้ดูแลระบบ");
+          setLoading(false);
+          return;
+        }
+
+        // Record successful initial authentication
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const hasVerifiedFactor = (factors?.totp || []).length > 0;
+
+        await fetch("/api/auth/login-log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: cleanEmail,
+            admin_name: adminUser.name_th || adminUser.name || cleanEmail.split("@")[0],
+            status: "success",
+            notes: hasVerifiedFactor ? "เข้าสู่ระบบสำเร็จ (รอรหัส 2FA)" : "เข้าสู่ระบบสำเร็จ (รอตั้งค่า 2FA)",
+          }),
+        }).catch(() => {});
       }
 
       // This tab has now logged in itself; pages behind login check for it.

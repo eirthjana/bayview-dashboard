@@ -21,10 +21,11 @@ export async function requireAdminApi(): Promise<AdminCheck> {
 
   const { data: adminUser } = await supabase
     .from("admin_users")
-    .select("id")
+    .select("id, is_active")
     .eq("user_id", user.id)
     .maybeSingle();
-  if (!adminUser) {
+  // A suspended admin keeps a valid session token for a while; refuse it here.
+  if (!adminUser || adminUser.is_active === false) {
     return { ok: false, response: NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 }) };
   }
 

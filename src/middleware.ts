@@ -72,11 +72,12 @@ export async function middleware(request: NextRequest) {
     // Check if current user is in admin_users table
     const { data: adminUser } = await supabase
       .from("admin_users")
-      .select("id")
+      .select("id, is_active")
       .eq("user_id", user!.id)
       .maybeSingle();
 
-    if (!adminUser) {
+    // Suspended admins (Admin Manage) are signed out even mid-session.
+    if (!adminUser || adminUser.is_active === false) {
       // Not an admin - sign out and redirect
       await supabase.auth.signOut();
       const url = request.nextUrl.clone();

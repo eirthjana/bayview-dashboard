@@ -42,6 +42,9 @@ export interface ChatLog {
   created_at: string;
   display_name?: string | null;
   employee?: Employee | null;
+  response_time?: number | null;
+  response_time_seconds?: number | null;
+  response_time_ms?: number | null;
 }
 
 export interface SystemSetting {
@@ -102,6 +105,7 @@ export interface DeptTokenUsage {
 
 export interface AnalyticsSummary {
   totalInquiries: number;
+  avgResponseTime?: string;
   estimatedTimeSaved: string;
   avgTokensPerQuery?: number;
   peakTrafficTime: string;

@@ -41,7 +41,10 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
+  Timer,
+  Loader2,
 } from "lucide-react";
+import { DASHBOARD_DATA_REFRESH } from "@/lib/system-health-events";
 
 // Real Hotel Departments List
 const DEPARTMENTS = [
@@ -111,6 +114,30 @@ function formatDateTime(dateStr: string) {
   };
 }
 
+function getResponseTime(log: ChatLog): { seconds: number | null; formatted: string } {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawAny = log as any;
+  if (typeof rawAny.response_time_seconds === "number" && rawAny.response_time_seconds > 0) {
+    const s = rawAny.response_time_seconds;
+    return { seconds: s, formatted: `${s.toFixed(1)}s` };
+  }
+  if (typeof rawAny.response_time === "number" && rawAny.response_time > 0) {
+    // n8n writes seconds (e.g. 4.37); only a value this large can be milliseconds.
+    const s = rawAny.response_time > 1000 ? rawAny.response_time / 1000 : rawAny.response_time;
+    return { seconds: s, formatted: `${s.toFixed(1)}s` };
+  }
+  if (typeof rawAny.response_time_ms === "number" && rawAny.response_time_ms > 0) {
+    const s = rawAny.response_time_ms / 1000;
+    return { seconds: s, formatted: `${s.toFixed(1)}s` };
+  }
+
+  // Real data only: if null or missing, do not simulate or mock
+  return {
+    seconds: null,
+    formatted: "-",
+  };
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 // No "error": failed requests are kept in Supabase but filtered out of
@@ -126,6 +153,7 @@ interface EnrichedLog extends ChatLog {
   cleanLineUserId: string;
   cleanMessage: string;
   cleanResponse: string;
+  responseTime: { seconds: number | null; formatted: string };
 }
 
 interface ChatLogsTableProps {
@@ -213,9 +241,53 @@ export function ChatLogsTable({
   const empLineIdMapRef = useRef(new Map<string, Employee>());
 
   // Live logs: seeded from the server-rendered initial fetch, then kept
-  // current via a Supabase Realtime subscription below
+  // current via a Supabase Realtime subscription below and manual refresh
   const [logs, setLogs] = useState<ChatLog[]>(chatLogs);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const knownIds = useRef(new Set(chatLogs.map((l) => l.id)));
+
+  // Sync state if server component revalidates and passes fresh chatLogs
+  const [syncedChatLogs, setSyncedChatLogs] = useState(chatLogs);
+  if (syncedChatLogs !== chatLogs) {
+    setSyncedChatLogs(chatLogs);
+    setLogs(chatLogs);
+  }
+  useEffect(() => {
+    knownIds.current = new Set(chatLogs.map((l) => l.id));
+  }, [chatLogs]);
+
+  // Direct Supabase re-fetch handler when user triggers refresh button
+  const fetchLatestLogs = async () => {
+    setIsRefreshing(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("chat_logs")
+        .select("*")
+        .neq("status", "error")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        const corrected = (data as ChatLog[]).map(correctStatus);
+        setLogs(corrected);
+        knownIds.current = new Set(corrected.map((l) => l.id));
+      }
+    } catch (err) {
+      console.error("Failed to re-fetch chat logs:", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchLatestLogs();
+    };
+    window.addEventListener(DASHBOARD_DATA_REFRESH, handleRefresh);
+    return () => {
+      window.removeEventListener(DASHBOARD_DATA_REFRESH, handleRefresh);
+    };
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -337,6 +409,7 @@ export function ChatLogsTable({
         cleanLineUserId: displayId,
         cleanMessage: cleanText(log.user_message),
         cleanResponse: cleanText(log.ai_response),
+        responseTime: getResponseTime(log),
       };
     });
   }, [logs, empLineIdMap, empLineNameMap]);
@@ -499,6 +572,12 @@ export function ChatLogsTable({
                 <Filter className="w-3.5 h-3.5 text-[#0C645B] dark:text-emerald-400" />
                 <span>ตัวกรองข้อมูลขั้นสูง (Advanced Filters)</span>
               </div>
+              {isRefreshing && (
+                <span className="flex items-center gap-1.5 text-xs text-[#0C645B] dark:text-emerald-400 font-semibold animate-pulse">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  กำลังอัปเดตข้อมูล...
+                </span>
+              )}
             </div>
             {isFiltered && (
               <Button
@@ -594,29 +673,31 @@ export function ChatLogsTable({
         <div className="overflow-x-auto">
           <table className="w-full table-fixed text-xs">
             <colgroup>
-              <col style={{ width: "125px" }} />
-              <col style={{ width: "210px" }} />
-              <col style={{ width: "38%" }} />
+              <col style={{ width: "115px" }} />
+              <col style={{ width: "160px" }} />
+              <col style={{ width: "180px" }} />
               <col />
-              <col style={{ width: "120px" }} />
-              <col style={{ width: "48px" }} />
+              <col style={{ width: "95px" }} />
+              <col style={{ width: "105px" }} />
+              <col style={{ width: "40px" }} />
             </colgroup>
 
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/60 text-zinc-700 dark:text-zinc-300 font-bold">
-                <th className="px-3.5 py-3 text-left whitespace-nowrap">วันที่และเวลา</th>
-                <th className="px-3.5 py-3 text-left whitespace-nowrap">ชื่อผู้ใช้ / แผนก</th>
-                <th className="px-3.5 py-3 text-left">คำถามผู้ใช้</th>
-                <th className="px-3.5 py-3 text-left">คำตอบ AI</th>
-                <th className="px-3.5 py-3 text-center whitespace-nowrap">สถานะ</th>
-                <th className="px-2 py-3 text-center"></th>
+                <th className="px-2.5 py-2.5 text-left whitespace-nowrap">วันที่และเวลา</th>
+                <th className="px-2.5 py-2.5 text-left whitespace-nowrap">ชื่อผู้ใช้ / แผนก</th>
+                <th className="px-2.5 py-2.5 text-left whitespace-nowrap">คำถามผู้ใช้</th>
+                <th className="px-2.5 py-2.5 text-left">คำตอบ AI</th>
+                <th className="px-2 py-2.5 text-center whitespace-nowrap">เวลาตอบกลับ</th>
+                <th className="px-2 py-2.5 text-center whitespace-nowrap">สถานะ</th>
+                <th className="px-1 py-2.5 text-center"></th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800 font-medium">
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center text-zinc-500 dark:text-zinc-400 py-16">
+                  <td colSpan={7} className="text-center text-zinc-500 dark:text-zinc-400 py-16">
                     <MessageSquare className="w-8 h-8 mx-auto mb-2 text-zinc-300 dark:text-zinc-600" />
                     <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</p>
                     <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">ลองปรับตัวกรองค้นหา หรือกด Reset ตัวกรอง</p>
@@ -642,20 +723,20 @@ export function ChatLogsTable({
                       onClick={() => openDetail(log)}
                     >
                       {/* Date / Time */}
-                      <td className="px-3.5 py-3 align-middle">
+                      <td className="px-2.5 py-2.5 align-middle whitespace-nowrap">
                         <div className="flex flex-col gap-0.5">
                           <span className="font-bold text-zinc-900 dark:text-zinc-100 whitespace-nowrap">{date}</span>
-                          <span className="text-[0.625rem] text-zinc-400 dark:text-zinc-500">{time}</span>
+                          <span className="text-[0.625rem] text-zinc-400 dark:text-zinc-500 whitespace-nowrap">{time}</span>
                         </div>
                       </td>
 
                       {/* Sender + Role + Department */}
-                      <td className="px-3.5 py-3 align-middle">
+                      <td className="px-2.5 py-2.5 align-middle">
                         <div className="flex flex-col gap-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <Badge
                               variant="outline"
-                              className={`text-[0.5625rem] px-1.5 py-0 gap-1 w-fit font-bold ${badgeClass}`}
+                              className={`text-[0.5625rem] px-1.5 py-0 gap-1 w-fit font-bold whitespace-nowrap ${badgeClass}`}
                             >
                               {log.roleType === "admin" ? (
                                 <Crown className="w-2.5 h-2.5" />
@@ -678,27 +759,47 @@ export function ChatLogsTable({
                         </div>
                       </td>
 
-                      {/* User message — truncated */}
-                      <td className="px-3.5 py-3 align-middle">
+                      {/* User message — compact & truncated */}
+                      <td className="px-2.5 py-2.5 align-middle max-w-[180px]">
                         <p className="text-zinc-800 dark:text-zinc-200 truncate max-w-full font-normal" title={log.cleanMessage}>
                           {log.cleanMessage || <span className="text-zinc-400 dark:text-zinc-500 italic">— ไม่มีข้อความ —</span>}
                         </p>
                       </td>
 
-                      {/* AI response — truncated */}
-                      <td className="px-3.5 py-3 align-middle">
+                      {/* AI response — expands full remaining width */}
+                      <td className="px-2.5 py-2.5 align-middle">
                         <p className="text-zinc-600 dark:text-zinc-300 truncate max-w-full font-normal" title={log.cleanResponse}>
                           {log.cleanResponse || <span className="text-zinc-400 dark:text-zinc-500 italic">— ไม่มีการตอบ —</span>}
                         </p>
                       </td>
 
+                      {/* Response Time Badge */}
+                      <td className="px-2 py-2.5 align-middle text-center whitespace-nowrap">
+                        {log.responseTime.seconds !== null ? (
+                          <span
+                            className={`inline-flex items-center gap-1 font-mono text-[0.6875rem] font-bold px-2 py-0.5 rounded-md border whitespace-nowrap ${
+                              log.responseTime.seconds < 2.6
+                                ? "bg-[#DEEFEC]/80 text-[#0C645B] border-[#0C645B]/20 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-500/30"
+                                : log.responseTime.seconds <= 3.4
+                                ? "bg-[#EFE8DF]/80 text-[#8B5E3C] border-[#8B5E3C]/20 dark:bg-[#8B5E3C]/20 dark:text-[#D4A373] dark:border-[#8B5E3C]/40"
+                                : "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/40"
+                            }`}
+                          >
+                            <Timer className="w-3 h-3 opacity-70" />
+                            {log.responseTime.formatted}
+                          </span>
+                        ) : (
+                          <span className="text-zinc-400 dark:text-zinc-600 font-mono text-xs">-</span>
+                        )}
+                      </td>
+
                       {/* Status Badge */}
-                      <td className="px-3.5 py-3 align-middle text-center" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-2 py-2.5 align-middle text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <StatusBadge status={log.status} />
                       </td>
 
                       {/* Eye button */}
-                      <td className="px-2 py-3 align-middle text-center" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-1 py-2.5 align-middle text-center" onClick={(e) => e.stopPropagation()}>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -888,6 +989,16 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
               {date} {time}
             </span>
           </div>
+
+          {log.responseTime.seconds !== null && (
+            <>
+              <span className="text-zinc-300 dark:text-zinc-600 hidden sm:inline">|</span>
+              <div className="flex items-center gap-1 font-mono text-[#0C645B] dark:text-emerald-300 font-bold">
+                <Timer className="w-3.5 h-3.5" />
+                <span>{log.responseTime.formatted}</span>
+              </div>
+            </>
+          )}
 
           <span className="text-zinc-300 dark:text-zinc-600 hidden sm:inline">|</span>
           <StatusBadge status={log.status} />

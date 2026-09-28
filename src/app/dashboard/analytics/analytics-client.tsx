@@ -3,7 +3,7 @@
 import { StatCard } from "@/components/dashboard/stat-card";
 import { PeakHoursChart, DeptActivityChart } from "@/components/dashboard/analytics-charts";
 import type { AnalyticsSummary, HourlyUsage, DeptActivity } from "@/lib/types";
-import { MessageSquare, Clock, Building2 } from "lucide-react";
+import { MessageSquare, Clock, Building2, Timer } from "lucide-react";
 
 interface AnalyticsClientProps {
   summary: AnalyticsSummary;
@@ -29,8 +29,8 @@ export function AnalyticsClient({ summary, hourly, deptActivity }: AnalyticsClie
         </span>
       </div>
 
-      {/* 3 Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* 4 Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total AI Inquiries"
           value={summary.totalInquiries}
@@ -38,6 +38,14 @@ export function AnalyticsClient({ summary, hourly, deptActivity }: AnalyticsClie
           href="/dashboard/users"
           icon={<MessageSquare className="w-5 h-5" />}
           color="blue"
+        />
+        <StatCard
+          title="AVG RESPONSE TIME"
+          value={summary.avgResponseTime || "-"}
+          description="เวลาเฉลี่ยที่ใช้ประมวลผลคำตอบ"
+          href="/dashboard/users"
+          icon={<Timer className="w-5 h-5" />}
+          color="amber"
         />
         <StatCard
           title="Peak Traffic Time"

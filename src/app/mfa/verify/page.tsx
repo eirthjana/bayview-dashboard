@@ -76,6 +76,18 @@ export default function MfaVerifyPage() {
       });
 
       if (verifyErr) {
+        const { data: { user } } = await supabase.auth.getUser();
+        await fetch("/api/auth/login-log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: user?.email || "-",
+            admin_name: user?.user_metadata?.name || user?.email?.split("@")[0] || "-",
+            status: "failed",
+            notes: "รหัส 2FA (TOTP) ไม่ถูกต้อง หรือหมดอายุ",
+          }),
+        }).catch(() => {});
+
         setError("รหัสไม่ถูกต้อง หรือหมดอายุ กรุณาลองใหม่");
         setCode("");
         setVerifying(false);
@@ -83,6 +95,18 @@ export default function MfaVerifyPage() {
         void startChallenge();
         return;
       }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      await fetch("/api/auth/login-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user?.email || "-",
+          admin_name: user?.user_metadata?.name || user?.email?.split("@")[0] || "-",
+          status: "success",
+          notes: "ยืนยันรหัส 2FA สำเร็จ (เข้าสู่ Dashboard)",
+        }),
+      }).catch(() => {});
 
       router.push("/dashboard");
       router.refresh();
