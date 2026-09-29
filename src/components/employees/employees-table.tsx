@@ -235,6 +235,10 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       const trimmedPhone = editPhone.trim() || null;
       const nextStatus =
         editing.status === "disabled" ? "disabled" : trimmedLineId ? "linked" : "unlinked";
+      // The stored LINE picture belongs to the old account: drop it when the
+      // LINE ID is removed (ยกเลิกการผูก) or replaced.
+      const lineIdChanged = trimmedLineId !== (editing.line_user_id || null);
+      const pictureUpdate = lineIdChanged ? { line_picture_url: null } : {};
 
       const supabase = createClient();
       const { error } = await supabase
@@ -245,6 +249,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
           access_level: editAccess,
           line_user_id: trimmedLineId,
           line_name: trimmedLineName,
+          ...pictureUpdate,
           email: trimmedEmail,
           phone_number: trimmedPhone,
           status: nextStatus,
@@ -263,6 +268,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
                 access_level: editAccess,
                 line_user_id: trimmedLineId,
                 line_name: trimmedLineName,
+                ...pictureUpdate,
                 email: trimmedEmail,
                 phone_number: trimmedPhone,
                 status: nextStatus,
@@ -537,7 +543,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
                   <TableCell className="px-4 py-4 font-mono text-sm text-zinc-500 dark:text-zinc-400">{emp.emp_id}</TableCell>
                   <TableCell className="px-4 py-4">
                     <div className="flex items-center gap-3">
-                      <LineAvatar url={emp.line_picture_url} name={emp.name} />
+                      <LineAvatar url={emp.line_user_id ? emp.line_picture_url : null} name={emp.name} />
                       <div>
                         <div className="text-[0.9375rem] font-medium text-zinc-800 dark:text-zinc-200">{emp.name}</div>
                         <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
@@ -617,7 +623,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
           {viewing && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <LineAvatar url={viewing.line_picture_url} name={viewing.name} size="lg" />
+                <LineAvatar url={viewing.line_user_id ? viewing.line_picture_url : null} name={viewing.name} size="lg" />
                 <Badge
                   variant="outline"
                   className={ACCESS_BADGE_CLASS[viewing.access_level] || ACCESS_BADGE_CLASS.staff}
