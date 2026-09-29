@@ -96,6 +96,28 @@ export function getActionMeta(actionType: string) {
         badgeColor:
           "bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800/60",
       };
+    case "employee_update":
+    case "update_employee":
+      return {
+        label: "แก้ไขข้อมูลพนักงาน",
+        category: "employee",
+        badgeColor:
+          "bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800/60",
+      };
+    case "toggle_employee_status":
+      return {
+        label: "เปิด/ปิดใช้งานพนักงาน",
+        category: "employee",
+        badgeColor:
+          "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60",
+      };
+    case "create_employee":
+      return {
+        label: "เพิ่มพนักงาน",
+        category: "employee",
+        badgeColor:
+          "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60",
+      };
     case "admin_reply":
       return {
         label: "ตอบกลับข้อความ (Pending Reply)",

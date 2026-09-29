@@ -72,6 +72,28 @@ async function syncRichMenu(lineUserId: string, action: "link" | "unlink", name:
   }
 }
 
+async function logAudit(
+  actionType: string,
+  target: string,
+  details: string,
+  status: "success" | "failed" = "success"
+) {
+  try {
+    await fetch("/api/audit-logs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action_type: actionType,
+        target,
+        details,
+        status,
+      }),
+    });
+  } catch {
+    // best-effort
+  }
+}
+
 function LineAvatar({ url, name, size = "sm" }: { url?: string | null; name: string; size?: "sm" | "lg" }) {
   const box = size === "lg" ? "h-14 w-14 text-lg" : "h-9 w-9 text-sm";
   if (url) {
@@ -203,6 +225,8 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
   async function saveEdit() {
     if (!editing) return;
     setSaving(true);
+    const empDisplay = editing.name_th ? `${editing.name_th} (${editing.name})` : editing.name;
+    const target = `พนักงาน: ${empDisplay} (รหัส: ${editing.emp_id})`;
     try {
       const trimmedLineId = editLineId.trim() || null;
       const trimmedLineName = editLineName.trim() || null;
@@ -247,9 +271,35 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       );
       toast.success(`บันทึกข้อมูลของ ${editing.name} แล้ว`);
 
+      const changes: string[] = [];
+      if (editDept !== (editing.department || "")) {
+        changes.push(`แผนก: ${editDept}`);
+      }
+      if (editPos !== (editing.position || "")) {
+        changes.push(`ตำแหน่ง: ${editPos}`);
+      }
+      if (trimmedEmail !== (editing.email || null)) {
+        changes.push(`อีเมล: ${trimmedEmail || "-"}`);
+      }
+      if (trimmedPhone !== (editing.phone_number || null)) {
+        changes.push(`เบอร์โทร: ${trimmedPhone || "-"}`);
+      }
+      const previousLineId = editing.line_user_id || null;
+      if (previousLineId !== trimmedLineId) {
+        if (!trimmedLineId && previousLineId) {
+          changes.push(`ยกเลิกการผูก LINE ID (${editing.line_name || previousLineId})`);
+        } else if (trimmedLineId && !previousLineId) {
+          changes.push(`ผูก LINE ID (${trimmedLineName || trimmedLineId})`);
+        } else {
+          changes.push(`เปลี่ยน LINE ID เป็น ${trimmedLineId}`);
+        }
+      }
+
+      const details = changes.length > 0 ? `แก้ไขข้อมูลพนักงาน (${changes.join(", ")})` : "แก้ไขข้อมูลพนักงาน (ไม่มีการเปลี่ยนแปลงค่า)";
+      void logAudit("employee_update", target, details, "success");
+
       // A removed or replaced LINE ID goes back to the default menu; a newly
       // entered one on an active employee gets the full menu.
-      const previousLineId = editing.line_user_id;
       if (previousLineId && previousLineId !== trimmedLineId) {
         void syncRichMenu(previousLineId, "unlink", editing.name);
       }
@@ -264,6 +314,12 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       } else {
         toast.error("บันทึกไม่สำเร็จ กรุณาลองใหม่");
       }
+      void logAudit(
+        "employee_update",
+        target,
+        `บันทึกข้อมูลไม่สำเร็จ: ${err instanceof Error ? err.message : "Error"}`,
+        "failed"
+      );
     } finally {
       setSaving(false);
     }
@@ -291,6 +347,8 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       toast.error("กรุณากรอกรหัสพนักงานและชื่อให้ครบ");
       return;
     }
+    const empDisplay = addNameTh.trim() ? `${addNameTh.trim()} (${addName.trim()})` : addName.trim();
+    const target = `พนักงาน: ${empDisplay} (รหัส: ${empId})`;
     setAdding(true);
     try {
       const trimmedEmail = addEmail.trim() || null;
@@ -337,6 +395,12 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       ]);
       toast.success(`เพิ่ม ${addName.trim()} แล้ว`);
       setAddOpen(false);
+      void logAudit(
+        "create_employee",
+        target,
+        `เพิ่มพนักงานใหม่ (แผนก: ${addDept}, ตำแหน่ง: ${addPos}${trimmedEmail ? `, อีเมล: ${trimmedEmail}` : ""}${trimmedPhone ? `, เบอร์โทร: ${trimmedPhone}` : ""})`,
+        "success"
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : "";
       if (message.includes("duplicate") || message.includes("emp_id")) {
@@ -344,6 +408,12 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       } else {
         toast.error("เพิ่มไม่สำเร็จ กรุณาลองใหม่");
       }
+      void logAudit(
+        "create_employee",
+        target,
+        `เพิ่มพนักงานไม่สำเร็จ: ${err instanceof Error ? err.message : "Error"}`,
+        "failed"
+      );
     } finally {
       setAdding(false);
     }
@@ -351,6 +421,8 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
 
   async function handleToggleDisable(emp: EmployeeRegistry) {
     const nextStatus = emp.status === "disabled" ? (emp.line_user_id ? "linked" : "unlinked") : "disabled";
+    const empDisplay = emp.name_th ? `${emp.name_th} (${emp.name})` : emp.name;
+    const target = `พนักงาน: ${empDisplay} (รหัส: ${emp.emp_id})`;
     try {
       const supabase = createClient();
       const { error } = await supabase
@@ -370,8 +442,20 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       if (emp.line_user_id) {
         void syncRichMenu(emp.line_user_id, nextStatus === "disabled" ? "unlink" : "link", emp.name);
       }
-    } catch {
+      void logAudit(
+        "toggle_employee_status",
+        target,
+        nextStatus === "disabled" ? "เปลี่ยนสถานะเป็น: ปิดใช้งาน (disabled)" : "เปลี่ยนสถานะเป็น: เปิดใช้งาน (active)",
+        "success"
+      );
+    } catch (err) {
       toast.error("ทำรายการไม่สำเร็จ");
+      void logAudit(
+        "toggle_employee_status",
+        target,
+        `เปลี่ยนสถานะไม่สำเร็จ: ${err instanceof Error ? err.message : "Error"}`,
+        "failed"
+      );
     }
   }
 

@@ -84,6 +84,7 @@ const CATEGORY_FILTER_LABELS: Record<string, string> = {
   sop: "📄 จัดการเอกสาร SOP",
   settings: "⚙️ ตั้งค่าระบบ AI",
   admin: "👥 จัดการบัญชีแอดมิน",
+  employee: "👔 จัดการข้อมูลพนักงาน",
   reply: "💬 ตอบกลับข้อความผู้ใช้",
 };
 
@@ -138,6 +139,13 @@ function getFailedActionLabel(actionType: string, defaultLabel: string) {
       return "ปรับสถานะแอดมินไม่สำเร็จ";
     case "update_admin":
       return "แก้ไขข้อมูลแอดมินไม่สำเร็จ";
+    case "employee_update":
+    case "update_employee":
+      return "แก้ไขข้อมูลพนักงานไม่สำเร็จ";
+    case "toggle_employee_status":
+      return "ปรับสถานะพนักงานไม่สำเร็จ";
+    case "create_employee":
+      return "เพิ่มพนักงานไม่สำเร็จ";
     case "admin_reply":
       return "ตอบกลับข้อความไม่สำเร็จ";
     default:
@@ -228,7 +236,7 @@ export function AdminsClient({
   const [logsStartDate, setLogsStartDate] = useState("");
   const [logsEndDate, setLogsEndDate] = useState("");
   const [logsCategoryFilter, setLogsCategoryFilter] = useState<
-    "all" | "auth" | "sop" | "settings" | "admin" | "reply"
+    "all" | "auth" | "sop" | "settings" | "admin" | "employee" | "reply"
   >("all");
   const [logsStatusFilter, setLogsStatusFilter] = useState<"all" | "success" | "failed">("all");
   const [logsPageSize, setLogsPageSize] = useState<number>(25);
@@ -719,7 +727,7 @@ export function AdminsClient({
                     value={logsCategoryFilter}
                     onValueChange={(v) => {
                       setLogsCategoryFilter(
-                        (v || "all") as "all" | "auth" | "sop" | "settings" | "admin" | "reply"
+                        (v || "all") as "all" | "auth" | "sop" | "settings" | "admin" | "employee" | "reply"
                       );
                       setLogsCurrentPage(1);
                     }}
@@ -735,6 +743,7 @@ export function AdminsClient({
                       <SelectItem value="sop">📄 จัดการเอกสาร SOP</SelectItem>
                       <SelectItem value="settings">⚙️ ตั้งค่าระบบ AI</SelectItem>
                       <SelectItem value="admin">👥 จัดการบัญชีแอดมิน</SelectItem>
+                      <SelectItem value="employee">👔 จัดการข้อมูลพนักงาน</SelectItem>
                       <SelectItem value="reply">💬 ตอบกลับข้อความผู้ใช้</SelectItem>
                     </SelectContent>
                   </Select>
