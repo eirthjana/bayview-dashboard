@@ -242,8 +242,9 @@ export async function verifyOtpCode(
   return { status: "linked", employee: linked[0] as LinkedEmployee };
 }
 
+// No nicknames: the profile page shows the name only.
 export const PROFILE_COLUMNS =
-  "emp_id, name, name_th, nickname, nickname_th, department, position, phone_number, line_picture_url, access_level";
+  "emp_id, name, name_th, department, position, phone_number, line_picture_url, access_level";
 
 /** Thai phone number as typed, spaces and dashes dropped: 0 followed by 8–9 digits. */
 export function normalizePhone(value: unknown): string | null {

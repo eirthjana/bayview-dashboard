@@ -23,8 +23,6 @@ type Profile = {
   emp_id: number;
   name: string;
   name_th: string | null;
-  nickname: string | null;
-  nickname_th: string | null;
   department: string | null;
   position: string | null;
   phone_number: string | null;
@@ -118,7 +116,6 @@ function ProfileCard({
   // picture is the same LINE profile image.
   const picture = profile.line_picture_url || liff.getDecodedIDToken()?.picture || null;
   const displayName = profile.name_th || profile.name;
-  const nickname = [profile.nickname_th, profile.nickname].filter(Boolean).join(" · ");
 
   async function savePhone() {
     setSaving(true);
@@ -160,11 +157,6 @@ function ProfileCard({
         <div>
           <h2 className="text-xl font-semibold leading-snug">{displayName}</h2>
           {profile.name_th && profile.name && <p className="text-sm text-zinc-500">{profile.name}</p>}
-          {nickname && (
-            <p className="mt-2 inline-block rounded-full bg-[#F4EFE6] px-3 py-0.5 text-sm text-zinc-700">
-              ชื่อเล่น {nickname}
-            </p>
-          )}
         </div>
       </div>
 
