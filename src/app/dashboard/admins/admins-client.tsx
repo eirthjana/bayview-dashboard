@@ -116,6 +116,35 @@ function formatThaiDateTime(dateStr: string) {
   }
 }
 
+function getFailedActionLabel(actionType: string, defaultLabel: string) {
+  switch (actionType) {
+    case "login":
+      return "เข้าสู่ระบบไม่สำเร็จ";
+    case "verify_2fa":
+      return "ยืนยัน 2FA ไม่สำเร็จ";
+    case "change_password":
+      return "เปลี่ยนรหัสผ่านไม่สำเร็จ";
+    case "upload_sop":
+      return "อัปโหลด SOP ไม่สำเร็จ";
+    case "delete_sop":
+      return "ลบ SOP ไม่สำเร็จ";
+    case "update_settings":
+      return "บันทึกการตั้งค่าไม่สำเร็จ";
+    case "create_admin":
+      return "เพิ่มแอดมินไม่สำเร็จ";
+    case "reset_password":
+      return "รีเซ็ตรหัสผ่านไม่สำเร็จ";
+    case "toggle_admin_status":
+      return "ปรับสถานะแอดมินไม่สำเร็จ";
+    case "update_admin":
+      return "แก้ไขข้อมูลแอดมินไม่สำเร็จ";
+    case "admin_reply":
+      return "ตอบกลับข้อความไม่สำเร็จ";
+    default:
+      return `${defaultLabel} (ไม่สำเร็จ)`;
+  }
+}
+
 /** Password input with a show/hide toggle. Visible only while being typed. */
 function PasswordField({
   value,
@@ -803,19 +832,18 @@ export function AdminsClient({
 
                           {/* Action Badge & Status */}
                           <td className="px-4 py-3.5 align-middle whitespace-nowrap">
-                            <div className="flex flex-col gap-1 items-start">
+                            {isSuccess ? (
                               <span
                                 className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[0.6875rem] font-bold shadow-2xs ${meta.badgeColor}`}
                               >
                                 {meta.label}
                               </span>
-                              {!isSuccess && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50 text-[0.5625rem] font-bold">
-                                  <XCircle className="w-2.5 h-2.5 text-rose-600 dark:text-rose-400" />
-                                  ทำรายการไม่สำเร็จ
-                                </span>
-                              )}
-                            </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[0.6875rem] font-bold shadow-2xs bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60">
+                                <XCircle className="w-3 h-3 text-rose-600 dark:text-rose-400 shrink-0" />
+                                {getFailedActionLabel(log.action_type, meta.label)}
+                              </span>
+                            )}
                           </td>
 
                           {/* Target & Details */}
