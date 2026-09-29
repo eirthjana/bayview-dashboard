@@ -202,6 +202,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       (e.department || "").toLowerCase().includes(q) ||
       (e.position || "").toLowerCase().includes(q) ||
       String(e.emp_id).includes(q) ||
+      (e.email || "").toLowerCase().includes(q) ||
       (e.line_user_id || "").toLowerCase().includes(q) ||
       (e.line_name || "").toLowerCase().includes(q);
     const matchDept = deptFilter === "__all__" || e.department === deptFilter;
@@ -464,7 +465,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       {/* Search + Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <Input
-          placeholder="ค้นหาชื่อ / ตำแหน่ง / รหัสพนักงาน / LINE ID..."
+          placeholder="ค้นหาชื่อ / ตำแหน่ง / รหัสพนักงาน / อีเมล..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
@@ -514,7 +515,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">ชื่อ-นามสกุล</TableHead>
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">แผนก / ตำแหน่ง</TableHead>
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">สิทธิ์</TableHead>
-              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">LINE ID</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">อีเมล</TableHead>
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">สถานะ</TableHead>
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400 text-right">จัดการ</TableHead>
             </TableRow>
@@ -557,8 +558,9 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
                       {ACCESS_LEVELS.find((a) => a.value === emp.access_level)?.label || emp.access_level}
                     </Badge>
                   </TableCell>
-                  <TableCell className="px-4 py-4 font-mono text-sm text-zinc-500 dark:text-zinc-400">
-                    {emp.line_user_id || <span className="italic">ยังไม่ผูก</span>}
+                  {/* LINE User ID is still shown (and copyable) in the row detail dialog. */}
+                  <TableCell className="px-4 py-4 font-mono text-sm text-zinc-500 dark:text-zinc-400 max-w-[18rem] truncate" title={emp.email || undefined}>
+                    {emp.email || <span className="italic font-sans">ไม่มีอีเมล</span>}
                   </TableCell>
                   <TableCell className="px-4 py-4">
                     {emp.status === "disabled" ? (
