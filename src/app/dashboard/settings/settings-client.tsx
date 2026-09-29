@@ -50,12 +50,40 @@ interface AiModelOption {
   label: string;
 }
 
+// The models an admin picks on this page. n8n's "Parse System Settings" reads
+// each key from system_settings on every message and hands it to these nodes.
+const MODEL_SETTINGS = [
+  {
+    key: "selected_model",
+    title: "โมเดลหลัก (RAG AI Agent)",
+    detail:
+      'ใช้ตอบคำถามผู้ใช้ และเขียนประโยคปิดท้ายชวนคุยต่อ — โหนด "Google Gemini Chat Model3" และ "Gemini (Follow-up)" ใน n8n',
+  },
+  {
+    key: "media_analysis_model",
+    title: "โมเดลวิเคราะห์รูป เสียง และวิดีโอ",
+    detail: 'อ่านรูป ถอดเสียง และสรุปวิดีโอที่ผู้ใช้ส่งมา — โหนด "Analyze image", "Analyze audio", "Analyze video" ใน n8n',
+  },
+  {
+    key: "media_reply_model",
+    title: "โมเดลตอบหลังวิเคราะห์รูป เสียง และวิดีโอ",
+    detail: 'เรียบเรียงคำตอบจากผลวิเคราะห์ — โหนด "Google Gemini Chat Model" (AI Agent1-3) ใน n8n',
+  },
+] as const;
+type ModelKey = (typeof MODEL_SETTINGS)[number]["key"];
+
+// Context Window Length of "Simple Memory1": how many past question/answer
+// pairs the RAG AI Agent sees. n8n keeps it to the same 1-10.
+const MEMORY_WINDOW_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
+
 interface SettingsClientProps {
   initialSettings: {
     ai_enabled: boolean;
     system_prompt: string;
     selected_model: string;
-    retrieval_model: string;
+    media_analysis_model: string;
+    media_reply_model: string;
+    memory_window: number;
     system_message: string;
   };
   /** Live from Google's ListModels — see src/lib/gemini-models.ts */
@@ -68,10 +96,15 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   const [systemPrompt, setSystemPrompt] = useState(initialSettings.system_prompt);
   const [editingPrompt, setEditingPrompt] = useState(false);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
-  const [savedSelectedModel, setSavedSelectedModel] = useState(initialSettings.selected_model);
-  const [selectedModel, setSelectedModel] = useState(initialSettings.selected_model);
-  const [savedRetrievalModel, setSavedRetrievalModel] = useState(initialSettings.retrieval_model);
-  const [retrievalModel, setRetrievalModel] = useState(initialSettings.retrieval_model);
+  const initialModels = {
+    selected_model: initialSettings.selected_model,
+    media_analysis_model: initialSettings.media_analysis_model,
+    media_reply_model: initialSettings.media_reply_model,
+  } satisfies Record<ModelKey, string>;
+  const [savedModels, setSavedModels] = useState<Record<ModelKey, string>>(initialModels);
+  const [modelValues, setModelValues] = useState<Record<ModelKey, string>>(initialModels);
+  const [savedMemoryWindow, setSavedMemoryWindow] = useState(initialSettings.memory_window);
+  const [memoryWindow, setMemoryWindow] = useState(initialSettings.memory_window);
   const [editingModel, setEditingModel] = useState(false);
   const [confirmModelSaveOpen, setConfirmModelSaveOpen] = useState(false);
   const [savingModel, setSavingModel] = useState(false);
@@ -88,7 +121,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   // dropdown shows what the bot is actually running on instead of a blank box.
   const modelOptions = useMemo(() => {
     const list = [...models];
-    for (const saved of [savedSelectedModel, savedRetrievalModel]) {
+    for (const saved of Object.values(savedModels)) {
       if (saved && !list.some((m) => m.value === saved)) {
         list.push({
           value: saved,
@@ -97,20 +130,18 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
       }
     }
     return list;
-  }, [models, savedSelectedModel, savedRetrievalModel]);
+  }, [models, savedModels]);
 
   async function saveSetting(key: string, value: unknown, silent = false) {
     try {
       const supabase = createClient();
       const { error } = await supabase
         .from("system_settings")
-        // `value` is a jsonb column — pass the raw value directly so it's stored
-        // as its real JSON type (boolean/string), not a JSON-encoded string of itself.
-        .update({
-          value,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("key", key);
+        // Upsert, so a setting added later (the media models) is created on its
+        // first save. `value` is a jsonb column — pass the raw value directly so
+        // it's stored as its real JSON type (boolean/string), not a JSON-encoded
+        // string of itself.
+        .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
 
       if (error) throw error;
       setLastSaved(new Date());
@@ -166,14 +197,9 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
     return true;
   }
 
-  function handleModelChange(model: string | null) {
+  function handleModelChange(key: ModelKey, model: string | null) {
     if (!model) return;
-    setSelectedModel(model);
-  }
-
-  function handleRetrievalModelChange(model: string | null) {
-    if (!model) return;
-    setRetrievalModel(model);
+    setModelValues((prev) => ({ ...prev, [key]: model }));
   }
 
   function handleStartEditModel() {
@@ -182,8 +208,8 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   }
 
   function handleCancelEditModel() {
-    setSelectedModel(savedSelectedModel);
-    setRetrievalModel(savedRetrievalModel);
+    setModelValues(savedModels);
+    setMemoryWindow(savedMemoryWindow);
     setEditingModel(false);
   }
 
@@ -197,18 +223,22 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
       return;
     }
     setSavingModel(true);
-    const okMain = await saveSetting("selected_model", selectedModel, true);
-    const okRetrieval = await saveSetting("retrieval_model", retrievalModel, true);
+    // Only the ones that changed; each is its own row in system_settings.
+    let ok = true;
+    for (const { key } of MODEL_SETTINGS) {
+      if (modelValues[key] !== savedModels[key]) ok = (await saveSetting(key, modelValues[key], true)) && ok;
+    }
+    if (memoryWindow !== savedMemoryWindow) ok = (await saveSetting("memory_window", memoryWindow, true)) && ok;
     setSavingModel(false);
     setConfirmModelSaveOpen(false);
-    if (okMain && okRetrieval) {
-      setSavedSelectedModel(selectedModel);
-      setSavedRetrievalModel(retrievalModel);
-      setEditingModel(false);
-      toast.success("บันทึกโมเดล AI สำเร็จ");
+    if (ok) {
+      setSavedModels(modelValues);
+      setSavedMemoryWindow(memoryWindow);
+      toast.success("บันทึกการตั้งค่า AI สำเร็จ");
+      const modelSummary = MODEL_SETTINGS.map(({ key, label }) => `${label}: ${modelValues[key]?.replace("models/", "") || ""}`).join(", ");
       void logAudit(
-        "AI Models (โมเดล AI)",
-        `โมเดลหลัก: ${selectedModel.replace("models/", "")}, โมเดลค้นหาเอกสาร: ${retrievalModel.replace("models/", "")}`
+        "AI Models & Memory (การตั้งค่า AI)",
+        `${modelSummary}, memory_window: ${memoryWindow}`
       );
     }
   }
@@ -353,7 +383,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
                 AI Model
               </CardTitle>
               <CardDescription className="text-zinc-500 dark:text-zinc-400 mt-1">
-                เลือกโมเดล AI ที่ต้องการใช้งาน
+                เลือกโมเดล AI และจำนวนบทสนทนาที่ AI จำได้
               </CardDescription>
             </div>
             {!editingModel && (
@@ -375,56 +405,66 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
           </div>
         </CardHeader>
         <CardContent>
+          {MODEL_SETTINGS.map((setting) => (
+            <div key={setting.key} className="space-y-3">
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-zinc-700 dark:text-zinc-300">{setting.title}</Label>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{setting.detail}</p>
+                </div>
+                <Select
+                  value={modelValues[setting.key]}
+                  onValueChange={(model) => handleModelChange(setting.key, model)}
+                  disabled={!editingModel}
+                >
+                  <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
+                    <SelectValue placeholder="เลือกโมเดล">
+                      {(value: string) => modelOptions.find((m) => m.value === value)?.label || value}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
+                    {modelOptions.map((model) => (
+                      <SelectItem
+                        key={model.value}
+                        value={model.value}
+                        className="text-zinc-800 dark:text-zinc-200 focus:bg-zinc-200 dark:focus:bg-zinc-700 focus:text-zinc-900 dark:focus:text-zinc-100"
+                      >
+                        {model.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Separator className="bg-zinc-100 dark:bg-zinc-800/50" />
+            </div>
+          ))}
+
           <div className="space-y-3">
             <div>
-              <Label className="text-zinc-700 dark:text-zinc-300">โมเดลหลัก (RAG AI Agent)</Label>
+              <Label className="text-zinc-700 dark:text-zinc-300">ความจำบทสนทนา (Context Window Length)</Label>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                ใช้คิดและตอบคำถามผู้ใช้ — โหนด &quot;Google Gemini Chat Model3&quot; ใน n8n
+                จำนวนคำถาม-คำตอบก่อนหน้าที่ AI เห็นตอนตอบ — โหนด &quot;Simple Memory1&quot; ใน n8n · ยิ่งมาก
+                ยิ่งตอบต่อเนื่องจากที่คุยไว้ได้ดี แต่ตอบช้าลงและอาจหยิบเรื่องเก่ามาปน
               </p>
             </div>
-            <Select value={selectedModel} onValueChange={handleModelChange} disabled={!editingModel}>
+            <Select
+              value={String(memoryWindow)}
+              onValueChange={(value) => value && setMemoryWindow(Number(value))}
+              disabled={!editingModel}
+            >
               <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
-                <SelectValue placeholder="เลือกโมเดล">
-                  {(value: string) => modelOptions.find((m) => m.value === value)?.label || value}
+                <SelectValue placeholder="เลือกจำนวน">
+                  {(value: string) => `${value} รอบสนทนา`}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-                {modelOptions.map((model) => (
+                {MEMORY_WINDOW_OPTIONS.map((n) => (
                   <SelectItem
-                    key={model.value}
-                    value={model.value}
+                    key={n}
+                    value={String(n)}
                     className="text-zinc-800 dark:text-zinc-200 focus:bg-zinc-200 dark:focus:bg-zinc-700 focus:text-zinc-900 dark:focus:text-zinc-100"
                   >
-                    {model.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Separator className="bg-zinc-100 dark:bg-zinc-800/50" />
-
-          <div className="space-y-3">
-            <div>
-              <Label className="text-zinc-700 dark:text-zinc-300">โมเดลค้นหาเอกสาร (Retrieve Documents)</Label>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                ใช้ค้นข้อมูลจากฐานเอกสารก่อนตอบ — โหนด &quot;Google Gemini Chat Model2&quot; ใน n8n
-              </p>
-            </div>
-            <Select value={retrievalModel} onValueChange={handleRetrievalModelChange} disabled={!editingModel}>
-              <SelectTrigger className="bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 h-11">
-                <SelectValue placeholder="เลือกโมเดล">
-                  {(value: string) => modelOptions.find((m) => m.value === value)?.label || value}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-200 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700">
-                {modelOptions.map((model) => (
-                  <SelectItem
-                    key={model.value}
-                    value={model.value}
-                    className="text-zinc-800 dark:text-zinc-200 focus:bg-zinc-200 dark:focus:bg-zinc-700 focus:text-zinc-900 dark:focus:text-zinc-100"
-                  >
-                    {model.label}
+                    {n} รอบสนทนา{n === 1 ? " (ค่าเดิม)" : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -455,7 +495,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
                 ) : (
                   <>
                     <Save className="w-4 h-4" />
-                    บันทึกโมเดล AI
+                    บันทึกการตั้งค่า AI
                   </>
                 )}
               </Button>
@@ -672,9 +712,9 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
       <Dialog open={confirmModelSaveOpen} onOpenChange={(o) => !savingModel && setConfirmModelSaveOpen(o)}>
         <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100">
           <DialogHeader>
-            <DialogTitle>ยืนยันการเปลี่ยนโมเดล AI</DialogTitle>
+            <DialogTitle>ยืนยันการเปลี่ยนการตั้งค่า AI</DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400">
-              แน่ใจนะว่าจะเปลี่ยนโมเดล AI — บอทจะเริ่มใช้โมเดลนี้ทันทีหลังบันทึก
+              แน่ใจนะว่าจะเปลี่ยนโมเดลหรือความจำบทสนทนา — บอทจะเริ่มใช้ค่าใหม่ทันทีหลังบันทึก
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

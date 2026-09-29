@@ -1,4 +1,11 @@
--- Migration: 08_create_admin_login_logs.sql
+-- Migration: 10_create_admin_login_logs.sql (added upstream as 08; renumbered
+-- because 08 is already 08_liff_otp_hardening.sql)
+--
+-- RECORD ONLY: this table was created by hand in the Supabase SQL editor.
+-- The live database does NOT have the two policies below — it has a single
+-- "Allow all actions for authenticated and service roles" policy (ALL, roles
+-- anon + authenticated + service_role, USING true). 11_lock_admin_login_logs.sql
+-- replaces it; the dashboard only reaches this table through the service role.
 -- Create admin_login_logs table for tracking administrator authentication attempts and audit logs
 
 CREATE TABLE IF NOT EXISTS public.admin_login_logs (

@@ -4,8 +4,10 @@
 // alongside documents ingested via the Google Drive flow.
 
 const EMBEDDING_MODEL = "gemini-embedding-001";
-const CHUNK_SIZE = 1000;
-const CHUNK_OVERLAP = 150;
+// 900 / 180 per the RAG brief (26 Sep 2026): smaller pieces with more
+// overlap, so an answer that straddles a cut still lands whole in one chunk.
+const CHUNK_SIZE = 900;
+const CHUNK_OVERLAP = 180;
 
 // Private Storage bucket holding the original uploaded files, so admins can
 // open/preview a SOP doc straight from the browser instead of only having
@@ -114,31 +116,76 @@ export async function extractText(buffer: Buffer, fileType: SupportedFileType): 
   return sanitizeExtractedText(buffer.toString("utf-8"));
 }
 
-/** Simple recursive-ish splitter: pack paragraphs into ~CHUNK_SIZE chunks with overlap. */
-export function chunkText(text: string): string[] {
-  const clean = text.replace(/\r\n/g, "\n").trim();
-  if (!clean) return [];
-
-  const paragraphs = clean.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+/** Pack paragraphs into ~size chunks, carrying `overlap` characters forward. */
+function packParagraphs(text: string, size: number, overlap: number): string[] {
+  const paragraphs = text.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
   const chunks: string[] = [];
   let current = "";
 
   for (const para of paragraphs) {
-    if (current && (current.length + para.length + 2) > CHUNK_SIZE) {
+    if (current && (current.length + para.length + 2) > size) {
       chunks.push(current);
       // carry the tail of the previous chunk forward as overlap context
-      current = current.slice(Math.max(0, current.length - CHUNK_OVERLAP));
+      current = current.slice(Math.max(0, current.length - overlap));
     }
     current = current ? `${current}\n\n${para}` : para;
 
-    // A single paragraph longer than CHUNK_SIZE: hard-split it.
-    while (current.length > CHUNK_SIZE) {
-      chunks.push(current.slice(0, CHUNK_SIZE));
-      current = current.slice(CHUNK_SIZE - CHUNK_OVERLAP);
+    // A single paragraph longer than size: hard-split it.
+    while (current.length > size) {
+      chunks.push(current.slice(0, size));
+      current = current.slice(size - overlap);
     }
   }
   if (current.trim()) chunks.push(current);
 
+  return chunks;
+}
+
+const HEADING = /^(#{1,3})\s+(.+?)\s*#*\s*$/;
+
+/**
+ * Section-aware splitter. A chunk never spans two headings (#, ##, ###), and
+ * every chunk starts with the heading path it belongs to, e.g.
+ * "[หัวข้อ: ส่วนที่ 4 — ... > 4.3 การต่อสาย Console]". Without the label, a
+ * piece that began mid-section gave the bot no way to tell which section its
+ * text or images came from, and it attached figures from the next section.
+ * Files without headings (plain text, most PDFs) fall back to one section.
+ */
+export function chunkText(text: string): string[] {
+  const clean = text.replace(/\r\n/g, "\n").trim();
+  if (!clean) return [];
+
+  const sections: { path: string[]; text: string }[] = [];
+  const stack: string[] = [];
+  let pathNow: string[] = [];
+  let body: string[] = [];
+  const flush = () => {
+    const t = body.join("\n").trim();
+    if (t) sections.push({ path: pathNow, text: t });
+    body = [];
+  };
+
+  for (const line of clean.split("\n")) {
+    const m = line.match(HEADING);
+    if (m) {
+      flush();
+      const level = m[1].length;
+      stack.length = level - 1;
+      stack[level - 1] = m[2].trim();
+      pathNow = stack.filter(Boolean);
+      continue;
+    }
+    body.push(line);
+  }
+  flush();
+
+  const chunks: string[] = [];
+  for (const s of sections) {
+    const label = s.path.length ? `[หัวข้อ: ${s.path.join(" > ")}]\n` : "";
+    for (const piece of packParagraphs(s.text, CHUNK_SIZE - label.length, CHUNK_OVERLAP)) {
+      chunks.push(label + piece);
+    }
+  }
   return chunks;
 }
 

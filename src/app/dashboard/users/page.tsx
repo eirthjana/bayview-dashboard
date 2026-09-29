@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { EMPLOYEE_TABLE } from "@/lib/config";
 import { ChatLogsTable } from "@/components/users/chat-logs-table";
 import type { ChatLog, Employee } from "@/lib/types";
 import { correctStatus } from "@/lib/answer-status";
@@ -61,7 +62,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
       supabase.from("chat_logs").select("line_user_id").neq("status", "error"),
       // Employee list directly from employee_test
       supabase
-        .from("employee_test")
+        .from(EMPLOYEE_TABLE)
         .select("emp_id, name, department, position, line_user_id, access_level, line_name, status"),
     ]);
 

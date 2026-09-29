@@ -12,6 +12,7 @@ import {
   fileIdFromName,
   sopStoragePath,
 } from "@/lib/documents";
+import { parseSopGroup } from "@/lib/sop-groups";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
@@ -48,6 +49,18 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get("file");
+
+    // Every file must say whose it is and who may read it; match_documents
+    // enforces the access when the bot searches.
+    const choice = parseSopGroup({
+      groupType: formData.get("group_type"),
+      group: formData.get("group"),
+      access: formData.get("access"),
+    });
+    if (!choice.ok) {
+      return NextResponse.json({ success: false, error: choice.error }, { status: 400 });
+    }
+    const { groupType, group, access } = choice;
 
     if (!(file instanceof File)) {
       return NextResponse.json({ success: false, error: "ไม่พบไฟล์ที่อัปโหลด" }, { status: 400 });
@@ -119,6 +132,9 @@ export async function POST(request: NextRequest) {
           metadata: { file_id: fileId, title: file.name, chunk_index: i },
           uploaded_by: uploadedBy,
           uploaded_by_user_id: user.id,
+          sop_group: group,
+          sop_group_type: groupType,
+          sop_access: access,
           created_at: now,
           updated_at: now,
         });
@@ -151,6 +167,9 @@ export async function POST(request: NextRequest) {
       title: file.name,
       chunk_count: chunks.length,
       uploaded_by: uploadedBy,
+      sop_group: group,
+      sop_group_type: groupType,
+      sop_access: access,
       view_url: signedUrlData?.signedUrl ?? null,
     });
   } catch (error) {

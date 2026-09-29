@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { EMPLOYEE_TABLE } from "@/lib/config";
 import { EmployeesTable } from "@/components/employees/employees-table";
 import type { EmployeeRegistry } from "@/lib/types";
 
@@ -10,7 +11,7 @@ export default async function EmployeesPage() {
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
-      .from("employee_test")
+      .from(EMPLOYEE_TABLE)
       .select("*")
       .order("emp_id", { ascending: true });
 
@@ -18,7 +19,7 @@ export default async function EmployeesPage() {
       employees = data;
     }
   } catch (error) {
-    console.error("Failed to fetch employee_test from Supabase:", error);
+    console.error(`Failed to fetch ${EMPLOYEE_TABLE} from Supabase:`, error);
     employees = [];
   }
 
@@ -35,7 +36,7 @@ export default async function EmployeesPage() {
         </p>
       </div>
 
-      <EmployeesTable employees={employees} />
+      <EmployeesTable employees={employees} table={EMPLOYEE_TABLE} />
     </div>
   );
 }

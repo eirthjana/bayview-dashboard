@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { EMPLOYEE_TABLE } from "@/lib/config";
 import { AdminsClient, type AdminRow, type EmployeeOption } from "./admins-client";
 import { getAdminStatusMap } from "@/lib/admin-manage";
 import { getAdminAuditLogs, type AdminAuditLog } from "@/lib/admin-audit";
@@ -25,7 +26,7 @@ export default async function AdminsPage() {
         .order("created_at", { ascending: true }),
       // Picker for "เพิ่มแอดมิน": choosing an employee fills in their details.
       supabase
-        .from("employee_test")
+        .from(EMPLOYEE_TABLE)
         .select("emp_id, name, name_th, email, status")
         .order("emp_id", { ascending: true }),
       getAdminStatusMap(),

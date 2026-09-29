@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { EMPLOYEE_TABLE } from "@/lib/config";
 import { AnalyticsClient } from "./analytics-client";
 import type { AnalyticsSummary, HourlyUsage, DeptActivity } from "@/lib/types";
 
@@ -69,10 +70,10 @@ export default async function AnalyticsPage() {
       // traffic the rest of the UI does not show.
       supabase
         .from("chat_logs")
-        .select("*")
+        .select("user_message, created_at, line_user_id, response_time")
         .neq("status", "error"),
       supabase
-        .from("employee_test")
+        .from(EMPLOYEE_TABLE)
         .select("line_user_id, department, name, name_th"),
     ]);
 
@@ -172,7 +173,8 @@ export default async function AnalyticsPage() {
       if (typeof raw.response_time_seconds === "number" && raw.response_time_seconds > 0) {
         validResponseTimes.push(raw.response_time_seconds);
       } else if (typeof raw.response_time === "number" && raw.response_time > 0) {
-        const s = raw.response_time > 50 ? raw.response_time / 1000 : raw.response_time;
+        // n8n writes seconds (e.g. 4.37); only a value this large can be milliseconds.
+        const s = raw.response_time > 1000 ? raw.response_time / 1000 : raw.response_time;
         validResponseTimes.push(s);
       } else if (typeof raw.response_time_ms === "number" && raw.response_time_ms > 0) {
         validResponseTimes.push(raw.response_time_ms / 1000);

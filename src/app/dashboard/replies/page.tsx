@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { EMPLOYEE_TABLE } from "@/lib/config";
 import { correctStatus } from "@/lib/answer-status";
 import type { AdminProfile } from "@/lib/admin-reply";
 import { RepliesClient, type PendingQuestion } from "./replies-client";
@@ -51,7 +52,7 @@ export default async function RepliesPage() {
         )
         .in("status", ["success", "not_found"])
         .order("created_at", { ascending: false }),
-      supabase.from("employee_test").select("line_user_id, name, name_th, department, position"),
+      supabase.from(EMPLOYEE_TABLE).select("line_user_id, name, name_th, department, position"),
       supabase
         .from("admin_users")
         .select("email, emp_id, name, name_th, position, department")

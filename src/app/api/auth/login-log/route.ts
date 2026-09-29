@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { requireAdminApi } from "@/lib/admin-auth";
 import { recordAdminLoginLog, getAdminLoginLogs } from "@/lib/admin-manage";
 
+// Admin login audit log.
+// Reading needs a signed-in admin past 2FA: the log holds admin emails and IPs.
+// Writing is called by the login and 2FA pages, including for failed attempts
+// made before anyone is signed in, so it stays open — but a "success" entry is
+// only ever recorded for the signed-in user's own email, and the admin name is
+// looked up on the server, so nobody can forge a successful login for someone.
+
 export async function GET() {
+  const admin = await requireAdminApi();
+  if (!admin.ok) return admin.response;
+
   try {
     const logs = await getAdminLoginLogs();
     return NextResponse.json({ success: true, logs });
@@ -11,10 +23,31 @@ export async function GET() {
   }
 }
 
+const clip = (value: unknown, max: number) => (typeof value === "string" ? value.trim().slice(0, max) : "");
+
 export async function POST(request: NextRequest) {
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ success: false, error: "Bad request" }, { status: 400 });
+  }
+
   try {
-    const body = await request.json();
-    const { admin_name, email, status, notes } = body;
+    const status = body.status === "success" ? "success" : "failed";
+    let email = clip(body.email, 254).toLowerCase();
+
+    if (status === "success") {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user?.email) {
+        return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      }
+      email = user.email.toLowerCase();
+    }
+    if (!email) {
+      return NextResponse.json({ success: false, error: "Bad request" }, { status: 400 });
+    }
 
     const forwarded = request.headers.get("x-forwarded-for");
     const ip = forwarded
@@ -22,11 +55,11 @@ export async function POST(request: NextRequest) {
       : request.headers.get("x-real-ip") || "127.0.0.1";
 
     await recordAdminLoginLog({
-      admin_name: admin_name || (email ? email.split("@")[0] : "-"),
-      email: email || "-",
+      admin_name: null, // resolved from admin_users by email
+      email,
       ip_address: ip,
-      status: status === "failed" ? "failed" : "success",
-      notes: notes || (status === "success" ? "เข้าสู่ระบบสำเร็จ" : "เข้าสู่ระบบไม่สำเร็จ"),
+      status,
+      notes: clip(body.notes, 200) || (status === "success" ? "เข้าสู่ระบบสำเร็จ" : "เข้าสู่ระบบไม่สำเร็จ"),
     });
 
     const is2fa = typeof notes === "string" && (notes.includes("2FA") || notes.includes("TOTP"));

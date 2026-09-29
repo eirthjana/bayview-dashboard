@@ -10,7 +10,18 @@ import {
   type AdminProfile,
 } from "@/lib/admin-reply";
 
-const N8N_ADMIN_REPLY_URL = process.env.N8N_ADMIN_REPLY_URL || "";
+// Where the n8n "admin-reply" webhook lives. N8N_ADMIN_REPLY_URL wins, except
+// when it points at a host only this machine can reach (host.docker.internal,
+// localhost) while running on Vercel — then, as when it is unset, it is built
+// from N8N_WEBHOOK_URL (the public ngrok address the health check already uses).
+function adminReplyUrl(): string {
+  const explicit = (process.env.N8N_ADMIN_REPLY_URL || "").trim();
+  const localOnly = /\/\/(host\.docker\.internal|localhost|127\.0\.0\.1)([:/]|$)/.test(explicit);
+  if (explicit && !(localOnly && process.env.VERCEL)) return explicit;
+  const base = (process.env.N8N_WEBHOOK_URL || "").trim().replace(/\/+$/, "");
+  return base ? `${base}/admin-reply` : explicit;
+}
+const N8N_ADMIN_REPLY_URL = adminReplyUrl();
 
 // LINE user ids are case-sensitive ("U…"), so unlike the display helpers this
 // only strips the quote/equals junk some rows were stored with.
@@ -61,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     if (!N8N_ADMIN_REPLY_URL) {
       return NextResponse.json(
-        { success: false, error: "ยังไม่ได้ตั้งค่า N8N_ADMIN_REPLY_URL" },
+        { success: false, error: "ยังไม่ได้ตั้งค่า N8N_WEBHOOK_URL หรือ N8N_ADMIN_REPLY_URL" },
         { status: 500 }
       );
     }
@@ -139,7 +150,7 @@ export async function POST(request: NextRequest) {
       if (quoteToken && pushRes.status === 502) pushRes = await push(null);
     } catch {
       return NextResponse.json(
-        { success: false, error: "ติดต่อ n8n ไม่ได้ ตรวจสอบว่า n8n เปิดอยู่และ workflow Admin Reply ถูก Activate แล้ว" },
+        { success: false, error: `ติดต่อ n8n ไม่ได้ (${new URL(N8N_ADMIN_REPLY_URL).host}) ตรวจสอบว่า n8n และ ngrok เปิดอยู่ และ workflow ที่มี Admin Reply ถูก Activate แล้ว` },
         { status: 502 }
       );
     }

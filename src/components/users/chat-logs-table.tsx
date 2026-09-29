@@ -122,7 +122,8 @@ function getResponseTime(log: ChatLog): { seconds: number | null; formatted: str
     return { seconds: s, formatted: `${s.toFixed(1)}s` };
   }
   if (typeof rawAny.response_time === "number" && rawAny.response_time > 0) {
-    const s = rawAny.response_time > 50 ? rawAny.response_time / 1000 : rawAny.response_time;
+    // n8n writes seconds (e.g. 4.37); only a value this large can be milliseconds.
+    const s = rawAny.response_time > 1000 ? rawAny.response_time / 1000 : rawAny.response_time;
     return { seconds: s, formatted: `${s.toFixed(1)}s` };
   }
   if (typeof rawAny.response_time_ms === "number" && rawAny.response_time_ms > 0) {
@@ -246,8 +247,12 @@ export function ChatLogsTable({
   const knownIds = useRef(new Set(chatLogs.map((l) => l.id)));
 
   // Sync state if server component revalidates and passes fresh chatLogs
-  useEffect(() => {
+  const [syncedChatLogs, setSyncedChatLogs] = useState(chatLogs);
+  if (syncedChatLogs !== chatLogs) {
+    setSyncedChatLogs(chatLogs);
     setLogs(chatLogs);
+  }
+  useEffect(() => {
     knownIds.current = new Set(chatLogs.map((l) => l.id));
   }, [chatLogs]);
 

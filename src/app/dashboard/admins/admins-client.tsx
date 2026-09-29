@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import {
   Pencil,
@@ -165,14 +165,16 @@ export function AdminsClient({
   const [admins, setAdmins] = useState<AdminRow[]>(initialAdmins);
   const [activityLogs, setActivityLogs] = useState<AdminAuditLog[]>(initialLogs);
 
-  // Sync state if server component revalidates
-  useEffect(() => {
+  const [syncedAdmins, setSyncedAdmins] = useState(initialAdmins);
+  if (syncedAdmins !== initialAdmins) {
+    setSyncedAdmins(initialAdmins);
     setAdmins(initialAdmins);
-  }, [initialAdmins]);
-
-  useEffect(() => {
+  }
+  const [syncedLogs, setSyncedLogs] = useState(initialLogs);
+  if (syncedLogs !== initialLogs) {
+    setSyncedLogs(initialLogs);
     setActivityLogs(initialLogs);
-  }, [initialLogs]);
+  }
 
   // Tab 1: Admins Search & Filter
   const [adminSearch, setAdminSearch] = useState("");
@@ -406,23 +408,23 @@ export function AdminsClient({
   return (
     <div className="space-y-6">
       {/* ── Tabs Navigation ── */}
-      <div className="flex items-center gap-2 p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-2xl w-fit border border-zinc-200/80 dark:border-zinc-700/80">
+      <div className="flex items-center gap-1 p-1 bg-white dark:bg-zinc-900/50 rounded-xl w-fit border border-zinc-200 dark:border-zinc-800/50">
         <button
           type="button"
           onClick={() => setActiveTab("admins")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
             activeTab === "admins"
-              ? "bg-white dark:bg-[#0C645B] text-[#0C645B] dark:text-white shadow-sm"
-              : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+              ? "bg-blue-500/10 text-blue-400 shadow-sm shadow-blue-500/5"
+              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
           }`}
         >
           <ShieldCheck className="w-4 h-4" />
           <span>รายชื่อแอดมิน (Admin List)</span>
           <span
-            className={`text-[0.6875rem] px-2 py-0.5 rounded-full font-bold ${
+            className={`text-[0.6875rem] px-2 py-0.5 rounded-full font-medium ${
               activeTab === "admins"
-                ? "bg-[#0C645B]/10 dark:bg-emerald-950 text-[#0C645B] dark:text-emerald-300"
-                : "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
+                ? "bg-blue-500/15 text-blue-400"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
             }`}
           >
             {admins.length}
@@ -432,19 +434,19 @@ export function AdminsClient({
         <button
           type="button"
           onClick={() => setActiveTab("logs")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
             activeTab === "logs"
-              ? "bg-white dark:bg-[#0C645B] text-[#0C645B] dark:text-white shadow-sm"
-              : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+              ? "bg-blue-500/10 text-blue-400 shadow-sm shadow-blue-500/5"
+              : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
           }`}
         >
           <Activity className="w-4 h-4" />
           <span>บันทึกกิจกรรมระบบ (Activity Logs)</span>
           <span
-            className={`text-[0.6875rem] px-2 py-0.5 rounded-full font-bold ${
+            className={`text-[0.6875rem] px-2 py-0.5 rounded-full font-medium ${
               activeTab === "logs"
-                ? "bg-[#0C645B]/10 dark:bg-emerald-950 text-[#0C645B] dark:text-emerald-300"
-                : "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
+                ? "bg-blue-500/15 text-blue-400"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
             }`}
           >
             {activityLogs.length}
@@ -474,12 +476,8 @@ export function AdminsClient({
                     className="pl-8 h-9 text-xs rounded-xl bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 focus:bg-white dark:focus:bg-zinc-800"
                   />
                 </div>
-                <Button
-                  size="sm"
-                  onClick={openAdd}
-                  className="gap-1.5 bg-[#0C645B] hover:bg-[#0a5750] text-white rounded-xl text-xs h-9 px-3.5 font-semibold shadow-xs shrink-0"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
+                <Button size="sm" onClick={openAdd} className="gap-1.5 bg-blue-600 hover:bg-blue-500 text-white shrink-0">
+                  <UserPlus className="w-4 h-4" />
                   เพิ่มแอดมิน
                 </Button>
               </div>
@@ -728,9 +726,11 @@ export function AdminsClient({
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-[#27211C] border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs">
-                      <SelectItem value="all">ทุกสถานะ (All)</SelectItem>
-                      <SelectItem value="success">สำเร็จ (Success)</SelectItem>
-                      <SelectItem value="failed">ไม่สำเร็จ (Failed)</SelectItem>
+                      {Object.entries(STATUS_FILTER_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
