@@ -234,8 +234,9 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
     if (ok) {
       setSavedModels(modelValues);
       setSavedMemoryWindow(memoryWindow);
+      setEditingModel(false);
       toast.success("บันทึกการตั้งค่า AI สำเร็จ");
-      const modelSummary = MODEL_SETTINGS.map(({ key, label }) => `${label}: ${modelValues[key]?.replace("models/", "") || ""}`).join(", ");
+      const modelSummary = MODEL_SETTINGS.map(({ key, title }) => `${title}: ${modelValues[key]?.replace("models/", "") || ""}`).join(", ");
       void logAudit(
         "AI Models & Memory (การตั้งค่า AI)",
         `${modelSummary}, memory_window: ${memoryWindow}`

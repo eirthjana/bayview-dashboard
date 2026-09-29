@@ -54,23 +54,26 @@ export async function POST(request: NextRequest) {
       ? forwarded.split(",")[0].trim()
       : request.headers.get("x-real-ip") || "127.0.0.1";
 
+    const notesText = clip(body.notes, 200) || (status === "success" ? "เข้าสู่ระบบสำเร็จ" : "เข้าสู่ระบบไม่สำเร็จ");
+    const adminName = typeof body.admin_name === "string" ? body.admin_name : null;
+
     await recordAdminLoginLog({
       admin_name: null, // resolved from admin_users by email
       email,
       ip_address: ip,
       status,
-      notes: clip(body.notes, 200) || (status === "success" ? "เข้าสู่ระบบสำเร็จ" : "เข้าสู่ระบบไม่สำเร็จ"),
+      notes: notesText,
     });
 
-    const is2fa = typeof notes === "string" && (notes.includes("2FA") || notes.includes("TOTP"));
+    const is2fa = typeof notesText === "string" && (notesText.includes("2FA") || notesText.includes("TOTP"));
     const { logAdminActivity } = await import("@/lib/admin-audit");
     await logAdminActivity({
       action_type: is2fa ? "verify_2fa" : "login",
       target: is2fa ? "2FA Authenticator" : "ระบบแดชบอร์ด (Dashboard)",
-      details: notes || (status === "success" ? "เข้าสู่ระบบสำเร็จ" : "เข้าสู่ระบบไม่สำเร็จ"),
+      details: notesText,
       status: status === "failed" ? "failed" : "success",
       email: email || "-",
-      admin_name: admin_name || null,
+      admin_name: adminName,
       ip_address: ip,
     });
 
