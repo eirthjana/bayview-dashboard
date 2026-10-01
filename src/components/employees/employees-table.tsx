@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +33,8 @@ import type { EmployeeTable } from "@/lib/config";
 import { DEPARTMENTS, ACCESS_LEVELS } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Copy } from "lucide-react";
+import { Copy, RotateCcw } from "lucide-react";
+import { DASHBOARD_DATA_REFRESH, requestDashboardDataRefresh } from "@/lib/system-health-events";
 
 interface EmployeesTableProps {
   employees: EmployeeRegistry[];
@@ -158,6 +159,54 @@ function DetailRow({
 
 export function EmployeesTable({ employees: initial, table }: EmployeesTableProps) {
   const [employees, setEmployees] = useState(initial);
+  const [syncedInitial, setSyncedInitial] = useState(initial);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Sync state if server component revalidates
+  if (syncedInitial !== initial) {
+    setSyncedInitial(initial);
+    setEmployees(initial);
+  }
+
+  const refetchEmployees = useCallback(async (showToast = false) => {
+    setIsRefreshing(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from(table)
+        .select("*")
+        .order("emp_id", { ascending: true });
+
+      if (error) throw error;
+
+      if (data) {
+        setEmployees(data);
+        setSyncedInitial(data);
+        if (showToast) {
+          toast.success("อัปเดตข้อมูลพนักงานล่าสุดเรียบร้อย", {
+            description: `ดึงข้อมูลสำเร็จทั้งหมด ${data.length} รายการ`,
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to refetch employees:", err);
+      if (showToast) {
+        toast.error("รีเฟรชข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [table]);
+
+  useEffect(() => {
+    const handleRefreshEvent = () => {
+      void refetchEmployees(false);
+    };
+    window.addEventListener(DASHBOARD_DATA_REFRESH, handleRefreshEvent);
+    return () => {
+      window.removeEventListener(DASHBOARD_DATA_REFRESH, handleRefreshEvent);
+    };
+  }, [refetchEmployees]);
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState<string>("__all__");
   const [linkFilter, setLinkFilter] = useState<string>("__all__");
@@ -459,9 +508,25 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
     }
   }
 
+  const linkedCount = employees.filter((e) => e.line_user_id).length;
+
   return (
-    <div className="space-y-4">
-      {/* Search + Filters */}
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-1 border-b border-zinc-200/80 dark:border-zinc-800">
+        <div>
+          <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
+            Employees Management
+          </h1>
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">
+            จัดการตำแหน่ง แผนก และสิทธิ์การเข้าถึงของพนักงานที่ผูก LINE ID กับบอท
+            {" · "}
+            <span className="font-bold text-emerald-600 dark:text-emerald-400">{linkedCount}</span> / {employees.length} คนผูก LINE แล้ว
+          </p>
+        </div>
+      </div>
+
+      {/* Search + Filters + Actions */}
       <div className="flex flex-col sm:flex-row gap-3">
         <Input
           placeholder="ค้นหาชื่อ / ตำแหน่ง / รหัสพนักงาน / LINE ID..."
@@ -500,9 +565,24 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
             <SelectItem value="unlinked">ยังไม่ผูก</SelectItem>
           </SelectContent>
         </Select>
-        <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-500 text-white sm:ml-auto">
-          เพิ่มพนักงาน
-        </Button>
+        <div className="flex items-center gap-2 sm:ml-auto">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              requestDashboardDataRefresh();
+              void refetchEmployees(true);
+            }}
+            disabled={isRefreshing}
+            className="h-10 px-3 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-semibold"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 mr-1.5 transition-transform duration-500 ${isRefreshing ? "animate-spin text-emerald-500" : ""}`} />
+            <span>รีเฟรช</span>
+          </Button>
+          <Button onClick={openAdd} className="h-10 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold">
+            เพิ่มพนักงาน
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
