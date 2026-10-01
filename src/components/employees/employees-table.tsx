@@ -33,8 +33,8 @@ import type { EmployeeTable } from "@/lib/config";
 import { DEPARTMENTS, ACCESS_LEVELS } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Copy, RotateCcw } from "lucide-react";
-import { DASHBOARD_DATA_REFRESH, requestDashboardDataRefresh } from "@/lib/system-health-events";
+import { Copy } from "lucide-react";
+import { DASHBOARD_DATA_REFRESH } from "@/lib/system-health-events";
 
 interface EmployeesTableProps {
   employees: EmployeeRegistry[];
@@ -565,24 +565,9 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
             <SelectItem value="unlinked">ยังไม่ผูก</SelectItem>
           </SelectContent>
         </Select>
-        <div className="flex items-center gap-2 sm:ml-auto">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              requestDashboardDataRefresh();
-              void refetchEmployees(true);
-            }}
-            disabled={isRefreshing}
-            className="h-10 px-3 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800/60 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 rounded-xl text-xs font-semibold"
-          >
-            <RotateCcw className={`w-3.5 h-3.5 mr-1.5 transition-transform duration-500 ${isRefreshing ? "animate-spin text-emerald-500" : ""}`} />
-            <span>รีเฟรช</span>
-          </Button>
-          <Button onClick={openAdd} className="h-10 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold">
-            เพิ่มพนักงาน
-          </Button>
-        </div>
+        <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-500 text-white sm:ml-auto">
+          เพิ่มพนักงาน
+        </Button>
       </div>
 
       {/* Table */}
