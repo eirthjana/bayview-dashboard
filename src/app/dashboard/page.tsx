@@ -3,6 +3,7 @@ import { EMPLOYEE_TABLE } from "@/lib/config";
 import { DashboardClient } from "./dashboard-client";
 import { normalizeStatusKey } from "@/components/dashboard/status-badge";
 import type { DailyUsage, ChatLog, DailyMessageUsage, DeptMessageUsage, Employee } from "@/lib/types";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 
 export const dynamic = "force-dynamic";
 
@@ -119,13 +120,15 @@ export default async function DashboardPage() {
       employeeTestResult,
     ] = await Promise.all([
       // Unique users from chat_logs
-      supabase.from("chat_logs").select("line_user_id").neq("status", "error"),
+      fetchAllRows((from, to) =>
+        supabase.from("chat_logs").select("line_user_id").neq("status", "error").order("created_at").order("id")
+          .range(from, to)
+      ),
       // Active today from chat_logs
-      supabase
-        .from("chat_logs")
-        .select("line_user_id")
-        .gte("created_at", today)
-        .neq("status", "error"),
+      fetchAllRows((from, to) =>
+        supabase.from("chat_logs").select("line_user_id").gte("created_at", today).neq("status", "error").order("created_at").order("id")
+          .range(from, to)
+      ),
       // Total messages across all time
       supabase
         .from("chat_logs")
@@ -153,11 +156,10 @@ export default async function DashboardPage() {
         .neq("status", "error")
         .order("created_at", { ascending: false })
         .limit(10),
-      supabase
-        .from("chat_logs")
-        .select("created_at, status, line_user_id, display_name")
-        .neq("status", "error")
-        .order("created_at", { ascending: true }),
+      fetchAllRows((from, to) =>
+        supabase.from("chat_logs").select("created_at, status, line_user_id, display_name").neq("status", "error").order("created_at", { ascending: true }).order("id")
+          .range(from, to)
+      ),
       // Fetch employee list directly from employee_test
       supabase.from(EMPLOYEE_TABLE).select("*"),
     ]);

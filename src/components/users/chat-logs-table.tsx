@@ -45,6 +45,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { DASHBOARD_DATA_REFRESH } from "@/lib/system-health-events";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 
 // Real Hotel Departments List
 const DEPARTMENTS = [
@@ -261,11 +262,15 @@ export function ChatLogsTable({
     setIsRefreshing(true);
     try {
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from("chat_logs")
-        .select("*")
-        .neq("status", "error")
-        .order("created_at", { ascending: false });
+      const { data, error } = await fetchAllRows((from, to) =>
+        supabase
+          .from("chat_logs")
+          .select("*")
+          .neq("status", "error")
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to)
+      );
 
       if (!error && data) {
         const corrected = (data as ChatLog[]).map(correctStatus);

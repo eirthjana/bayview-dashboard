@@ -3,6 +3,7 @@ import { EMPLOYEE_TABLE } from "@/lib/config";
 import { correctStatus } from "@/lib/answer-status";
 import type { AdminProfile } from "@/lib/admin-reply";
 import { RepliesClient, type PendingQuestion } from "./replies-client";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 
 export const dynamic = "force-dynamic";
 
@@ -45,13 +46,17 @@ export default async function RepliesPage() {
       // success rows are fetched too: rows logged by the older workflow were
       // filed as success even when the bot could not answer, and correctStatus
       // re-files them the same way Users & Logs does.
-      supabase
-        .from("chat_logs")
-        .select(
-          "id, line_user_id, display_name, user_message, ai_response, status, created_at, admin_reply, admin_replied_at, admin_replied_by, quote_token"
-        )
-        .in("status", ["success", "not_found"])
-        .order("created_at", { ascending: false }),
+      fetchAllRows((from, to) =>
+        supabase
+          .from("chat_logs")
+          .select(
+            "id, line_user_id, display_name, user_message, ai_response, status, created_at, admin_reply, admin_replied_at, admin_replied_by, quote_token"
+          )
+          .in("status", ["success", "not_found"])
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to)
+      ),
       supabase.from(EMPLOYEE_TABLE).select("line_user_id, name, name_th, department, position"),
       supabase
         .from("admin_users")
