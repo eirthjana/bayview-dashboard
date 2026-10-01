@@ -9,9 +9,27 @@ import { generateOtp, hashOtp, verifyOtp, OTP_MAX_ATTEMPTS, OTP_TTL_MINUTES } fr
 // Every function here takes `sub` from a token already verified with LINE —
 // never a userId sent by the client.
 
-/** The same answer whether or not the employee id exists or can be linked. */
+/** Shown when no code was sent: unknown id, already linked, disabled, no email or over the cap. */
 export const OTP_REQUEST_MESSAGE =
   "ถ้ารหัสพนักงานนี้อยู่ในระบบและยังไม่ได้ผูกบัญชี ระบบได้ส่งรหัส 6 หลักไปที่อีเมลบริษัทของคุณแล้ว หากไม่ได้รับภายใน 5 นาที กรุณาติดต่อแอดมิน";
+
+/** Shown when a code was sent, naming the (masked) address it went to. */
+export function otpSentMessage(email: string): string {
+  return `ส่งรหัส 6 หลักไปที่อีเมล ${maskEmail(email)} แล้ว รหัสใช้ได้ภายใน ${OTP_TTL_MINUTES} นาที หากไม่ได้รับภายใน 5 นาที ให้ดูในโฟลเดอร์ Junk หรือ Spam ถ้ายังไม่พบ กรุณาติดต่อแอดมิน`;
+}
+
+/**
+ * Same format the old chat OTP used: the first two characters of the name,
+ * then ***@domain (e.g. tt***@gmail.com). A name of one or two characters
+ * keeps fewer, so the whole name is never shown.
+ */
+export function maskEmail(email: string): string {
+  const at = email.lastIndexOf("@");
+  if (at <= 0) return "***";
+  const local = email.slice(0, at);
+  const keep = Math.min(2, local.length - 1);
+  return `${local.slice(0, keep)}***${email.slice(at)}`;
+}
 
 const RESEND_SECONDS = 60;
 const HOURLY_LIMIT = 5;
@@ -242,8 +260,9 @@ export async function verifyOtpCode(
   return { status: "linked", employee: linked[0] as LinkedEmployee };
 }
 
+// No nicknames: the profile page shows the name only.
 export const PROFILE_COLUMNS =
-  "emp_id, name, name_th, nickname, nickname_th, department, position, phone_number, line_picture_url, access_level";
+  "emp_id, name, name_th, department, position, phone_number, line_picture_url, access_level";
 
 /** Thai phone number as typed, spaces and dashes dropped: 0 followed by 8–9 digits. */
 export function normalizePhone(value: unknown): string | null {

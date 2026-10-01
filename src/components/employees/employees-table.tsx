@@ -251,6 +251,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       (e.department || "").toLowerCase().includes(q) ||
       (e.position || "").toLowerCase().includes(q) ||
       String(e.emp_id).includes(q) ||
+      (e.email || "").toLowerCase().includes(q) ||
       (e.line_user_id || "").toLowerCase().includes(q) ||
       (e.line_name || "").toLowerCase().includes(q);
     const matchDept = deptFilter === "__all__" || e.department === deptFilter;
@@ -283,6 +284,10 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       const trimmedPhone = editPhone.trim() || null;
       const nextStatus =
         editing.status === "disabled" ? "disabled" : trimmedLineId ? "linked" : "unlinked";
+      // The stored LINE picture belongs to the old account: drop it when the
+      // LINE ID is removed (ยกเลิกการผูก) or replaced.
+      const lineIdChanged = trimmedLineId !== (editing.line_user_id || null);
+      const pictureUpdate = lineIdChanged ? { line_picture_url: null } : {};
 
       const supabase = createClient();
       const { error } = await supabase
@@ -293,6 +298,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
           access_level: editAccess,
           line_user_id: trimmedLineId,
           line_name: trimmedLineName,
+          ...pictureUpdate,
           email: trimmedEmail,
           phone_number: trimmedPhone,
           status: nextStatus,
@@ -311,6 +317,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
                 access_level: editAccess,
                 line_user_id: trimmedLineId,
                 line_name: trimmedLineName,
+                ...pictureUpdate,
                 email: trimmedEmail,
                 phone_number: trimmedPhone,
                 status: nextStatus,
@@ -529,7 +536,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       {/* Search + Filters + Actions */}
       <div className="flex flex-col sm:flex-row gap-3">
         <Input
-          placeholder="ค้นหาชื่อ / ตำแหน่ง / รหัสพนักงาน / LINE ID..."
+          placeholder="ค้นหาชื่อ / ตำแหน่ง / รหัสพนักงาน / อีเมล..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-sm bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
@@ -579,7 +586,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">ชื่อ-นามสกุล</TableHead>
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">แผนก / ตำแหน่ง</TableHead>
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">สิทธิ์</TableHead>
-              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">LINE ID</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">อีเมล</TableHead>
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">สถานะ</TableHead>
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400 text-right">จัดการ</TableHead>
             </TableRow>
@@ -601,7 +608,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
                   <TableCell className="px-4 py-4 font-mono text-sm text-zinc-500 dark:text-zinc-400">{emp.emp_id}</TableCell>
                   <TableCell className="px-4 py-4">
                     <div className="flex items-center gap-3">
-                      <LineAvatar url={emp.line_picture_url} name={emp.name} />
+                      <LineAvatar url={emp.line_user_id ? emp.line_picture_url : null} name={emp.name} />
                       <div>
                         <div className="text-[0.9375rem] font-medium text-zinc-800 dark:text-zinc-200">{emp.name}</div>
                         <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
@@ -622,8 +629,9 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
                       {ACCESS_LEVELS.find((a) => a.value === emp.access_level)?.label || emp.access_level}
                     </Badge>
                   </TableCell>
-                  <TableCell className="px-4 py-4 font-mono text-sm text-zinc-500 dark:text-zinc-400">
-                    {emp.line_user_id || <span className="italic">ยังไม่ผูก</span>}
+                  {/* LINE User ID is still shown (and copyable) in the row detail dialog. */}
+                  <TableCell className="px-4 py-4 font-mono text-sm text-zinc-500 dark:text-zinc-400 max-w-[18rem] truncate" title={emp.email || undefined}>
+                    {emp.email || <span className="italic font-sans">ไม่มีอีเมล</span>}
                   </TableCell>
                   <TableCell className="px-4 py-4">
                     {emp.status === "disabled" ? (
@@ -680,7 +688,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
           {viewing && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <LineAvatar url={viewing.line_picture_url} name={viewing.name} size="lg" />
+                <LineAvatar url={viewing.line_user_id ? viewing.line_picture_url : null} name={viewing.name} size="lg" />
                 <Badge
                   variant="outline"
                   className={ACCESS_BADGE_CLASS[viewing.access_level] || ACCESS_BADGE_CLASS.staff}

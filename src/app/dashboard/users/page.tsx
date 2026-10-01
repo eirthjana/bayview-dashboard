@@ -3,6 +3,7 @@ import { EMPLOYEE_TABLE } from "@/lib/config";
 import { ChatLogsTable } from "@/components/users/chat-logs-table";
 import type { ChatLog, Employee } from "@/lib/types";
 import { correctStatus } from "@/lib/answer-status";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 
 export const dynamic = "force-dynamic";
 
@@ -53,13 +54,15 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
 
     const [logsResult, allIdsResult, employeeTestResult] = await Promise.all([
       // Fetch all chat logs without limit, failed requests excluded
-      supabase
-        .from("chat_logs")
-        .select("*")
-        .neq("status", "error")
-        .order("created_at", { ascending: false }),
+      fetchAllRows((from, to) =>
+        supabase.from("chat_logs").select("*").neq("status", "error").order("created_at", { ascending: false }).order("id", { ascending: false })
+          .range(from, to)
+      ),
       // Ids only, no cap — just enough to state the true totals honestly
-      supabase.from("chat_logs").select("line_user_id").neq("status", "error"),
+      fetchAllRows((from, to) =>
+        supabase.from("chat_logs").select("line_user_id").neq("status", "error").order("created_at").order("id")
+          .range(from, to)
+      ),
       // Employee list directly from employee_test
       supabase
         .from(EMPLOYEE_TABLE)

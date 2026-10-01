@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { EMPLOYEE_TABLE } from "@/lib/config";
 import { AnalyticsClient } from "./analytics-client";
 import type { AnalyticsSummary, HourlyUsage, DeptActivity } from "@/lib/types";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 
 export const dynamic = "force-dynamic";
 
@@ -69,10 +70,10 @@ export default async function AnalyticsPage() {
       // dashboard, so they are excluded here too — otherwise the inquiry
       // count and the per-hour/per-department charts would be inflated by
       // traffic the rest of the UI does not show.
-      supabase
-        .from("chat_logs")
-        .select("user_message, created_at, line_user_id, response_time")
-        .neq("status", "error"),
+      fetchAllRows((from, to) =>
+        supabase.from("chat_logs").select("user_message, created_at, line_user_id, response_time").neq("status", "error").order("created_at").order("id")
+          .range(from, to)
+      ),
       supabase
         .from(EMPLOYEE_TABLE)
         .select("line_user_id, department, name, name_th"),

@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { EMPLOYEE_TABLE } from "@/lib/config";
 import { sendMail } from "@/lib/mailer";
 import { readLiffRequest, serverError } from "@/lib/liff/request";
-import { OTP_REQUEST_MESSAGE, requestOtp } from "@/lib/liff/registration";
+import { OTP_REQUEST_MESSAGE, otpSentMessage, requestOtp } from "@/lib/liff/registration";
 import { otpEmailMessage } from "@/lib/liff/otp-email";
 
 function parseEmpId(value: unknown): number | null {
@@ -14,10 +14,11 @@ function parseEmpId(value: unknown): number | null {
 }
 
 /**
- * Step 1 of LIFF registration: email a one-time code to the employee. Apart
- * from rate limits and "you're already linked" (about the caller's own LINE
- * account), the answer is word-for-word the same whether or not the employee
- * id exists, so the page can't be used to discover valid ids.
+ * Step 1 of LIFF registration: email a one-time code to the employee. When a
+ * code was sent, the answer names the address masked (tt***@domain) so the
+ * employee knows which inbox to check. Every case where nothing was sent
+ * shares one neutral answer. Rate limits (per LINE account and per employee)
+ * keep anyone from walking through employee ids this way.
  */
 export async function POST(request: NextRequest) {
   const auth = await readLiffRequest(request);
@@ -60,7 +61,10 @@ export async function POST(request: NextRequest) {
         }
       });
     }
-    return NextResponse.json({ status: "requested", message: OTP_REQUEST_MESSAGE });
+    return NextResponse.json({
+      status: "requested",
+      message: email ? otpSentMessage(email.to) : OTP_REQUEST_MESSAGE,
+    });
   } catch (error) {
     return serverError("OTP request failed", error);
   }

@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
       : request.headers.get("x-real-ip") || "127.0.0.1";
 
     const notesText = clip(body.notes, 200) || (status === "success" ? "เข้าสู่ระบบสำเร็จ" : "เข้าสู่ระบบไม่สำเร็จ");
-    const adminName = typeof body.admin_name === "string" ? body.admin_name : null;
 
     await recordAdminLoginLog({
       admin_name: null, // resolved from admin_users by email
@@ -73,7 +72,7 @@ export async function POST(request: NextRequest) {
       details: notesText,
       status: status === "failed" ? "failed" : "success",
       email: email || "-",
-      admin_name: adminName,
+      admin_name: null, // resolved from admin_users by email, never taken from the client
       ip_address: ip,
     });
 
