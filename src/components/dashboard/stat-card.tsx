@@ -93,6 +93,7 @@ export function StatCard({
         ${colors.hoverBorder}
         hover:shadow-md dark:hover:shadow-black/40 transition-all duration-300 ease-out
         hover:-translate-y-0.5 rounded-2xl
+        h-full flex flex-col justify-between
       `}
     >
       {/* Top subtle accent highlight on hover */}
@@ -100,8 +101,9 @@ export function StatCard({
         className={`absolute top-0 left-0 right-0 h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${colors.accentLine}`}
       />
 
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
+      <CardContent className="p-5 flex-1 flex flex-col justify-between gap-3">
+        {/* Top: Title, Value, Icon */}
+        <div className="flex items-start justify-between gap-2">
           <div className="space-y-1.5 flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <p className="text-[0.6875rem] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
@@ -118,13 +120,32 @@ export function StatCard({
             <p className={`${valueSizeClass} text-zinc-900 dark:text-zinc-100 tracking-tight tabular-nums leading-snug`}>
               {typeof value === "number" ? value.toLocaleString() : value}
             </p>
+          </div>
 
+          {/* Icon Box */}
+          <div
+            className={`
+              p-3 rounded-xl shrink-0 ml-2
+              ${colors.bg} ${colors.border} border
+              transition-all duration-300
+              group-hover:scale-105
+            `}
+          >
+            <span className={`${colors.iconColor} block`}>{icon}</span>
+          </div>
+        </div>
+
+        {/* Bottom: Description & Trend */}
+        {(description || trend) && (
+          <div className="mt-auto pt-1 flex flex-col justify-end">
             {description && (
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate font-medium">{description}</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium leading-tight break-words">
+                {description}
+              </p>
             )}
 
             {trend && (
-              <div className="flex items-center gap-1.5 pt-0.5">
+              <div className="flex items-center gap-1.5 pt-1">
                 <span
                   className={`text-xs font-semibold flex items-center gap-0.5 ${
                     trend.isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
@@ -141,19 +162,7 @@ export function StatCard({
               </div>
             )}
           </div>
-
-          {/* Icon Box */}
-          <div
-            className={`
-              p-3 rounded-xl shrink-0 ml-3
-              ${colors.bg} ${colors.border} border
-              transition-all duration-300
-              group-hover:scale-105
-            `}
-          >
-            <span className={`${colors.iconColor} block`}>{icon}</span>
-          </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -161,7 +170,10 @@ export function StatCard({
   // A plain <a> wrapper keeps the card markup identical whether or not it links,
   // so the hover lift, accent line and spacing stay exactly the same.
   return href ? (
-    <Link href={href} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F7D72] dark:focus-visible:ring-emerald-500 rounded-2xl">
+    <Link
+      href={href}
+      className="block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F7D72] dark:focus-visible:ring-emerald-500 rounded-2xl"
+    >
       {card}
     </Link>
   ) : (

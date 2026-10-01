@@ -104,7 +104,8 @@ export interface DeptTokenUsage {
 // ==========================================
 
 export interface AnalyticsSummary {
-  totalInquiries: number;
+  totalInquiries?: number;
+  avgInquiriesPerWeek: number | string;
   avgResponseTime?: string;
   estimatedTimeSaved: string;
   avgTokensPerQuery?: number;

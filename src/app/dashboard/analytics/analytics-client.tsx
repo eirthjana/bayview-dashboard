@@ -30,11 +30,11 @@ export function AnalyticsClient({ summary, hourly, deptActivity }: AnalyticsClie
       </div>
 
       {/* 4 Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
         <StatCard
-          title="Total AI Inquiries"
-          value={summary.totalInquiries}
-          description="คำถามทั้งหมดที่ระบบประมวลผล"
+          title="AVG INQUIRIES / WEEK"
+          value={summary.avgInquiriesPerWeek}
+          description="คำถามเฉลี่ยต่อสัปดาห์"
           href="/dashboard/users"
           icon={<MessageSquare className="w-5 h-5" />}
           color="blue"

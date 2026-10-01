@@ -39,7 +39,7 @@ export function DashboardClient({ data }: DashboardClientProps) {
       </div>
 
       {/* 5 Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-stretch">
         <StatCard
           title="Total Users"
           value={data.stats.totalUsers}

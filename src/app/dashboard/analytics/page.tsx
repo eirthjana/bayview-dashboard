@@ -52,6 +52,7 @@ interface EmployeeDeptRow {
 export default async function AnalyticsPage() {
   let summary: AnalyticsSummary = {
     totalInquiries: 0,
+    avgInquiriesPerWeek: 0,
     avgResponseTime: "-",
     estimatedTimeSaved: "0 นาที",
     peakTrafficTime: "-",
@@ -93,6 +94,25 @@ export default async function AnalyticsPage() {
     });
 
     const total = logs.length;
+
+    // Calculate average inquiries per week based on date span of recorded logs
+    let avgInquiriesPerWeek: number | string = 0;
+    if (total > 0) {
+      const timestamps = logs
+        .map((l) => new Date(l.created_at).getTime())
+        .filter((t) => !isNaN(t) && t > 0);
+
+      if (timestamps.length > 0) {
+        const minTime = Math.min(...timestamps);
+        const maxTime = Math.max(...timestamps);
+        const diffDays = Math.max(1, (maxTime - minTime) / (1000 * 60 * 60 * 24));
+        const diffWeeks = Math.max(1, diffDays / 7);
+        const avg = total / diffWeeks;
+        avgInquiriesPerWeek = avg >= 10 ? Math.round(avg) : Number(avg.toFixed(1));
+      } else {
+        avgInquiriesPerWeek = total;
+      }
+    }
 
     // Hour-of-day histogram across all history (not per-calendar-day) — a
     // "typical daily pattern" view, tiered by share of the busiest hour.
@@ -188,6 +208,7 @@ export default async function AnalyticsPage() {
 
     summary = {
       totalInquiries: total,
+      avgInquiriesPerWeek,
       avgResponseTime,
       estimatedTimeSaved,
       peakTrafficTime,
