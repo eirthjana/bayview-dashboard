@@ -985,7 +985,7 @@ export function AdminsClient({
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  placeholder="admin@hotel.com"
+                  placeholder="เช่น admin@hotel.com"
                   className="rounded-xl text-xs h-9"
                 />
               </div>
@@ -995,7 +995,7 @@ export function AdminsClient({
               <Input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Suphanat Phromwong"
+                placeholder="เช่น Somchai Jaidee"
                 className="rounded-xl text-xs h-9"
               />
             </div>
@@ -1004,7 +1004,7 @@ export function AdminsClient({
               <Input
                 value={form.name_th}
                 onChange={(e) => setForm({ ...form, name_th: e.target.value })}
-                placeholder="ศุภณัฐ พรหมวงษ์"
+                placeholder="เช่น สมชาย ใจดี"
                 className="rounded-xl text-xs h-9"
               />
             </div>
