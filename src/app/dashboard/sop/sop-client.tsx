@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -26,7 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { UploadCloud, FileText, Trash2, Loader2, AlertTriangle, X, FolderOpen, Pencil } from "lucide-react";
+import { UploadCloud, FileText, Trash2, Loader2, AlertTriangle, X, FolderOpen, Pencil, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -592,6 +592,18 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
                     </TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
+                        {/* Only docs uploaded here have the original file in Storage. */}
+                        {doc.view_url && (
+                          <a
+                            href={`/api/documents/download?file_id=${encodeURIComponent(doc.file_id)}`}
+                            download={doc.title}
+                            title={`ดาวน์โหลด ${doc.title}`}
+                            className={`${buttonVariants({ variant: "ghost", size: "sm" })} text-zinc-500 dark:text-zinc-400 hover:text-emerald-500 h-8 px-2 items-center gap-1.5`}
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            ดาวน์โหลด
+                          </a>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"

@@ -54,6 +54,13 @@ export function getActionMeta(actionType: string) {
         badgeColor:
           "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60",
       };
+    case "download_sop":
+      return {
+        label: "ดาวน์โหลดไฟล์ SOP",
+        category: "sop",
+        badgeColor:
+          "bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800/60",
+      };
     case "delete_sop":
       return {
         label: "ลบไฟล์ SOP",
