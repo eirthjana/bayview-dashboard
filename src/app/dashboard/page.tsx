@@ -89,7 +89,7 @@ export default async function DashboardPage() {
     activeUsersToday: 0,
     totalMessages: 0,
     messagesToday: 0,
-    answerAccuracy: 0,
+    answerSuccessRate: 0,
   };
   let dailyUsage: DailyUsage[] = [];
   let recentLogs: ChatLog[] = [];
@@ -114,7 +114,7 @@ export default async function DashboardPage() {
       messagesResult,
       messagesTodayResult,
       successResult,
-      notFoundResult,
+      errorResult,
       logsResult,
       allLogsResult,
       employeeTestResult,
@@ -140,8 +140,10 @@ export default async function DashboardPage() {
         .select("id", { count: "exact", head: true })
         .gte("created_at", today)
         .neq("status", "error"),
-      // Answer accuracy is success measured against not_found — of the
-      // questions the bot actually tried to answer, how many it could.
+      // Answer success rate: success measured against error only. not_found
+      // (the SOP has nothing on the question) and unauthorized (the asker may
+      // not see it) depend on what was asked, not on the system, so they are
+      // left out. error is the one outcome that is the system's fault.
       supabase
         .from("chat_logs")
         .select("id", { count: "exact", head: true })
@@ -149,7 +151,7 @@ export default async function DashboardPage() {
       supabase
         .from("chat_logs")
         .select("id", { count: "exact", head: true })
-        .eq("status", "not_found"),
+        .eq("status", "error"),
       supabase
         .from("chat_logs")
         .select("*")
@@ -200,16 +202,16 @@ export default async function DashboardPage() {
     const totalMessages = messagesResult.count || 0;
     const messagesToday = messagesTodayResult.count || 0;
     const successCount = successResult.count || 0;
-    const notFoundCount = notFoundResult.count || 0;
-    const answered = successCount + notFoundCount;
+    const errorCount = errorResult.count || 0;
+    const attempted = successCount + errorCount;
 
     stats = {
       totalUsers,
       activeUsersToday,
       totalMessages,
       messagesToday,
-      answerAccuracy:
-        answered > 0 ? Number(((successCount / answered) * 100).toFixed(1)) : 0,
+      answerSuccessRate:
+        attempted > 0 ? Number(((successCount / attempted) * 100).toFixed(1)) : 0,
     };
 
     // Enrich recent logs with matched employee from employee_test and clean messages

@@ -64,9 +64,10 @@ export interface DashboardStats {
   activeUsersToday: number;
   totalMessages: number;
   messagesToday: number;
-  /** success / (success + not_found), as a percentage — how often a question
-   *  the bot was asked actually got an answer out of the knowledge base. */
-  answerAccuracy: number;
+  /** success / (success + error), as a percentage — how often the system
+   *  answered without failing. not_found and unauthorized are left out: they
+   *  depend on what was asked, not on the system. */
+  answerSuccessRate: number;
   totalTokensUsed?: number;
 }
 

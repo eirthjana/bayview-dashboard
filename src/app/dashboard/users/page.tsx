@@ -27,7 +27,7 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 interface UsersPageProps {
   // Stat cards on other pages deep-link here with the view already narrowed,
-  // e.g. Answer Accuracy -> ?status=not_found, Active Today -> ?range=today.
+  // e.g. Active Today -> ?range=today.
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
