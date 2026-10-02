@@ -1,4 +1,4 @@
-import { CheckCircle2, AlertCircle, ShieldAlert, XCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, ShieldAlert, TimerOff } from "lucide-react";
 
 // Single source of truth for chat_logs.status -> color/label, shared by
 // Recent Activity (Overview) and the Users & Chat Logs table so a given
@@ -31,9 +31,10 @@ export const STATUS_META = {
       "text-purple-800 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 border-purple-200 dark:border-purple-800/60",
     iconClass: "text-purple-600 dark:text-purple-400",
   },
-  error: {
-    label: "Error",
-    Icon: XCircle,
+  // The AI (Google Gemini) did not answer in time, so the user got no reply.
+  timeout: {
+    label: "Time Out",
+    Icon: TimerOff,
     hex: "#f43f5e", // rose-500
     dotClass: "bg-rose-500 shadow-rose-500/50",
     badgeClass:
@@ -45,21 +46,21 @@ export const STATUS_META = {
 export type StatusKey = keyof typeof STATUS_META;
 
 // Fixed display order shared by every status list/legend/chart in the app.
-// "error" is intentionally missing: failed requests are still written to
+// "timeout" is intentionally missing: those rows are still written to
 // chat_logs and can be inspected in Supabase, but they are filtered out of
 // every dashboard query, so nothing should draw a legend chip or series for
-// them. STATUS_META still carries the error entry because normalizeStatusKey
+// them. STATUS_META still carries the timeout entry because normalizeStatusKey
 // falls back to it for any status string the app does not recognise.
 export const STATUS_ORDER: StatusKey[] = ["success", "not_found", "unauthorized"];
 
 export function getStatusMeta(status: string) {
-  return STATUS_META[status.toLowerCase() as StatusKey] ?? STATUS_META.error;
+  return STATUS_META[status.toLowerCase() as StatusKey] ?? STATUS_META.timeout;
 }
 
-/** Maps any chat_logs.status string to one of the 4 known keys, defaulting unrecognized values to "error". */
+/** Maps any chat_logs.status string to one of the 4 known keys, defaulting unrecognized values to "timeout". */
 export function normalizeStatusKey(status: string): StatusKey {
   const key = status.toLowerCase();
-  return (Object.prototype.hasOwnProperty.call(STATUS_META, key) ? key : "error") as StatusKey;
+  return (Object.prototype.hasOwnProperty.call(STATUS_META, key) ? key : "timeout") as StatusKey;
 }
 
 /** Full pill badge with icon + label, e.g. for table rows and detail dialogs. */

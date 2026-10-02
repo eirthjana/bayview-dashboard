@@ -32,9 +32,9 @@ function getDailyUsageFromLogs(logs: ChatLog[]): DailyUsage[] {
 
   logs.forEach((log) => {
     const key = normalizeStatusKey(log.status);
-    // normalizeStatusKey maps anything unrecognised to "error", which has no
+    // normalizeStatusKey maps anything unrecognised to "timeout", which has no
     // bucket here — skip those rather than crashing on an undefined counter.
-    if (key === "error") return;
+    if (key === "timeout") return;
     const logDate = new Date(log.created_at).toISOString().split("T")[0];
     const current = countMap.get(logDate) || emptyStats();
     current[key] += 1;
@@ -104,7 +104,7 @@ export default async function DashboardPage() {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     // Fetch all data in parallel from employee_test and chat_logs
-    // Failed requests stay in chat_logs for troubleshooting in Supabase, but
+    // Timed-out requests stay in chat_logs for troubleshooting in Supabase, but
     // the dashboard never shows them — so every query below excludes them.
     // Leaving them in would inflate Total Messages and put a series on the
     // usage chart and rows in Recent Activity that nothing else displays.
@@ -114,36 +114,37 @@ export default async function DashboardPage() {
       messagesResult,
       messagesTodayResult,
       successResult,
-      errorResult,
+      timeoutResult,
       logsResult,
       allLogsResult,
       employeeTestResult,
     ] = await Promise.all([
       // Unique users from chat_logs
       fetchAllRows((from, to) =>
-        supabase.from("chat_logs").select("line_user_id").neq("status", "error").order("created_at").order("id")
+        supabase.from("chat_logs").select("line_user_id").neq("status", "timeout").order("created_at").order("id")
           .range(from, to)
       ),
       // Active today from chat_logs
       fetchAllRows((from, to) =>
-        supabase.from("chat_logs").select("line_user_id").gte("created_at", today).neq("status", "error").order("created_at").order("id")
+        supabase.from("chat_logs").select("line_user_id").gte("created_at", today).neq("status", "timeout").order("created_at").order("id")
           .range(from, to)
       ),
       // Total messages across all time
       supabase
         .from("chat_logs")
         .select("id", { count: "exact", head: true })
-        .neq("status", "error"),
+        .neq("status", "timeout"),
       // Messages today
       supabase
         .from("chat_logs")
         .select("id", { count: "exact", head: true })
         .gte("created_at", today)
-        .neq("status", "error"),
-      // Answer success rate: success measured against error only. not_found
+        .neq("status", "timeout"),
+      // Answer success rate: success measured against timeout only. not_found
       // (the SOP has nothing on the question) and unauthorized (the asker may
-      // not see it) depend on what was asked, not on the system, so they are
-      // left out. error is the one outcome that is the system's fault.
+      // not see it) depend on what was asked, so they are left out. timeout is
+      // a question that got no answer because the AI (Google Gemini) did not
+      // reply in time.
       supabase
         .from("chat_logs")
         .select("id", { count: "exact", head: true })
@@ -151,15 +152,15 @@ export default async function DashboardPage() {
       supabase
         .from("chat_logs")
         .select("id", { count: "exact", head: true })
-        .eq("status", "error"),
+        .eq("status", "timeout"),
       supabase
         .from("chat_logs")
         .select("*")
-        .neq("status", "error")
+        .neq("status", "timeout")
         .order("created_at", { ascending: false })
         .limit(10),
       fetchAllRows((from, to) =>
-        supabase.from("chat_logs").select("created_at, status, line_user_id, display_name").neq("status", "error").order("created_at", { ascending: true }).order("id")
+        supabase.from("chat_logs").select("created_at, status, line_user_id, display_name").neq("status", "timeout").order("created_at", { ascending: true }).order("id")
           .range(from, to)
       ),
       // Fetch employee list directly from employee_test
@@ -202,8 +203,8 @@ export default async function DashboardPage() {
     const totalMessages = messagesResult.count || 0;
     const messagesToday = messagesTodayResult.count || 0;
     const successCount = successResult.count || 0;
-    const errorCount = errorResult.count || 0;
-    const attempted = successCount + errorCount;
+    const timeoutCount = timeoutResult.count || 0;
+    const attempted = successCount + timeoutCount;
 
     stats = {
       totalUsers,

@@ -7,9 +7,9 @@ import { fetchAllRows } from "@/lib/supabase/fetch-all";
 
 export const dynamic = "force-dynamic";
 
-// "error" is absent on purpose — failed requests stay in chat_logs for
+// "timeout" is absent on purpose — timed-out requests stay in chat_logs for
 // troubleshooting in Supabase but are never shown in the dashboard, so
-// ?status=error falls back to "all" rather than rendering an empty table.
+// ?status=timeout falls back to "all" rather than rendering an empty table.
 const STATUS_VALUES = ["all", "success", "not_found", "unauthorized"] as const;
 type StatusFilterType = (typeof STATUS_VALUES)[number];
 
@@ -55,12 +55,12 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
     const [logsResult, allIdsResult, employeeTestResult] = await Promise.all([
       // Fetch all chat logs without limit, failed requests excluded
       fetchAllRows((from, to) =>
-        supabase.from("chat_logs").select("*").neq("status", "error").order("created_at", { ascending: false }).order("id", { ascending: false })
+        supabase.from("chat_logs").select("*").neq("status", "timeout").order("created_at", { ascending: false }).order("id", { ascending: false })
           .range(from, to)
       ),
       // Ids only, no cap — just enough to state the true totals honestly
       fetchAllRows((from, to) =>
-        supabase.from("chat_logs").select("line_user_id").neq("status", "error").order("created_at").order("id")
+        supabase.from("chat_logs").select("line_user_id").neq("status", "timeout").order("created_at").order("id")
           .range(from, to)
       ),
       // Employee list directly from employee_test
