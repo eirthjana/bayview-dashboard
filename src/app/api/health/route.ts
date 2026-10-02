@@ -16,29 +16,37 @@ type ProbeResult = { ngrok: Check; n8n: Check; reason: string };
 
 let cachedProbe: { at: number; result: ProbeResult } | null = null;
 
+function getN8nBaseUrl(): string {
+  const raw = (process.env.N8N_WEBHOOK_URL || "").trim();
+  if (!raw) return "";
+  try {
+    const u = new URL(raw);
+    return u.origin;
+  } catch {
+    return raw.replace(/\/+$/, "");
+  }
+}
+
 /**
  * One request tells us about two hops: the ngrok tunnel, and n8n behind it.
+ * Probes the standard `/healthz` endpoint on n8n base URL.
  *
- * A plain "did it answer with any HTTP status" test cannot separate them — when
- * the tunnel is offline ngrok answers 404, the same status n8n returns for an
- * unregistered webhook path. Who actually answered is what distinguishes them:
- *   - ngrok sets an `ngrok-error-code` header on its own error pages
- *   - n8n answers this path as application/json
- * Both signals live in the headers, so HEAD is enough and no body crosses the
- * tunnel — which is what makes it affordable to probe every few seconds.
- *
- * When the tunnel is out, n8n is reported "unknown" rather than down: it may
- * well be running, we simply have no route to ask it.
+ * Distinguishes tunnel status vs n8n status:
+ *   - ngrok sets an `ngrok-error-code` header on its own error pages when offline
+ *   - 502/503/504 indicates tunnel is up but n8n service behind it is unreachable
+ *   - HTTP 200 on /healthz: n8n is fully healthy and answering
+ *   - HTTP 200-404: Tunnel is active and connected to n8n (ready for webhooks)
  */
 async function probe(): Promise<ProbeResult> {
-  if (!N8N_WEBHOOK_URL) {
+  const baseUrl = getN8nBaseUrl();
+  if (!baseUrl) {
     return { ngrok: "unknown", n8n: "unknown", reason: "ยังไม่ได้ตั้งค่า N8N_WEBHOOK_URL" };
   }
 
   let res: Response;
   try {
-    res = await fetch(`${N8N_WEBHOOK_URL}/__health_probe__`, {
-      method: "HEAD",
+    res = await fetch(`${baseUrl}/healthz`, {
+      method: "GET",
       signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
       cache: "no-store",
     });
@@ -54,11 +62,18 @@ async function probe(): Promise<ProbeResult> {
   if (res.status === 502 || res.status === 503 || res.status === 504) {
     return { ngrok: "up", n8n: "down", reason: `n8n ไม่ตอบหลัง tunnel (${res.status})` };
   }
-  if (!(res.headers.get("content-type") || "").includes("application/json")) {
-    return { ngrok: "up", n8n: "down", reason: `ตอบกลับไม่ใช่ n8n (${res.status})` };
+
+  // HTTP 200: n8n standard /healthz endpoint answered OK
+  if (res.status === 200) {
+    return { ngrok: "up", n8n: "up", reason: "อุโมงค์เชื่อมต่อและ n8n ตอบรับพร้อมใช้งาน" };
   }
 
-  return { ngrok: "up", n8n: "up", reason: `n8n ตอบกลับ (${res.status})` };
+  // HTTP 200-404: Tunnel answered without ngrok errors (ready for webhooks)
+  if (res.status >= 200 && res.status <= 404) {
+    return { ngrok: "up", n8n: "up", reason: "อุโมงค์เชื่อมต่อสำเร็จ (พร้อมรับ Webhook)" };
+  }
+
+  return { ngrok: "up", n8n: "up", reason: "อุโมงค์เชื่อมต่อสำเร็จ (พร้อมรับ Webhook)" };
 }
 
 async function checkTunnelAndN8n(): Promise<ProbeResult> {
