@@ -42,7 +42,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Loader2,
-  Lock,
 } from "lucide-react";
 
 interface AiModelOption {
@@ -184,18 +183,10 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
     }
   }
 
-  // AI Model, System Prompt and System Message are read live by the running n8n
-  // workflow on every incoming message. Editing them while the bot is answering
-  // means a half-saved prompt can serve a real employee, so the switch has to be
-  // off before any of the three opens for editing — and before a save lands, in
-  // case the bot was switched back on mid-edit.
-  function requireAiOff() {
-    if (aiEnabled) {
-      toast.warning("กรุณาปิด AI System ก่อน จึงจะแก้ไขส่วนนี้ได้");
-      return false;
-    }
-    return true;
-  }
+  // AI Model, System Prompt and System Message are read live by n8n on every
+  // message, but they can be edited while the AI is on: edits stay on this page
+  // until saved, and each save is a single write, so the bot only ever reads
+  // the old value or the new one.
 
   function handleModelChange(key: ModelKey, model: string | null) {
     if (!model) return;
@@ -203,7 +194,6 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   }
 
   function handleStartEditModel() {
-    if (!requireAiOff()) return;
     setEditingModel(true);
   }
 
@@ -218,10 +208,6 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   }
 
   async function handleConfirmSaveModel() {
-    if (!requireAiOff()) {
-      setConfirmModelSaveOpen(false);
-      return;
-    }
     setSavingModel(true);
     // Only the ones that changed; each is its own row in system_settings.
     let ok = true;
@@ -245,7 +231,6 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   }
 
   function handleStartEditPrompt() {
-    if (!requireAiOff()) return;
     setEditingPrompt(true);
   }
 
@@ -259,10 +244,6 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   }
 
   async function handleConfirmSavePrompt() {
-    if (!requireAiOff()) {
-      setConfirmSaveOpen(false);
-      return;
-    }
     setSaving(true);
     const ok = await saveSetting("system_prompt", systemPrompt);
     setSaving(false);
@@ -278,7 +259,6 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   }
 
   function handleStartEditSystemMessage() {
-    if (!requireAiOff()) return;
     setEditingSystemMessage(true);
   }
 
@@ -292,10 +272,6 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   }
 
   async function handleConfirmSaveSystemMessage() {
-    if (!requireAiOff()) {
-      setConfirmSystemMessageSaveOpen(false);
-      return;
-    }
     setSavingSystemMessage(true);
     const ok = await saveSetting("system_message", systemMessage);
     setSavingSystemMessage(false);
@@ -392,14 +368,9 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
                 variant="outline"
                 size="sm"
                 onClick={handleStartEditModel}
-                title={aiEnabled ? "ปิด AI System ก่อนจึงจะแก้ไขได้" : undefined}
-                className={`border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 ${
-                  aiEnabled
-                    ? "text-zinc-400 dark:text-zinc-500"
-                    : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
-                }`}
+                className="border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
               >
-                {aiEnabled ? <Lock className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                <Pencil className="w-3.5 h-3.5" />
                 แก้ไข
               </Button>
             )}
@@ -523,14 +494,9 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
                 variant="outline"
                 size="sm"
                 onClick={handleStartEditPrompt}
-                title={aiEnabled ? "ปิด AI System ก่อนจึงจะแก้ไขได้" : undefined}
-                className={`border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 ${
-                  aiEnabled
-                    ? "text-zinc-400 dark:text-zinc-500"
-                    : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
-                }`}
+                className="border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
               >
-                {aiEnabled ? <Lock className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                <Pencil className="w-3.5 h-3.5" />
                 แก้ไข
               </Button>
             )}
@@ -613,14 +579,9 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
                 variant="outline"
                 size="sm"
                 onClick={handleStartEditSystemMessage}
-                title={aiEnabled ? "ปิด AI System ก่อนจึงจะแก้ไขได้" : undefined}
-                className={`border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 ${
-                  aiEnabled
-                    ? "text-zinc-400 dark:text-zinc-500"
-                    : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
-                }`}
+                className="border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
               >
-                {aiEnabled ? <Lock className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                <Pencil className="w-3.5 h-3.5" />
                 แก้ไข
               </Button>
             )}
