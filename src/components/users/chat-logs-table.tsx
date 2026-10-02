@@ -141,7 +141,7 @@ function getResponseTime(log: ChatLog): { seconds: number | null; formatted: str
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-// No "error": failed requests are kept in Supabase but filtered out of
+// No "timeout": timed-out requests are kept in Supabase but filtered out of
 // every dashboard view, so there is nothing for that option to show.
 type StatusFilterType = "all" | "success" | "not_found" | "unauthorized";
 
@@ -266,7 +266,7 @@ export function ChatLogsTable({
         supabase
           .from("chat_logs")
           .select("*")
-          .neq("status", "error")
+          .neq("status", "timeout")
           .order("created_at", { ascending: false })
           .order("id", { ascending: false })
           .range(from, to)
@@ -303,7 +303,7 @@ export function ChatLogsTable({
         { event: "INSERT", schema: "public", table: "chat_logs" },
         (payload) => {
           const newLog = correctStatus(payload.new as ChatLog);
-          if (String(newLog.status).toLowerCase() === "error") return;
+          if (String(newLog.status).toLowerCase() === "timeout") return;
           if (knownIds.current.has(newLog.id)) return;
           knownIds.current.add(newLog.id);
 

@@ -71,7 +71,7 @@ export default async function AnalyticsPage() {
       // count and the per-hour/per-department charts would be inflated by
       // traffic the rest of the UI does not show.
       fetchAllRows((from, to) =>
-        supabase.from("chat_logs").select("user_message, created_at, line_user_id, response_time").neq("status", "error").order("created_at").order("id")
+        supabase.from("chat_logs").select("user_message, created_at, line_user_id, response_time").neq("status", "timeout").order("created_at").order("id")
           .range(from, to)
       ),
       supabase

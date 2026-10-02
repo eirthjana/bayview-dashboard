@@ -38,7 +38,7 @@ export interface ChatLog {
   user_message: string | null;
   ai_response: string | null;
   tokens_used: number;
-  status: "success" | "error";
+  status: "success" | "not_found" | "unauthorized" | "timeout";
   created_at: string;
   display_name?: string | null;
   employee?: Employee | null;
@@ -64,14 +64,14 @@ export interface DashboardStats {
   activeUsersToday: number;
   totalMessages: number;
   messagesToday: number;
-  /** success / (success + error), as a percentage — how often the system
-   *  answered without failing. not_found and unauthorized are left out: they
-   *  depend on what was asked, not on the system. */
+  /** success / (success + timeout), as a percentage — how often a question
+   *  got an answer instead of timing out. not_found and unauthorized are left
+   *  out: they depend on what was asked, not on the system. */
   answerSuccessRate: number;
   totalTokensUsed?: number;
 }
 
-/** Per-day counts for the usage chart. "error" is deliberately absent: failed
+/** Per-day counts for the usage chart. "timeout" is deliberately absent: those
  *  requests stay in chat_logs but are filtered out before reaching the UI. */
 export interface DailyUsage {
   date: string;
