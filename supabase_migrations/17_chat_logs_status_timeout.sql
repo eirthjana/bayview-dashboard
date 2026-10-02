@@ -1,5 +1,5 @@
 -- Migration: 17_chat_logs_status_timeout.sql
--- NOT APPLIED YET — run it once in the Supabase SQL editor.
+-- Applied 2026-10-02 via Supabase MCP execute_sql (verified). Do not re-run.
 --
 -- chat_logs.status "error" becomes "timeout". The only failure the bot logs is
 -- the AI (Google Gemini) not answering in time — n8n "Log Timeout (No Reply)",
