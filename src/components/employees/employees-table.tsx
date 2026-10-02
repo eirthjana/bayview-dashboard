@@ -582,19 +582,18 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
         <Table>
           <TableHeader>
             <TableRow className="border-zinc-200 dark:border-zinc-800/50 hover:bg-transparent">
-              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">รหัส</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400 w-24">รหัส</TableHead>
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">ชื่อ-นามสกุล</TableHead>
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">แผนก / ตำแหน่ง</TableHead>
-              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">สิทธิ์</TableHead>
-              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">อีเมล</TableHead>
-              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">สถานะ</TableHead>
-              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400 text-right">จัดการ</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400 w-32">สิทธิ์</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400 w-32">สถานะ LINE</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400 text-right w-36">จัดการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-zinc-500 dark:text-zinc-400 py-12">
+                <TableCell colSpan={6} className="text-center text-zinc-500 dark:text-zinc-400 py-12">
                   {search ? "ไม่พบพนักงานที่ค้นหา" : "ยังไม่มีข้อมูลพนักงาน"}
                 </TableCell>
               </TableRow>
@@ -610,7 +609,28 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
                     <div className="flex items-center gap-3">
                       <LineAvatar url={emp.line_user_id ? emp.line_picture_url : null} name={emp.name} />
                       <div>
-                        <div className="text-[0.9375rem] font-medium text-zinc-800 dark:text-zinc-200">{emp.name}</div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[0.9375rem] font-medium text-zinc-800 dark:text-zinc-200">
+                            {emp.name}
+                          </span>
+                          {emp.status === "disabled" ? (
+                            <Badge
+                              variant="outline"
+                              className="text-[0.625rem] bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/50 gap-1 font-bold"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                              Inactive
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="text-[0.625rem] bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/50 gap-1 font-bold"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              Active
+                            </Badge>
+                          )}
+                        </div>
                         <div className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
                           {emp.name_th || <span className="italic">-</span>}
                         </div>
@@ -628,10 +648,6 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
                     >
                       {ACCESS_LEVELS.find((a) => a.value === emp.access_level)?.label || emp.access_level}
                     </Badge>
-                  </TableCell>
-                  {/* LINE User ID is still shown (and copyable) in the row detail dialog. */}
-                  <TableCell className="px-4 py-4 font-mono text-sm text-zinc-500 dark:text-zinc-400 max-w-[18rem] truncate" title={emp.email || undefined}>
-                    {emp.email || <span className="italic font-sans">ไม่มีอีเมล</span>}
                   </TableCell>
                   <TableCell className="px-4 py-4">
                     {emp.status === "disabled" ? (
@@ -687,7 +703,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
 
           {viewing && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <LineAvatar url={viewing.line_user_id ? viewing.line_picture_url : null} name={viewing.name} size="lg" />
                 <Badge
                   variant="outline"

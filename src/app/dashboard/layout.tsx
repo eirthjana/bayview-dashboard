@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { SystemStatus } from "@/components/dashboard/system-status";
 import { CurrentAdmin } from "@/components/dashboard/current-admin";
 import { RefreshButton } from "@/components/dashboard/refresh-button";
 import {
@@ -21,6 +20,7 @@ import {
   LayoutDashboard,
   Users,
   Settings,
+  Activity,
   LogOut,
   Menu,
   ChevronLeft,
@@ -101,6 +101,11 @@ const navSections: NavSection[] = [
         label: "Settings",
         href: "/dashboard/settings",
         icon: Settings,
+      },
+      {
+        label: "System Status",
+        href: "/dashboard/status",
+        icon: Activity,
       },
     ],
   },
@@ -277,7 +282,6 @@ export default function DashboardLayout({
             {/* Right side */}
             <div className="flex items-center gap-2 shrink-0">
               <CurrentAdmin />
-              <SystemStatus />
               <ThemeToggle />
             </div>
           </header>
