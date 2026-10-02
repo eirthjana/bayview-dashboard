@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { recordAdminLoginLog, getAdminStatusMap } from "@/lib/admin-manage";
+import { getAdminStatusMap } from "@/lib/admin-manage";
 
 async function getClientIp(): Promise<string> {
   try {
@@ -33,17 +33,6 @@ export async function loginAction(formData: FormData) {
   });
 
   if (error) {
-    // Record failed login log
-    await recordAdminLoginLog({
-      admin_name: email.split("@")[0],
-      email,
-      ip_address: ip,
-      status: "failed",
-      notes: error.message.toLowerCase().includes("invalid login credentials")
-        ? "รหัสผ่านไม่ถูกต้อง (Invalid credentials)"
-        : error.message,
-    });
-
     const { logAdminActivity } = await import("@/lib/admin-audit");
     await logAdminActivity({
       action_type: "login",
@@ -81,13 +70,6 @@ export async function loginAction(formData: FormData) {
       const statusMap = await getAdminStatusMap();
       if (adminRecord.is_active === false || statusMap[adminRecord.id] === "suspended") {
         await supabase.auth.signOut();
-        await recordAdminLoginLog({
-          admin_name: adminRecord.name_th || adminRecord.name || email,
-          email,
-          ip_address: ip,
-          status: "failed",
-          notes: "บัญชีถูกปิดการใช้งาน (Account suspended)",
-        });
         const { logAdminActivity } = await import("@/lib/admin-audit");
         await logAdminActivity({
           action_type: "login",
@@ -112,15 +94,6 @@ export async function loginAction(formData: FormData) {
         email: data.user.email || email,
       });
     }
-
-    // Record successful login log
-    await recordAdminLoginLog({
-      admin_name: adminRecord?.name_th || adminRecord?.name || email,
-      email,
-      ip_address: ip,
-      status: "success",
-      notes: "เข้าสู่ระบบสำเร็จ",
-    });
 
     const { logAdminActivity } = await import("@/lib/admin-audit");
     await logAdminActivity({

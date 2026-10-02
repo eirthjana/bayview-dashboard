@@ -17,7 +17,7 @@ async function extractClientIp(): Promise<string> {
 }
 
 /**
- * Log an administrative activity into `admin_audit_logs`.
+ * Log an administrative activity into `admin_log`.
  * Automatically retrieves the current logged-in admin user and client IP if omitted.
  */
 export async function logAdminActivity(params: LogAdminActivityParams): Promise<void> {
@@ -88,7 +88,7 @@ export async function logAdminActivity(params: LogAdminActivityParams): Promise<
       email = "-";
     }
 
-    const { error } = await supabaseAdmin.from("admin_audit_logs").insert({
+    const { error } = await supabaseAdmin.from("admin_log").insert({
       admin_name: adminName,
       email,
       action_type: params.action_type,
@@ -99,7 +99,7 @@ export async function logAdminActivity(params: LogAdminActivityParams): Promise<
     });
 
     if (error) {
-      console.warn("Could not insert into admin_audit_logs:", error.message);
+      console.warn("Could not insert into admin_log:", error.message);
     }
   } catch (err) {
     console.error("Error logging admin activity:", err);
@@ -107,7 +107,7 @@ export async function logAdminActivity(params: LogAdminActivityParams): Promise<
 }
 
 /**
- * Fetch audit logs from `admin_audit_logs` ordered by created_at DESC.
+ * Fetch audit logs from `admin_log` ordered by created_at DESC.
  */
 export async function getAdminAuditLogs(limit = 1000): Promise<AdminAuditLog[]> {
   try {
@@ -134,7 +134,7 @@ export async function getAdminAuditLogs(limit = 1000): Promise<AdminAuditLog[]> 
     }
 
     const { data, error } = await supabase
-      .from("admin_audit_logs")
+      .from("admin_log")
       .select("id, created_at, admin_name, email, action_type, target, details, ip_address, status")
       .order("created_at", { ascending: false })
       .limit(limit);
@@ -162,7 +162,7 @@ export async function getAdminAuditLogs(limit = 1000): Promise<AdminAuditLog[]> 
       });
     }
   } catch (err) {
-    console.error("Error fetching admin_audit_logs:", err);
+    console.error("Error fetching admin_log:", err);
   }
 
   return [];
