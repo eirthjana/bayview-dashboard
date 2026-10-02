@@ -505,91 +505,6 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
         </CardContent>
       </Card>
 
-      {/* System Message Editor */}
-      <Card className="border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/50 backdrop-blur-sm">
-        <CardHeader>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <CardTitle className="text-lg text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-violet-400" />
-                System Message
-              </CardTitle>
-              <CardDescription className="text-zinc-500 dark:text-zinc-400 mt-1">
-                กฎพฤติกรรมมาตรฐานของ AI (เช่น เมื่อไหร่ต้องใช้เครื่องมือค้นหา, ห้ามเดาคำตอบ) — แยกจาก System Prompt ด้านขวา ตรงกับช่อง &quot;System Message&quot; ในโหนด &quot;RAG AI Agent&quot; ของ n8n
-              </CardDescription>
-            </div>
-            {!editingSystemMessage && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleStartEditSystemMessage}
-                title={aiEnabled ? "ปิด AI System ก่อนจึงจะแก้ไขได้" : undefined}
-                className={`border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 ${
-                  aiEnabled
-                    ? "text-zinc-400 dark:text-zinc-500"
-                    : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
-                }`}
-              >
-                {aiEnabled ? <Lock className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
-                แก้ไข
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Textarea
-            value={systemMessage}
-            onChange={(e) => setSystemMessage(e.target.value)}
-            readOnly={!editingSystemMessage}
-            rows={8}
-            placeholder="กรอก System Message สำหรับ AI..."
-            className={`bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-mono text-sm resize-y ${
-              !editingSystemMessage ? "opacity-70 cursor-not-allowed" : ""
-            }`}
-          />
-
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">
-              {systemMessage.length} ตัวอักษร
-            </div>
-
-            {editingSystemMessage && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  onClick={handleCancelEditSystemMessage}
-                  disabled={savingSystemMessage}
-                  className="text-zinc-500 dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-500 items-center gap-1.5"
-                >
-                  <X className="w-4 h-4" />
-                  ยกเลิก
-                </Button>
-                <Button
-                  onClick={handleRequestSaveSystemMessage}
-                  disabled={savingSystemMessage || !systemMessage.trim()}
-                  className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-lg shadow-blue-500/20 items-center gap-2"
-                >
-                  {savingSystemMessage ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      กำลังบันทึก...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      บันทึก System Message
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      </div>
-
-      {/* Right column */}
-      <div className="space-y-6">
       {/* System Prompt Editor */}
       <Card className="border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/50 backdrop-blur-sm">
         <CardHeader>
@@ -626,7 +541,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
             value={systemPrompt}
             onChange={(e) => setSystemPrompt(e.target.value)}
             readOnly={!editingPrompt}
-            rows={14}
+            rows={8}
             placeholder="กรอก System Prompt สำหรับ AI..."
             className={`bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-mono text-sm resize-y ${
               !editingPrompt ? "opacity-70 cursor-not-allowed" : ""
@@ -668,6 +583,91 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
                     <>
                       <Save className="w-4 h-4" />
                       บันทึก System Prompt
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      </div>
+
+      {/* Right column */}
+      <div className="space-y-6">
+      {/* System Message Editor */}
+      <Card className="border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/50 backdrop-blur-sm">
+        <CardHeader>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-violet-400" />
+                System Message
+              </CardTitle>
+              <CardDescription className="text-zinc-500 dark:text-zinc-400 mt-1">
+                กฎพฤติกรรมมาตรฐานของ AI (เช่น เมื่อไหร่ต้องใช้เครื่องมือค้นหา, ห้ามเดาคำตอบ) — แยกจาก System Prompt ด้านซ้าย ตรงกับช่อง &quot;System Message&quot; ในโหนด &quot;RAG AI Agent&quot; ของ n8n
+              </CardDescription>
+            </div>
+            {!editingSystemMessage && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleStartEditSystemMessage}
+                title={aiEnabled ? "ปิด AI System ก่อนจึงจะแก้ไขได้" : undefined}
+                className={`border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 ${
+                  aiEnabled
+                    ? "text-zinc-400 dark:text-zinc-500"
+                    : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
+                }`}
+              >
+                {aiEnabled ? <Lock className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                แก้ไข
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Textarea
+            value={systemMessage}
+            onChange={(e) => setSystemMessage(e.target.value)}
+            readOnly={!editingSystemMessage}
+            rows={14}
+            placeholder="กรอก System Message สำหรับ AI..."
+            className={`bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-mono text-sm resize-y ${
+              !editingSystemMessage ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+          />
+
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">
+              {systemMessage.length} ตัวอักษร
+            </div>
+
+            {editingSystemMessage && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={handleCancelEditSystemMessage}
+                  disabled={savingSystemMessage}
+                  className="text-zinc-500 dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-500 items-center gap-1.5"
+                >
+                  <X className="w-4 h-4" />
+                  ยกเลิก
+                </Button>
+                <Button
+                  onClick={handleRequestSaveSystemMessage}
+                  disabled={savingSystemMessage || !systemMessage.trim()}
+                  className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-lg shadow-blue-500/20 items-center gap-2"
+                >
+                  {savingSystemMessage ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      กำลังบันทึก...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      บันทึก System Message
                     </>
                   )}
                 </Button>
