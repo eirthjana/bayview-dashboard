@@ -32,45 +32,77 @@ import {
   UserCog,
 } from "lucide-react";
 
-const navItems = [
+interface NavItem {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
   {
-    label: "Overview",
-    href: "/dashboard",
-    icon: LayoutDashboard,
+    title: "ภาพรวม",
+    items: [
+      {
+        label: "Overview",
+        href: "/dashboard",
+        icon: LayoutDashboard,
+      },
+      {
+        label: "Analytics & Insights",
+        href: "/dashboard/analytics",
+        icon: BarChart3,
+      },
+    ],
   },
   {
-    label: "Analytics & Insights",
-    href: "/dashboard/analytics",
-    icon: BarChart3,
+    title: "การจัดการผู้ใช้",
+    items: [
+      {
+        label: "Employees Management",
+        href: "/dashboard/employees",
+        icon: IdCard,
+      },
+      {
+        label: "Admin Manage",
+        href: "/dashboard/admins",
+        icon: UserCog,
+      },
+    ],
   },
   {
-    label: "Users & Logs",
-    href: "/dashboard/users",
-    icon: Users,
+    title: "ข้อมูลบอทและการสนทนา",
+    items: [
+      {
+        label: "SOP Documents",
+        href: "/dashboard/sop",
+        icon: UploadCloud,
+      },
+      {
+        label: "Pending Replies",
+        href: "/dashboard/replies",
+        icon: MessageSquareReply,
+      },
+      {
+        label: "Users & Logs",
+        href: "/dashboard/users",
+        icon: Users,
+      },
+    ],
   },
   {
-    label: "Pending Replies",
-    href: "/dashboard/replies",
-    icon: MessageSquareReply,
-  },  {
-    label: "Employees Management",
-    href: "/dashboard/employees",
-    icon: IdCard,
-  },
-  {
-    label: "SOP Documents",
-    href: "/dashboard/sop",
-    icon: UploadCloud,
-  },
-  {
-    label: "Admin Manage",
-    href: "/dashboard/admins",
-    icon: UserCog,
-  },
-  {
-    label: "Settings",
-    href: "/dashboard/settings",
-    icon: Settings,
+    title: "ระบบ",
+    items: [
+      {
+        label: "Settings",
+        href: "/dashboard/settings",
+        icon: Settings,
+      },
+    ],
   },
 ];
 
@@ -95,49 +127,70 @@ function SidebarContent({ collapsed = false }: { collapsed?: boolean }) {
 
       <Separator className="bg-zinc-100 dark:bg-zinc-800/50" />
 
-      {/* Navigation */}
-      <nav className="flex-1 py-4 px-3 space-y-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive =
-            item.href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(item.href);
+      {/* Navigation Groups */}
+      <nav className="flex-1 py-3 px-3 overflow-y-auto space-y-4">
+        {navSections.map((section, sectionIdx) => (
+          <div key={section.title} className="space-y-1">
+            {!collapsed ? (
+              <div className="px-3 pt-1 pb-0.5">
+                <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  {section.title}
+                </p>
+              </div>
+            ) : (
+              sectionIdx > 0 && <Separator className="my-2 bg-zinc-100 dark:bg-zinc-800/50" />
+            )}
 
-          const linkContent = (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                collapsed ? "justify-center" : ""
-              } ${
-                isActive
-                  ? "bg-blue-500/10 text-blue-400 shadow-sm shadow-blue-500/5"
-                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
-              }`}
-            >
-              <Icon
-                className={`w-5 h-5 flex-shrink-0 transition-colors ${
-                  isActive ? "text-blue-400" : "text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300"
-                }`}
-              />
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
-          );
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                const isActive =
+                  item.href === "/dashboard"
+                    ? pathname === "/dashboard"
+                    : pathname.startsWith(item.href);
 
-          if (collapsed) {
-            return (
-              <Tooltip key={item.href}>
-                <TooltipTrigger render={linkContent} />
-                <TooltipContent side="right" className="bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700">
-                  {item.label}
-                </TooltipContent>
-              </Tooltip>
-            );
-          }
+                const linkContent = (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                      collapsed ? "justify-center" : ""
+                    } ${
+                      isActive
+                        ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold shadow-sm shadow-blue-500/5"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
+                    }`}
+                  >
+                    <Icon
+                      className={`w-4 h-4 flex-shrink-0 transition-colors ${
+                        isActive
+                          ? "text-blue-600 dark:text-blue-400"
+                          : "text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300"
+                      }`}
+                    />
+                    {!collapsed && <span>{item.label}</span>}
+                  </Link>
+                );
 
-          return linkContent;
-        })}
+                if (collapsed) {
+                  return (
+                    <Tooltip key={item.href}>
+                      <TooltipTrigger render={linkContent} />
+                      <TooltipContent
+                        side="right"
+                        className="bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700"
+                      >
+                        {item.label}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                return linkContent;
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       <Separator className="bg-zinc-100 dark:bg-zinc-800/50" />
