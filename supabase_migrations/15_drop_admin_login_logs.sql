@@ -1,5 +1,5 @@
 -- Migration: 15_drop_admin_login_logs.sql
--- NOT APPLIED YET — run it once in the Supabase SQL editor.
+-- Applied 2026-10-02 by hand in the Supabase SQL editor (verified). Do not re-run.
 --
 -- Last step of 14 (admin_audit_logs -> admin_log). Safe once the dashboard
 -- deploy with commit 4a61efd is live (checked 2026-10-02): that code only

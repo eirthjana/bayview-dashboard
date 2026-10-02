@@ -1,5 +1,5 @@
 -- Migration: 13_lock_admin_audit_logs.sql
--- NOT APPLIED YET — run it once in the Supabase SQL editor.
+-- Applied 2026-10-02 by hand in the Supabase SQL editor (verified). Do not re-run.
 -- The table was renamed to admin_log in 14; this file uses the new name.
 --
 -- Same problem 11_lock_admin_login_logs.sql fixed for the login log.
