@@ -35,11 +35,14 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Copy } from "lucide-react";
 import { DASHBOARD_DATA_REFRESH } from "@/lib/system-health-events";
+import { LOAD_FAILED_EMPTY_TEXT } from "@/components/dashboard/load-error-banner";
 
 interface EmployeesTableProps {
   employees: EmployeeRegistry[];
   /** EMPLOYEE_TABLE from the server (src/lib/config.ts) — client code can't read that env var. */
   table: EmployeeTable;
+  /** The list failed to load: say so instead of "no employees yet". */
+  loadFailed?: boolean;
 }
 
 const ACCESS_BADGE_CLASS: Record<string, string> = {
@@ -157,7 +160,7 @@ function DetailRow({
   );
 }
 
-export function EmployeesTable({ employees: initial, table }: EmployeesTableProps) {
+export function EmployeesTable({ employees: initial, table, loadFailed = false }: EmployeesTableProps) {
   const [employees, setEmployees] = useState(initial);
   const [syncedInitial, setSyncedInitial] = useState(initial);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -190,9 +193,9 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
       }
     } catch (err) {
       console.error("Failed to refetch employees:", err);
-      if (showToast) {
-        toast.error("รีเฟรชข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
-      }
+      // Always say so: the header refresh button no longer claims success
+      // on its own, so this is the only place a failure would surface.
+      toast.error("โหลดรายชื่อพนักงานล่าสุดไม่สำเร็จ ข้อมูลที่เห็นอาจไม่ใช่ล่าสุด กรุณาลองใหม่");
     } finally {
       setIsRefreshing(false);
     }
@@ -594,7 +597,7 @@ export function EmployeesTable({ employees: initial, table }: EmployeesTableProp
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-zinc-500 dark:text-zinc-400 py-12">
-                  {search ? "ไม่พบพนักงานที่ค้นหา" : "ยังไม่มีข้อมูลพนักงาน"}
+                  {loadFailed ? LOAD_FAILED_EMPTY_TEXT : search ? "ไม่พบพนักงานที่ค้นหา" : "ยังไม่มีข้อมูลพนักงาน"}
                 </TableCell>
               </TableRow>
             ) : (

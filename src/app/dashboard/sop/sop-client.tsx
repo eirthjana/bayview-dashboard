@@ -411,9 +411,8 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
         <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-300 text-sm">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
-            โหลดรายการเอกสารไม่สำเร็จ: {configError} — ตรวจสอบว่าตั้งค่า{" "}
-            <code className="font-mono">SUPABASE_SERVICE_ROLE_KEY</code> ใน{" "}
-            <code className="font-mono">.env.local</code> แล้วหรือยัง
+            โหลดรายการเอกสารไม่สำเร็จ รายการด้านล่างจึงอาจว่างเปล่า ไม่ได้แปลว่าไม่มีเอกสาร
+            กรุณารีเฟรชหน้านี้ ถ้ายังไม่ได้ ให้แจ้งผู้ดูแลระบบ
           </span>
         </div>
       )}
@@ -534,7 +533,7 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
       {/* Document List, one section per department / topic */}
       {documents.length === 0 ? (
         <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-zinc-900/50 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          ยังไม่มีเอกสาร SOP ในฐานความรู้
+          {configError ? "โหลดรายการเอกสารไม่สำเร็จ ดูแถบแจ้งเตือนด้านบน" : "ยังไม่มีเอกสาร SOP ในฐานความรู้"}
         </div>
       ) : (
         groupDocuments(documents).map((group) => (

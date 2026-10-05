@@ -3,6 +3,7 @@ import { EMPLOYEE_TABLE } from "@/lib/config";
 import { AnalyticsClient } from "./analytics-client";
 import type { AnalyticsSummary, HourlyUsage, DeptActivity } from "@/lib/types";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
+import { LoadErrorBanner } from "@/components/dashboard/load-error-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,7 @@ export default async function AnalyticsPage() {
   };
   let hourly: HourlyUsage[] = [];
   let deptActivity: DeptActivity[] = [];
+  let loadError = false;
 
   try {
     const supabase = await createClient();
@@ -79,6 +81,7 @@ export default async function AnalyticsPage() {
         .select("line_user_id, department, name, name_th"),
     ]);
 
+    if (logsResult.error) throw logsResult.error;
     const logs = (logsResult.data as ChatLogRow[]) || [];
     const employees = (employeesResult.data as EmployeeDeptRow[]) || [];
 
@@ -217,7 +220,17 @@ export default async function AnalyticsPage() {
     };
   } catch (error) {
     console.error("Failed to fetch analytics data from Supabase:", error);
+    loadError = true;
   }
 
-  return <AnalyticsClient summary={summary} hourly={hourly} deptActivity={deptActivity} />;
+  return (
+    <div className="space-y-6">
+      {loadError && (
+        <div className="max-w-7xl mx-auto">
+          <LoadErrorBanner what="ข้อมูลสถิติ" />
+        </div>
+      )}
+      <AnalyticsClient summary={summary} hourly={hourly} deptActivity={deptActivity} />
+    </div>
+  );
 }

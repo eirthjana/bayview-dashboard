@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 import { DASHBOARD_DATA_REFRESH } from "@/lib/system-health-events";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
+import { LOAD_FAILED_EMPTY_TEXT } from "@/components/dashboard/load-error-banner";
 
 // Real Hotel Departments List
 const DEPARTMENTS = [
@@ -168,6 +169,8 @@ interface ChatLogsTableProps {
    *  say when the table is only showing the newest slice of the history. */
   totalLogsInDb?: number;
   totalUsersInDb?: number;
+  /** The logs failed to load: say so instead of "nothing matches". */
+  loadFailed?: boolean;
 }
 
 // ─── Summary strip ────────────────────────────────────────────────────────────
@@ -222,6 +225,7 @@ export function ChatLogsTable({
   initialEndDate = "",
   totalLogsInDb = 0,
   totalUsersInDb = 0,
+  loadFailed = false,
 }: ChatLogsTableProps) {
   // Filter States
   const [search, setSearch] = useState("");
@@ -272,13 +276,15 @@ export function ChatLogsTable({
           .range(from, to)
       );
 
-      if (!error && data) {
+      if (error) throw error;
+      if (data) {
         const corrected = (data as ChatLog[]).map(correctStatus);
         setLogs(corrected);
         knownIds.current = new Set(corrected.map((l) => l.id));
       }
     } catch (err) {
       console.error("Failed to re-fetch chat logs:", err);
+      toast.error("โหลดประวัติการสนทนาล่าสุดไม่สำเร็จ ข้อมูลที่เห็นอาจไม่ใช่ล่าสุด กรุณาลองใหม่");
     } finally {
       setIsRefreshing(false);
     }
@@ -704,8 +710,8 @@ export function ChatLogsTable({
                 <tr>
                   <td colSpan={7} className="text-center text-zinc-500 dark:text-zinc-400 py-16">
                     <MessageSquare className="w-8 h-8 mx-auto mb-2 text-zinc-300 dark:text-zinc-600" />
-                    <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">ไม่พบข้อมูลที่ตรงกับเงื่อนไข</p>
-                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">ลองปรับตัวกรองค้นหา หรือกด Reset ตัวกรอง</p>
+                    <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{loadFailed ? LOAD_FAILED_EMPTY_TEXT : "ไม่พบข้อมูลที่ตรงกับเงื่อนไข"}</p>
+                    {!loadFailed && <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">ลองปรับตัวกรองค้นหา หรือกด Reset ตัวกรอง</p>}
                   </td>
                 </tr>
               ) : (

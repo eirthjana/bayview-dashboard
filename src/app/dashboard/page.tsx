@@ -4,6 +4,7 @@ import { DashboardClient } from "./dashboard-client";
 import { normalizeStatusKey } from "@/components/dashboard/status-badge";
 import type { DailyUsage, ChatLog, DailyMessageUsage, DeptMessageUsage, Employee } from "@/lib/types";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
+import { LoadErrorBanner } from "@/components/dashboard/load-error-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -96,6 +97,7 @@ export default async function DashboardPage() {
   let dailyMessageUsage: DailyMessageUsage[] = [];
   let deptMessageUsage: DeptMessageUsage[] = [];
   let rawLogs: { created_at: string }[] = [];
+  let loadError = false;
 
   try {
     const supabase = await createClient();
@@ -166,6 +168,9 @@ export default async function DashboardPage() {
       // Fetch employee list directly from employee_test
       supabase.from(EMPLOYEE_TABLE).select("*"),
     ]);
+
+    if (messagesResult.error) throw messagesResult.error;
+    if (allLogsResult.error) throw allLogsResult.error;
 
     const allEmployees: Employee[] = (!employeeTestResult.error && employeeTestResult.data)
       ? (employeeTestResult.data as Employee[])
@@ -274,6 +279,7 @@ export default async function DashboardPage() {
     rawLogs = allLogs.map((l) => ({ created_at: l.created_at }));
   } catch (error) {
     console.error("Failed to fetch dashboard data from Supabase:", error);
+    loadError = true;
     dailyUsage = getDailyUsageFromLogs([]);
     dailyMessageUsage = getDailyMessageUsage([]);
   }
@@ -282,15 +288,22 @@ export default async function DashboardPage() {
   // second copy of this element in the catch drifts out of step the first time
   // someone adds a prop to one and not the other.
   return (
-    <DashboardClient
-      data={{
-        stats,
-        dailyUsage,
-        recentLogs,
-        dailyMessageUsage,
-        deptMessageUsage,
-        rawLogs,
-      }}
-    />
+    <div className="space-y-6">
+      {loadError && (
+        <div className="max-w-7xl mx-auto">
+          <LoadErrorBanner what="ข้อมูลภาพรวม" />
+        </div>
+      )}
+      <DashboardClient
+        data={{
+          stats,
+          dailyUsage,
+          recentLogs,
+          dailyMessageUsage,
+          deptMessageUsage,
+          rawLogs,
+        }}
+      />
+    </div>
   );
 }

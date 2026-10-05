@@ -4,6 +4,7 @@ import { ChatLogsTable } from "@/components/users/chat-logs-table";
 import type { ChatLog, Employee } from "@/lib/types";
 import { correctStatus } from "@/lib/answer-status";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
+import { LoadErrorBanner } from "@/components/dashboard/load-error-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   let employees: Employee[] = [];
   let totalLogsInDb = 0;
   let totalUsersInDb = 0;
+  let loadError = false;
 
   try {
     const supabase = await createClient();
@@ -69,7 +71,8 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
         .select("emp_id, name, department, position, line_user_id, access_level, line_name, status"),
     ]);
 
-    if (!logsResult.error && logsResult.data) {
+    if (logsResult.error) throw logsResult.error;
+    if (logsResult.data) {
       chatLogs = (logsResult.data as ChatLog[]).map(correctStatus);
       totalLogsInDb = chatLogs.length;
     }
@@ -88,6 +91,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
     }
   } catch (error) {
     console.error("Failed to fetch chat logs and employees from employee_test:", error);
+    loadError = true;
   }
 
   return (
@@ -104,7 +108,9 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
         </div>
       </div>
 
+      {loadError && <LoadErrorBanner what="ประวัติการสนทนา" />}
       <ChatLogsTable
+        loadFailed={loadError}
         chatLogs={chatLogs}
         employees={employees}
         initialStatus={initialStatus}

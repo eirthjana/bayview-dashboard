@@ -4,6 +4,7 @@ import { correctStatus } from "@/lib/answer-status";
 import type { AdminProfile } from "@/lib/admin-reply";
 import { RepliesClient, type PendingQuestion } from "./replies-client";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
+import { LoadErrorBanner } from "@/components/dashboard/load-error-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,7 @@ interface EmployeeRow {
 
 export default async function RepliesPage() {
   let questions: PendingQuestion[] = [];
+  let loadError = false;
   let admin: AdminProfile | null = null;
 
   try {
@@ -64,6 +66,7 @@ export default async function RepliesPage() {
         .eq("user_id", user?.id ?? "")
         .maybeSingle(),
     ]);
+    if (logsResult.error) throw logsResult.error;
     admin = (adminResult.data as AdminProfile | null) ?? null;
 
     const byLineId = new Map<string, EmployeeRow>();
@@ -92,6 +95,7 @@ export default async function RepliesPage() {
       });
   } catch (error) {
     console.error("Failed to load pending replies:", error);
+    loadError = true;
   }
 
   return (
@@ -105,7 +109,8 @@ export default async function RepliesPage() {
         </p>
       </div>
 
-      <RepliesClient questions={questions} admin={admin} />
+      {loadError && <LoadErrorBanner what="คำถามที่รอตอบ" />}
+      <RepliesClient questions={questions} admin={admin} loadFailed={loadError} />
     </div>
   );
 }

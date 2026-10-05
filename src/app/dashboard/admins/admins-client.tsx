@@ -47,6 +47,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getActionMeta, type AdminAuditLog } from "@/lib/admin-audit-types";
+import { LOAD_FAILED_EMPTY_TEXT } from "@/components/dashboard/load-error-banner";
 
 export interface AdminRow {
   id: string;
@@ -192,11 +193,14 @@ export function AdminsClient({
   employees,
   activityLogs: initialLogs,
   currentUserId,
+  loadFailed = false,
 }: {
   admins: AdminRow[];
   employees: EmployeeOption[];
   activityLogs: AdminAuditLog[];
   currentUserId: string | null;
+  /** The admin list failed to load: say so instead of "no match". */
+  loadFailed?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<"admins" | "logs">("admins");
   const [admins, setAdmins] = useState<AdminRow[]>(initialAdmins);
@@ -525,7 +529,7 @@ export function AdminsClient({
               {filteredAdmins.length === 0 ? (
                 <li className="p-12 text-center text-zinc-500 dark:text-zinc-400">
                   <UserX className="w-8 h-8 mx-auto mb-2 text-zinc-400 opacity-60" />
-                  <p className="text-sm font-bold">ไม่พบบัญชีแอดมินที่ตรงกับเงื่อนไข</p>
+                  <p className="text-sm font-bold">{loadFailed ? LOAD_FAILED_EMPTY_TEXT : "ไม่พบบัญชีแอดมินที่ตรงกับเงื่อนไข"}</p>
                 </li>
               ) : (
                 filteredAdmins.map((a) => {

@@ -3,6 +3,7 @@ import { EMPLOYEE_TABLE } from "@/lib/config";
 import { AdminsClient, type AdminRow, type EmployeeOption } from "./admins-client";
 import { getAdminStatusMap } from "@/lib/admin-manage";
 import { getAdminAuditLogs, type AdminAuditLog } from "@/lib/admin-audit";
+import { LoadErrorBanner } from "@/components/dashboard/load-error-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ export default async function AdminsPage() {
   let employees: EmployeeOption[] = [];
   let activityLogs: AdminAuditLog[] = [];
   let currentUserId: string | null = null;
+  let loadError = false;
 
   try {
     const supabase = await createClient();
@@ -33,6 +35,7 @@ export default async function AdminsPage() {
       getAdminAuditLogs(),
     ]);
 
+    if (adminsResult.error) throw adminsResult.error;
     const rawAdmins = (adminsResult.data as (Omit<AdminRow, "status">)[]) || [];
     admins = rawAdmins.map((a) => {
       const isActive =
@@ -53,6 +56,7 @@ export default async function AdminsPage() {
     activityLogs = logs;
   } catch (error) {
     console.error("Failed to load admin accounts and activity logs:", error);
+    loadError = true;
   }
 
   return (
@@ -72,7 +76,9 @@ export default async function AdminsPage() {
         </span>
       </div>
 
+      {loadError && <LoadErrorBanner what="รายชื่อแอดมิน" />}
       <AdminsClient
+        loadFailed={loadError}
         admins={admins}
         employees={employees}
         activityLogs={activityLogs}

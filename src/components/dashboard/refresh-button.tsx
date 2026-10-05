@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { RotateCcw } from "lucide-react";
 import { toast } from "sonner";
@@ -15,11 +15,22 @@ export function RefreshButton() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isSpinning, setIsSpinning] = useState(false);
+  // Set when a refresh starts; the toast waits for router.refresh() to finish
+  // instead of claiming success the moment the button is pressed. A server
+  // page that fails to load now shows its own error banner.
+  const awaitingRefresh = useRef(false);
+
+  useEffect(() => {
+    if (isPending || !awaitingRefresh.current) return;
+    awaitingRefresh.current = false;
+    toast.success("โหลดข้อมูลล่าสุดแล้ว", { duration: 2000 });
+  }, [isPending]);
 
   const handleRefresh = () => {
     if (isPending || isSpinning) return;
 
     setIsSpinning(true);
+    awaitingRefresh.current = true;
 
     startTransition(() => {
       // Trigger Next.js Server Components / Server Actions revalidation
@@ -30,11 +41,6 @@ export function RefreshButton() {
         window.dispatchEvent(new Event(SYSTEM_HEALTH_REFRESH));
         window.dispatchEvent(new Event(DASHBOARD_DATA_REFRESH));
       }
-    });
-
-    toast.success("อัปเดตข้อมูลล่าสุดเรียบร้อย", {
-      description: "ดึงข้อมูล Supabase และสถานะระบบใหม่สำเร็จ",
-      duration: 2000,
     });
 
     // Keep spin animation smooth for at least 700ms

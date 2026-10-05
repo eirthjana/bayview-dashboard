@@ -13,6 +13,7 @@ import {
   MAX_ADMIN_REPLY_LENGTH,
   type AdminProfile,
 } from "@/lib/admin-reply";
+import { LOAD_FAILED_EMPTY_TEXT } from "@/components/dashboard/load-error-banner";
 
 export interface PendingQuestion {
   id: string;
@@ -45,9 +46,12 @@ function formatDate(iso: string) {
 export function RepliesClient({
   questions: initial,
   admin,
+  loadFailed = false,
 }: {
   questions: PendingQuestion[];
   admin: AdminProfile | null;
+  /** The questions failed to load: say so instead of "nothing to answer". */
+  loadFailed?: boolean;
 }) {
   const adminName = adminDisplayName(admin);
   const [questions, setQuestions] = useState(initial);
@@ -190,7 +194,7 @@ export function RepliesClient({
       <Card className="bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 shadow-sm rounded-2xl overflow-hidden">
         {visible.length === 0 ? (
           <p className="p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-            {view === "pending" ? "ไม่มีคำถามที่รอตอบ" : "ยังไม่มีคำถามที่ตอบแล้ว"}
+            {loadFailed ? LOAD_FAILED_EMPTY_TEXT : view === "pending" ? "ไม่มีคำถามที่รอตอบ" : "ยังไม่มีคำถามที่ตอบแล้ว"}
           </p>
         ) : (
           <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
