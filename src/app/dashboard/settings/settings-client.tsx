@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Loader2,
+  RotateCcw,
 } from "lucide-react";
 
 interface AiModelOption {
@@ -87,9 +89,12 @@ interface SettingsClientProps {
   };
   /** Live from Google's ListModels — see src/lib/gemini-models.ts */
   models: AiModelOption[];
+  /** The real settings could not be loaded; initialSettings are defaults. */
+  loadError?: boolean;
 }
 
-export function SettingsClient({ initialSettings, models }: SettingsClientProps) {
+export function SettingsClient({ initialSettings, models, loadError = false }: SettingsClientProps) {
+  const router = useRouter();
   const [aiEnabled, setAiEnabled] = useState(initialSettings.ai_enabled);
   const [savedPrompt, setSavedPrompt] = useState(initialSettings.system_prompt);
   const [systemPrompt, setSystemPrompt] = useState(initialSettings.system_prompt);
@@ -170,8 +175,11 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   }
 
   async function handleToggleAI(checked: boolean) {
+    if (loadError) return;
     setAiEnabled(checked);
     const saved = await saveSetting("ai_enabled", checked);
+    // Not saved: the bot is still in the old state, so the switch goes back.
+    if (!saved) setAiEnabled(!checked);
     // the header badge reports this same flag — refresh it now instead of
     // leaving it stale until its next poll
     if (saved) {
@@ -194,6 +202,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   }
 
   function handleStartEditModel() {
+    if (loadError) return;
     setEditingModel(true);
   }
 
@@ -231,6 +240,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   }
 
   function handleStartEditPrompt() {
+    if (loadError) return;
     setEditingPrompt(true);
   }
 
@@ -259,6 +269,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
   }
 
   function handleStartEditSystemMessage() {
+    if (loadError) return;
     setEditingSystemMessage(true);
   }
 
@@ -296,6 +307,22 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
         </p>
       </div>
 
+      {loadError && (
+        <div role="alert" className="flex flex-col gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-700 dark:text-rose-300 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              โหลดการตั้งค่าจากฐานข้อมูลไม่สำเร็จ ค่าที่เห็นด้านล่างเป็นค่าเริ่มต้น ไม่ใช่ค่าที่บอทใช้อยู่
+              จึงปิดการแก้ไขไว้ก่อนเพื่อไม่ให้บันทึกทับค่าจริง กรุณาโหลดใหม่
+            </span>
+          </div>
+          <Button type="button" onClick={() => router.refresh()} className="shrink-0 gap-1.5 bg-blue-600 text-white hover:bg-blue-700">
+            <RotateCcw className="h-4 w-4" />
+            โหลดใหม่
+          </Button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
       {/* Left column */}
       <div className="space-y-6">
@@ -325,6 +352,8 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
             <Switch
               checked={aiEnabled}
               onCheckedChange={handleToggleAI}
+              disabled={loadError}
+              aria-label="เปิด-ปิดระบบ AI"
               className="data-[state=checked]:bg-emerald-500"
             />
           </div>
@@ -368,6 +397,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
                 variant="outline"
                 size="sm"
                 onClick={handleStartEditModel}
+                disabled={loadError}
                 className="border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
               >
                 <Pencil className="w-3.5 h-3.5" />
@@ -494,6 +524,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
                 variant="outline"
                 size="sm"
                 onClick={handleStartEditPrompt}
+                disabled={loadError}
                 className="border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
               >
                 <Pencil className="w-3.5 h-3.5" />
@@ -579,6 +610,7 @@ export function SettingsClient({ initialSettings, models }: SettingsClientProps)
                 variant="outline"
                 size="sm"
                 onClick={handleStartEditSystemMessage}
+                disabled={loadError}
                 className="border-zinc-300 dark:border-zinc-700/50 shrink-0 items-center gap-1.5 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
               >
                 <Pencil className="w-3.5 h-3.5" />

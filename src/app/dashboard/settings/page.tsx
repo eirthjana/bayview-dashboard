@@ -85,12 +85,16 @@ const DEFAULT_SETTINGS = {
 
 export default async function SettingsPage() {
   let settings = DEFAULT_SETTINGS;
+  // True when the real values could not be read. The page then shows the
+  // defaults above, which must never be saved over the live prompt.
+  let loadError = false;
 
   try {
     const supabase = await createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("system_settings")
       .select("key, value");
+    if (error) throw error;
 
     if (data && data.length > 0) {
       // `value` is a jsonb column — Supabase already returns it as its real JS type
@@ -130,13 +134,14 @@ export default async function SettingsPage() {
             : DEFAULT_SETTINGS.system_message,
       };
     }
-  } catch {
-    // Use defaults if Supabase is not configured
+  } catch (error) {
+    console.error("Failed to load system_settings:", error);
+    loadError = true;
   }
 
   // Read straight from Google so a model released after this was written shows
   // up as a choice without anyone editing a list here.
   const models = await fetchAvailableModels();
 
-  return <SettingsClient initialSettings={settings} models={models} />;
+  return <SettingsClient initialSettings={settings} models={models} loadError={loadError} />;
 }
