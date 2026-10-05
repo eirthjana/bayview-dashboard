@@ -150,7 +150,9 @@ function DetailRow({
             variant="ghost"
             size="icon"
             onClick={() => copyText(display, label)}
-            className="h-6 w-6 shrink-0 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+            aria-label={`คัดลอก${label}`}
+            title={`คัดลอก${label}`}
+            className="h-9 w-9 lg:h-7 lg:w-7 shrink-0 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
           >
             <Copy className="h-3.5 w-3.5" />
           </Button>

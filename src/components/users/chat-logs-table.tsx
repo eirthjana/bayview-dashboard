@@ -820,7 +820,9 @@ export function ChatLogsTable({
                             variant="ghost"
                             size="sm"
                             onClick={() => openDetail(log)}
-                            className="h-7 w-7 p-0 text-zinc-400 dark:text-zinc-400 hover:text-[#0C645B] dark:hover:text-emerald-400 hover:bg-[#0C645B]/10 dark:hover:bg-zinc-800 rounded-lg"
+                            aria-label="ดูรายละเอียดการสนทนา"
+                            title="ดูรายละเอียด"
+                            className="h-10 w-10 lg:h-7 lg:w-7 p-0 text-zinc-400 dark:text-zinc-400 hover:text-[#0C645B] dark:hover:text-emerald-400 hover:bg-[#0C645B]/10 dark:hover:bg-zinc-800 rounded-lg"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </Button>
@@ -890,8 +892,9 @@ export function ChatLogsTable({
               size="sm"
               disabled={safePage <= 1}
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-30 disabled:pointer-events-none"
+              className="h-10 w-10 lg:h-8 lg:w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-30 disabled:pointer-events-none"
               title="หน้าก่อนหน้า"
+              aria-label="หน้าก่อนหน้า"
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
@@ -926,8 +929,9 @@ export function ChatLogsTable({
               size="sm"
               disabled={safePage >= totalPages}
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              className="h-8 w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-30 disabled:pointer-events-none"
+              className="h-10 w-10 lg:h-8 lg:w-8 p-0 rounded-lg border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 disabled:opacity-30 disabled:pointer-events-none"
               title="หน้าถัดไป"
+              aria-label="หน้าถัดไป"
             >
               <ChevronRight className="w-4 h-4" />
             </Button>

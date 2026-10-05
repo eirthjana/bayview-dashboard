@@ -56,7 +56,7 @@ export function RefreshButton() {
       type="button"
       onClick={handleRefresh}
       disabled={isBusy}
-      className="group relative flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-lg text-xs font-semibold bg-[#DEEFEC]/70 hover:bg-[#DEEFEC] text-[#0C645B] border border-[#0C645B]/20 dark:bg-[#0C645B]/20 dark:hover:bg-[#0C645B]/30 dark:text-emerald-300 dark:border-emerald-500/30 transition-all duration-200 active:scale-95 disabled:opacity-70 disabled:pointer-events-none shadow-xs"
+      className="group relative flex items-center gap-1.5 h-10 lg:h-8 min-w-10 justify-center px-2.5 sm:px-3 rounded-lg text-xs font-semibold bg-[#DEEFEC]/70 hover:bg-[#DEEFEC] text-[#0C645B] border border-[#0C645B]/20 dark:bg-[#0C645B]/20 dark:hover:bg-[#0C645B]/30 dark:text-emerald-300 dark:border-emerald-500/30 transition-all duration-200 active:scale-95 disabled:opacity-70 disabled:pointer-events-none shadow-xs"
       aria-label="รีเฟรชข้อมูลหน้าปัจจุบัน"
     >
       <RotateCcw

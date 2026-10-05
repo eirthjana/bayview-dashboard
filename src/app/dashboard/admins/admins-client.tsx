@@ -523,8 +523,8 @@ export function AdminsClient({
                 </h2>
               </div>
 
-              <div className="flex items-center gap-2.5">
-                <div className="relative w-56 sm:w-64">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
                   <Input
                     placeholder="ค้นหาชื่อ หรือ อีเมล..."
@@ -617,12 +617,12 @@ export function AdminsClient({
                       </div>
 
                       {/* Action Buttons with fixed alignment */}
-                      <div className="flex items-center gap-2 shrink-0 justify-end">
+                      <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => openEdit(a)}
-                          className="h-8 w-[72px] justify-center text-xs font-semibold gap-1 text-zinc-600 dark:text-zinc-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-xl"
+                          className="h-10 sm:h-8 sm:w-[72px] justify-center text-xs font-semibold gap-1 text-zinc-600 dark:text-zinc-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-xl"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                           แก้ไข
@@ -635,21 +635,21 @@ export function AdminsClient({
                             setResetPassword("");
                             setResetting(a);
                           }}
-                          className="h-8 w-[112px] justify-center text-xs font-semibold gap-1 text-zinc-600 dark:text-zinc-300 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-xl"
+                          className="h-10 sm:h-8 sm:w-[112px] justify-center text-xs font-semibold gap-1 text-zinc-600 dark:text-zinc-300 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-xl"
                         >
                           <KeyRound className="w-3.5 h-3.5" />
                           รีเซ็ตรหัสผ่าน
                         </Button>
 
                         {/* Soft Delete / Suspend & Restore Button Slot (fixed width keeps grid aligned) */}
-                        <div className="w-[104px] flex justify-end">
+                        <div className="sm:w-[104px] flex sm:justify-end">
                           {!isMe && (
                             isActive ? (
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => setConfirmToggleAdmin(a)}
-                                className="w-full h-8 text-xs font-semibold gap-1 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700 rounded-xl justify-center"
+                                className="w-full h-10 sm:h-8 text-xs font-semibold gap-1 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700 rounded-xl justify-center"
                                 title="ปิดการใช้งานบัญชีแอดมินนี้"
                               >
                                 <Ban className="w-3.5 h-3.5" />
@@ -660,7 +660,7 @@ export function AdminsClient({
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => setConfirmToggleAdmin(a)}
-                                className="w-full h-8 text-xs font-semibold gap-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 rounded-xl justify-center"
+                                className="w-full h-10 sm:h-8 text-xs font-semibold gap-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 rounded-xl justify-center"
                                 title="เปิดใช้งานบัญชีแอดมินนี้"
                               >
                                 <UserCheck className="w-3.5 h-3.5" />

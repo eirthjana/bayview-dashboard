@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { logoutAction } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { CurrentAdmin } from "@/components/dashboard/current-admin";
 import { RefreshButton } from "@/components/dashboard/refresh-button";
@@ -111,7 +111,7 @@ const navSections: NavSection[] = [
   },
 ];
 
-function SidebarContent({ collapsed = false }: { collapsed?: boolean }) {
+function SidebarContent({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
@@ -158,7 +158,8 @@ function SidebarContent({ collapsed = false }: { collapsed?: boolean }) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                    onClick={onNavigate}
+                    className={`flex items-center gap-3 px-3 py-2.5 lg:py-2 rounded-lg text-sm font-medium transition-all duration-200 group ${
                       collapsed ? "justify-center" : ""
                     } ${
                       isActive
@@ -225,6 +226,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <TooltipProvider>
@@ -244,20 +246,24 @@ export default function DashboardLayout({
           <header className="h-14 border-b border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/70 dark:bg-zinc-900/30 backdrop-blur-sm flex items-center justify-between px-4 lg:px-6">
             <div className="flex items-center gap-2 sm:gap-3">
               {/* Mobile menu */}
-              <Sheet>
+              {/* Controlled so choosing a page closes it; the layout stays
+                  mounted between pages, so it would otherwise stay open. */}
+              <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                 <SheetTrigger
                   render={
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="lg:hidden text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                      aria-label="เปิดเมนู"
+                      className="lg:hidden size-10 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
                     >
                       <Menu className="w-5 h-5" />
                     </Button>
                   }
                 />
                 <SheetContent side="left" className="w-64 p-0 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                  <SidebarContent />
+                  <SheetTitle className="sr-only">เมนูหลัก</SheetTitle>
+                  <SidebarContent onNavigate={() => setMenuOpen(false)} />
                 </SheetContent>
               </Sheet>
 
@@ -266,6 +272,7 @@ export default function DashboardLayout({
                 variant="ghost"
                 size="icon"
                 onClick={() => setCollapsed(!collapsed)}
+                aria-label={collapsed ? "ขยายแถบเมนู" : "ย่อแถบเมนู"}
                 className="hidden lg:flex text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
               >
                 {collapsed ? (
