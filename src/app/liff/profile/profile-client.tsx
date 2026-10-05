@@ -39,7 +39,7 @@ export function ProfileClient({ liffId, registerUrl }: { liffId: string | undefi
       {liffState.status === "loading" ? (
         <LoadingCard text="กำลังเชื่อมต่อ LINE…" />
       ) : (
-        <ErrorCard message={liffState.message} />
+        <ErrorCard message={liffState.message} retry={liffState.retryable !== false} />
       )}
     </LiffShell>
   );
@@ -207,8 +207,8 @@ function ProfileCard({
             />
           </label>
           {error && <Notice tone="error">{error}</Notice>}
-          <PrimaryButton type="submit" busy={saving} disabled={!phone.trim()}>
-            บันทึกเบอร์โทร
+          <PrimaryButton type="submit" busy={saving}>
+            {phone.trim() ? "บันทึกเบอร์โทร" : "ลบเบอร์โทร"}
           </PrimaryButton>
           <TextButton className="self-center" disabled={saving} onClick={() => setEditing(false)}>
             ยกเลิก
@@ -218,7 +218,7 @@ function ProfileCard({
 
       {saved && !editing && (
         <div className="mt-3">
-          <Notice tone="success">บันทึกเบอร์โทรแล้ว</Notice>
+          <Notice tone="success">{profile.phone_number ? "บันทึกเบอร์โทรแล้ว" : "ลบเบอร์โทรแล้ว"}</Notice>
         </div>
       )}
 

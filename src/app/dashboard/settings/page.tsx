@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { SettingsClient } from "./settings-client";
 import { fetchAvailableModels } from "@/lib/gemini-models";
+
+export const metadata: Metadata = { title: "ตั้งค่า AI" };
 
 export const dynamic = "force-dynamic";
 

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { EMPLOYEE_TABLE } from "@/lib/config";
 import { ChatLogsTable } from "@/components/users/chat-logs-table";
@@ -5,6 +6,8 @@ import type { ChatLog, Employee } from "@/lib/types";
 import { correctStatus } from "@/lib/answer-status";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { LoadErrorBanner } from "@/components/dashboard/load-error-banner";
+
+export const metadata: Metadata = { title: "ประวัติการสนทนา" };
 
 export const dynamic = "force-dynamic";
 

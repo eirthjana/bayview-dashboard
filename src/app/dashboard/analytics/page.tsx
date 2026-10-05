@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { EMPLOYEE_TABLE } from "@/lib/config";
 import { AnalyticsClient } from "./analytics-client";
 import type { AnalyticsSummary, HourlyUsage, DeptActivity } from "@/lib/types";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { LoadErrorBanner } from "@/components/dashboard/load-error-banner";
+
+export const metadata: Metadata = { title: "สถิติการใช้งาน" };
 
 export const dynamic = "force-dynamic";
 

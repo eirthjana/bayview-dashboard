@@ -40,7 +40,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { busy?: boolean };
 
 /** Also used on links that should look like the main button. */
 export const primaryButtonClass =
-  "flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-base font-semibold text-white transition-colors hover:bg-blue-700 active:bg-blue-800 disabled:cursor-not-allowed disabled:bg-[#D6CEC0] disabled:text-white";
+  "flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-base font-semibold text-white transition-colors hover:bg-blue-700 active:bg-blue-800 disabled:cursor-not-allowed disabled:bg-[#D6CEC0] disabled:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FBF7F0]";
 
 export function PrimaryButton({ busy, disabled, children, className = "", ...props }: ButtonProps) {
   return (
@@ -60,7 +60,7 @@ export function TextButton({ children, className = "", ...props }: ButtonHTMLAtt
     <button
       type="button"
       {...props}
-      className={`rounded-md px-1 py-2 text-sm font-medium text-blue-700 underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:text-zinc-400 disabled:no-underline ${className}`}
+      className={`min-h-11 rounded-md px-2 py-2 text-sm font-medium text-blue-700 underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:text-zinc-500 disabled:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FBF7F0] ${className}`}
     >
       {children}
     </button>
@@ -94,14 +94,17 @@ export function LoadingCard({ text = "กำลังโหลด…" }: { text?
   );
 }
 
-export function ErrorCard({ message }: { message: string }) {
+/** retry: false for errors a reload cannot fix (e.g. the page is not set up). */
+export function ErrorCard({ message, retry = true }: { message: string; retry?: boolean }) {
   return (
     <Card>
       <div className="flex flex-col gap-4">
         <Notice tone="error">{message}</Notice>
-        <PrimaryButton type="button" onClick={() => window.location.reload()}>
-          ลองใหม่
-        </PrimaryButton>
+        {retry && (
+          <PrimaryButton type="button" onClick={() => window.location.reload()}>
+            ลองใหม่
+          </PrimaryButton>
+        )}
       </div>
     </Card>
   );

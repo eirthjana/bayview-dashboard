@@ -51,7 +51,7 @@ export function RegisterClient({ liffId }: { liffId: string | undefined }) {
       {liffState.status === "loading" ? (
         <LoadingCard text="กำลังเชื่อมต่อ LINE…" />
       ) : (
-        <ErrorCard message={liffState.message} />
+        <ErrorCard message={liffState.message} retry={liffState.retryable !== false} />
       )}
     </LiffShell>
   );

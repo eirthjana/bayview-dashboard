@@ -19,8 +19,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Admin Dashboard | Bayview",
-  description: "LINE OA & AI Automation Management Dashboard",
+  // Each page sets its own title, so tabs and history can tell them apart.
+  title: { default: "Bayview Admin", template: "%s | Bayview Admin" },
+  description: "ระบบจัดการบอท LINE สำหรับพนักงาน The Bayview Pattaya",
 };
 
 export default function RootLayout({

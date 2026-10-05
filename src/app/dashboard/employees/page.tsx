@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { EMPLOYEE_TABLE } from "@/lib/config";
 import { EmployeesTable } from "@/components/employees/employees-table";
 import type { EmployeeRegistry } from "@/lib/types";
 import { LoadErrorBanner } from "@/components/dashboard/load-error-banner";
+
+export const metadata: Metadata = { title: "จัดการพนักงาน" };
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

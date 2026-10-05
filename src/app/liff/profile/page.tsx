@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ProfileClient } from "./profile-client";
 
 export const metadata: Metadata = {
-  title: "โปรไฟล์ของฉัน",
+  title: { absolute: "โปรไฟล์ของฉัน" },
   robots: { index: false, follow: false },
 };
 

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { EMPLOYEE_TABLE } from "@/lib/config";
 import { correctStatus } from "@/lib/answer-status";
@@ -5,6 +6,8 @@ import type { AdminProfile } from "@/lib/admin-reply";
 import { RepliesClient, type PendingQuestion } from "./replies-client";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { LoadErrorBanner } from "@/components/dashboard/load-error-banner";
+
+export const metadata: Metadata = { title: "คำถามรอตอบ" };
 
 export const dynamic = "force-dynamic";
 

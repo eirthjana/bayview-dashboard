@@ -6,7 +6,7 @@ import type { Liff } from "@line/liff";
 export type LiffState =
   | { status: "loading" }
   | { status: "ready"; liff: Liff }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; retryable?: boolean };
 
 // liff.init must run once per page load; React may run effects twice in dev.
 let initOnce: { liffId: string; promise: Promise<Liff> } | null = null;
@@ -31,7 +31,7 @@ export function useLiff(liffId: string | undefined): LiffState {
   const [state, setState] = useState<LiffState>(() =>
     liffId
       ? { status: "loading" }
-      : { status: "error", message: "หน้านี้ยังไม่ได้ตั้งค่า LIFF ID กรุณาแจ้งผู้ดูแลระบบ" }
+      : { status: "error", message: "หน้านี้ยังไม่ได้ตั้งค่า LIFF ID กรุณาแจ้งผู้ดูแลระบบ", retryable: false }
   );
 
   useEffect(() => {

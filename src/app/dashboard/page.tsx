@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { EMPLOYEE_TABLE } from "@/lib/config";
 import { DashboardClient } from "./dashboard-client";
@@ -5,6 +6,8 @@ import { normalizeStatusKey } from "@/components/dashboard/status-badge";
 import type { DailyUsage, ChatLog, DailyMessageUsage, DeptMessageUsage, Employee } from "@/lib/types";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { LoadErrorBanner } from "@/components/dashboard/load-error-banner";
+
+export const metadata: Metadata = { title: "ภาพรวม" };
 
 export const dynamic = "force-dynamic";
 

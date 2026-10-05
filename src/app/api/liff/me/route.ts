@@ -32,8 +32,10 @@ export async function PATCH(request: NextRequest) {
   const auth = await readLiffRequest(request);
   if (!auth.ok) return auth.response;
 
-  const phone = normalizePhone(auth.body.phone_number);
-  if (!phone) {
+  // An empty field removes the number; anything else must be a Thai phone number.
+  const raw = typeof auth.body.phone_number === "string" ? auth.body.phone_number.replace(/[\s-]/g, "") : "";
+  const phone = raw === "" ? null : normalizePhone(raw);
+  if (raw !== "" && !phone) {
     return NextResponse.json(
       { status: "bad_request", error: "เบอร์โทรต้องขึ้นต้นด้วย 0 และมี 9–10 หลัก" },
       { status: 400 }

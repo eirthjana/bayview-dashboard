@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import { SopClient } from "./sop-client";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SOP_STORAGE_BUCKET, sopStoragePath } from "@/lib/documents";
 import { SOP_ROW_COLUMNS, summarizeSopRows, type SopDocumentSummary, type SopRow } from "@/lib/sop-groups";
+
+export const metadata: Metadata = { title: "เอกสาร SOP" };
 
 export const dynamic = "force-dynamic";
 

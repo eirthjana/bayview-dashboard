@@ -15,13 +15,7 @@ import {
   Clock,
   ArrowUpRight,
   ShieldCheck,
-  Zap,
-  Server,
-  Radio,
-  ExternalLink,
   HelpCircle,
-  Flame,
-  Check,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -99,7 +93,7 @@ export default function SystemStatusPage() {
       const now = new Date();
       setLatency(duration);
       setLastChecked(now);
-      setHealth((prev) => ({
+      setHealth(() => ({
         success: false,
         overall: "down",
         database: "down",
@@ -121,6 +115,7 @@ export default function SystemStatusPage() {
 
   useEffect(() => {
     isMounted.current = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the first health check has to run on page load
     probeStatus();
 
     return () => {
@@ -142,7 +137,6 @@ export default function SystemStatusPage() {
   const overallStatus = health?.overall || "up";
   const isAllUp = overallStatus === "up";
   const isDegraded = overallStatus === "degraded";
-  const isDown = overallStatus === "down";
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
@@ -250,10 +244,10 @@ export default function SystemStatusPage() {
                 </div>
                 <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
                   {isAllUp
-                    ? "ฐานข้อมูล Supabase, Ngrok Tunnel, n8n Workflow และระบบตอบกลับ AI พร้อมให้บริการเต็มรูปแบบ"
+                    ? "ทุกส่วนของระบบทำงานปกติ: ฐานข้อมูล การเชื่อมต่อกับ LINE ระบบประมวลผลแชท และ AI ตอบกลับ"
                     : isDegraded
-                    ? "การเชื่อมต่อพื้นฐานยังใช้งานได้ แต่มีบางบริการ เช่น บอท AI ปิดการทำงาน หรือตอบสนองช้ากว่าปกติ"
-                    : health?.probeReason || "มีบริการหลักไม่สามารถเชื่อมต่อได้ กรุณาตรวจสอบ ngrok หรือฐานข้อมูล"}
+                    ? "ระบบยังใช้งานได้ แต่มีบางส่วนที่ไม่ปกติ เช่น ปิด AI ไว้ หรือตอบช้ากว่าปกติ"
+                    : health?.probeReason || "บอทอาจตอบข้อความไม่ได้ในตอนนี้ เพราะมีบางส่วนของระบบเชื่อมต่อไม่ได้ กรุณาแจ้งผู้ดูแลระบบ IT"}
                 </p>
               </div>
             </div>
@@ -718,19 +712,19 @@ export default function SystemStatusPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-zinc-600 dark:text-zinc-400 pt-1">
               <div className="p-3 bg-white dark:bg-zinc-900/80 rounded-xl border border-zinc-200/70 dark:border-zinc-800/80 space-y-1">
                 <p className="font-bold text-zinc-800 dark:text-zinc-200">
-                  1. Ngrok Tunnel ออฟไลน์
+                  1. การเชื่อมต่อกับ LINE หลุด (Ngrok Tunnel)
                 </p>
                 <p>
-                  ตรวจสอบการรันคำสั่ง <code className="text-[0.6875rem] bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded">ngrok http 5678</code> บนเครื่องแม่ข่าย และอัปเดต Webhook URL ใน LINE Developer Console
+                  บอทจะไม่ได้รับข้อความจาก LINE แจ้งผู้ดูแลระบบ IT สำหรับผู้ดูแล: ตรวจสอบการรันคำสั่ง <code className="text-[0.6875rem] bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded">ngrok http 5678</code> บนเครื่องแม่ข่าย และอัปเดต Webhook URL ใน LINE Developer Console
                 </p>
               </div>
 
               <div className="p-3 bg-white dark:bg-zinc-900/80 rounded-xl border border-zinc-200/70 dark:border-zinc-800/80 space-y-1">
                 <p className="font-bold text-zinc-800 dark:text-zinc-200">
-                  2. n8n ไม่ตอบสนอง
+                  2. ระบบประมวลผลแชทไม่ตอบสนอง (n8n)
                 </p>
                 <p>
-                  ตรวจดูว่า n8n Container หรือ Service กำลังทำงานอยู่ และเปิดสวิตช์ <b>Active</b> ใน Workflow ตอบแชตเรียบร้อยแล้ว
+                  บอทจะไม่ตอบข้อความ แจ้งผู้ดูแลระบบ IT สำหรับผู้ดูแล: ตรวจดูว่า n8n Container หรือ Service กำลังทำงานอยู่ และเปิดสวิตช์ <b>Active</b> ใน Workflow ตอบแชตเรียบร้อยแล้ว
                 </p>
               </div>
 
@@ -739,7 +733,7 @@ export default function SystemStatusPage() {
                   3. บอท AI ปิดการทำงาน
                 </p>
                 <p>
-                  ไปที่หน้า <b>Settings</b> แล้วเปิดสวิตช์ <b>เปิดใช้งาน AI ตอบกลับอัตโนมัติ</b> เพื่อให้บอทกลับมาตอบข้อความตามปกติ
+                  ไปที่หน้า <b>ตั้งค่า AI</b> แล้วเปิดสวิตช์ <b>AI System</b> เพื่อให้บอทกลับมาตอบข้อความตามปกติ
                 </p>
               </div>
             </div>

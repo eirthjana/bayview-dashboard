@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { EMPLOYEE_TABLE } from "@/lib/config";
 import { AdminsClient, type AdminRow, type EmployeeOption } from "./admins-client";
 import { getAdminStatusMap } from "@/lib/admin-manage";
 import { getAdminAuditLogs, type AdminAuditLog } from "@/lib/admin-audit";
 import { LoadErrorBanner } from "@/components/dashboard/load-error-banner";
+
+export const metadata: Metadata = { title: "จัดการแอดมิน" };
 
 export const dynamic = "force-dynamic";
 
