@@ -22,7 +22,7 @@ export function ThemeToggle() {
     <div className="flex items-center gap-2">
       <span
         className={`text-xs font-medium transition-colors ${
-          !isDark ? "text-amber-600 dark:text-amber-400" : "text-zinc-400 dark:text-zinc-500"
+          !isDark ? "text-amber-600 dark:text-amber-400" : "text-zinc-500 dark:text-zinc-400"
         }`}
       >
         สว่าง
@@ -53,7 +53,7 @@ export function ThemeToggle() {
       </button>
       <span
         className={`text-xs font-medium transition-colors ${
-          isDark ? "text-blue-400" : "text-zinc-400 dark:text-zinc-500"
+          isDark ? "text-blue-400" : "text-zinc-500 dark:text-zinc-400"
         }`}
       >
         มืด

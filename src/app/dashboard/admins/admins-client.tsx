@@ -525,7 +525,7 @@ export function AdminsClient({
 
               <div className="flex flex-wrap items-center gap-2.5">
                 <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
                   <Input
                     placeholder="ค้นหาชื่อ หรือ อีเมล..."
                     value={adminSearch}
@@ -533,7 +533,7 @@ export function AdminsClient({
                     className="pl-8 h-9 text-xs rounded-xl bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 focus:bg-white dark:focus:bg-zinc-800"
                   />
                 </div>
-                <Button size="sm" onClick={openAdd} className="gap-1.5 bg-blue-600 hover:bg-blue-500 text-white shrink-0">
+                <Button size="sm" onClick={openAdd} className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shrink-0">
                   <UserPlus className="w-4 h-4" />
                   เพิ่มแอดมิน
                 </Button>
@@ -544,7 +544,7 @@ export function AdminsClient({
             <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
               {filteredAdmins.length === 0 ? (
                 <li className="p-12 text-center text-zinc-500 dark:text-zinc-400">
-                  <UserX className="w-8 h-8 mx-auto mb-2 text-zinc-400 opacity-60" />
+                  <UserX className="w-8 h-8 mx-auto mb-2 text-zinc-500 dark:text-zinc-400 opacity-60" />
                   <p className="text-sm font-bold">{loadFailed ? LOAD_FAILED_EMPTY_TEXT : "ไม่พบบัญชีแอดมินที่ตรงกับเงื่อนไข"}</p>
                 </li>
               ) : (
@@ -565,7 +565,7 @@ export function AdminsClient({
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">
                             {missingName ? (
-                              <span className="italic text-zinc-400">ยังไม่ได้ระบุชื่อ</span>
+                              <span className="italic text-zinc-500 dark:text-zinc-400">ยังไม่ได้ระบุชื่อ</span>
                             ) : (
                               a.name_th || a.name
                             )}
@@ -708,7 +708,7 @@ export function AdminsClient({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
                 {/* 1. Real-time Search */}
                 <div className="lg:col-span-4 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 dark:text-zinc-400 pointer-events-none" />
                   <Input
                     placeholder="ค้นหาชื่อ, อีเมล, กิจกรรม, หรือ IP..."
                     value={logsSearch}
@@ -716,7 +716,7 @@ export function AdminsClient({
                       setLogsSearch(e.target.value);
                       setLogsCurrentPage(1);
                     }}
-                    className="pl-9 bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800 transition-colors"
+                    className="pl-9 bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800 transition-colors"
                   />
                 </div>
 
@@ -730,7 +730,7 @@ export function AdminsClient({
                     }}
                     placeholder="dd/mm/yyyy"
                   />
-                  <span className="text-zinc-400 text-xs shrink-0">-</span>
+                  <span className="text-zinc-500 dark:text-zinc-400 text-xs shrink-0">-</span>
                   <DateInput
                     value={logsEndDate}
                     onChange={(v) => {
@@ -814,7 +814,7 @@ export function AdminsClient({
                   {paginatedLogs.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="text-center text-zinc-500 dark:text-zinc-400 py-16">
-                        <History className="w-8 h-8 mx-auto mb-2 text-zinc-300 dark:text-zinc-600" />
+                        <History className="w-8 h-8 mx-auto mb-2 text-zinc-300 dark:text-zinc-400" />
                         <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
                           ไม่พบบันทึกกิจกรรมระบบ
                         </p>
@@ -838,7 +838,7 @@ export function AdminsClient({
                           <td className="px-4 py-3.5 align-middle whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-zinc-900 dark:text-zinc-100">{date}</span>
-                              <span className="text-[0.625rem] text-zinc-400 dark:text-zinc-500">{time} น.</span>
+                              <span className="text-[0.625rem] text-zinc-500 dark:text-zinc-400">{time} น.</span>
                             </div>
                           </td>
 
@@ -892,7 +892,7 @@ export function AdminsClient({
                           {/* IP Address */}
                           <td className="px-4 py-3.5 align-middle whitespace-nowrap">
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-100/90 dark:bg-zinc-800/90 border border-zinc-200/80 dark:border-zinc-700/60 font-mono text-[0.6875rem] text-zinc-600 dark:text-zinc-300 shadow-2xs">
-                              <Globe className="w-2.5 h-2.5 text-zinc-400 shrink-0" />
+                              <Globe className="w-2.5 h-2.5 text-zinc-500 dark:text-zinc-400 shrink-0" />
                               {ipAddr}
                             </span>
                           </td>
@@ -1054,7 +1054,7 @@ export function AdminsClient({
             <Button
               onClick={save}
               disabled={saving || !canSave}
-              className="bg-[#0C645B] hover:bg-[#0a5750] text-white rounded-xl text-xs h-9 font-semibold"
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs h-9 font-semibold"
             >
               {saving ? "กำลังบันทึก..." : editing ? "บันทึกการแก้ไข" : "เพิ่มแอดมิน"}
             </Button>
@@ -1168,7 +1168,7 @@ export function AdminsClient({
               className={`rounded-xl text-xs h-9 font-semibold text-white ${
                 (confirmToggleAdmin?.status ?? "active") === "active"
                   ? "bg-rose-600 hover:bg-rose-700"
-                  : "bg-emerald-600 hover:bg-emerald-700"
+                  : "bg-blue-600 hover:bg-blue-700"
               }`}
             >
               {togglingStatus

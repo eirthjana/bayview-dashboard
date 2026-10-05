@@ -158,7 +158,7 @@ export function StatCard({
                   )}
                   {Math.abs(trend.value)}%
                 </span>
-                <span className="text-xs text-zinc-400 dark:text-zinc-500">vs yesterday</span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400">vs yesterday</span>
               </div>
             )}
           </div>

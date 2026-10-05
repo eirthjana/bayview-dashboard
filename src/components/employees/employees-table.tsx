@@ -579,7 +579,7 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
           placeholder="ค้นหาชื่อ / ตำแหน่ง / รหัสพนักงาน / อีเมล..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+          className="max-w-sm bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400"
         />
         <Select value={deptFilter} onValueChange={(v) => setDeptFilter(v || "__all__")}>
           <SelectTrigger className="w-[13.75rem] bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100">
@@ -612,7 +612,7 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
             <SelectItem value="unlinked">ยังไม่ผูก</SelectItem>
           </SelectContent>
         </Select>
-        <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-500 text-white sm:ml-auto">
+        <Button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700 text-white sm:ml-auto">
           เพิ่มพนักงาน
         </Button>
       </div>
@@ -996,7 +996,7 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
             <Button
               onClick={saveEdit}
               disabled={saving}
-              className="bg-blue-600 hover:bg-blue-500 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {saving ? "กำลังบันทึก..." : "บันทึก"}
             </Button>
@@ -1149,7 +1149,7 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
             <Button
               onClick={saveAdd}
               disabled={adding}
-              className="bg-blue-600 hover:bg-blue-500 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {adding ? "กำลังเพิ่ม..." : "เพิ่มพนักงาน"}
             </Button>

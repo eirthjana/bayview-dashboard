@@ -487,7 +487,7 @@ export function SettingsClient({ initialSettings, models, loadError = false }: S
               <Button
                 onClick={handleRequestSaveModel}
                 disabled={savingModel}
-                className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-lg shadow-blue-500/20 items-center gap-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 items-center gap-2"
               >
                 {savingModel ? (
                   <>
@@ -540,7 +540,7 @@ export function SettingsClient({ initialSettings, models, loadError = false }: S
             readOnly={!editingPrompt}
             rows={8}
             placeholder="กรอก System Prompt สำหรับ AI..."
-            className={`bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-mono text-sm resize-y ${
+            className={`bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 font-mono text-sm resize-y ${
               !editingPrompt ? "opacity-70 cursor-not-allowed" : ""
             }`}
           />
@@ -569,7 +569,7 @@ export function SettingsClient({ initialSettings, models, loadError = false }: S
                 <Button
                   onClick={handleRequestSavePrompt}
                   disabled={saving || !systemPrompt.trim()}
-                  className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-lg shadow-blue-500/20 items-center gap-2"
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 items-center gap-2"
                 >
                   {saving ? (
                     <>
@@ -626,7 +626,7 @@ export function SettingsClient({ initialSettings, models, loadError = false }: S
             readOnly={!editingSystemMessage}
             rows={14}
             placeholder="กรอก System Message สำหรับ AI..."
-            className={`bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-mono text-sm resize-y ${
+            className={`bg-zinc-100 dark:bg-zinc-800/50 border-zinc-300 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 font-mono text-sm resize-y ${
               !editingSystemMessage ? "opacity-70 cursor-not-allowed" : ""
             }`}
           />
@@ -650,7 +650,7 @@ export function SettingsClient({ initialSettings, models, loadError = false }: S
                 <Button
                   onClick={handleRequestSaveSystemMessage}
                   disabled={savingSystemMessage || !systemMessage.trim()}
-                  className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white shadow-lg shadow-blue-500/20 items-center gap-2"
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 items-center gap-2"
                 >
                   {savingSystemMessage ? (
                     <>
@@ -694,7 +694,7 @@ export function SettingsClient({ initialSettings, models, loadError = false }: S
             <Button
               onClick={handleConfirmSavePrompt}
               disabled={saving}
-              className="bg-blue-600 hover:bg-blue-500 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {saving ? "กำลังบันทึก..." : "ยืนยัน"}
             </Button>
@@ -723,7 +723,7 @@ export function SettingsClient({ initialSettings, models, loadError = false }: S
             <Button
               onClick={handleConfirmSaveModel}
               disabled={savingModel}
-              className="bg-blue-600 hover:bg-blue-500 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {savingModel ? "กำลังบันทึก..." : "ยืนยัน"}
             </Button>
@@ -755,7 +755,7 @@ export function SettingsClient({ initialSettings, models, loadError = false }: S
             <Button
               onClick={handleConfirmSaveSystemMessage}
               disabled={savingSystemMessage}
-              className="bg-blue-600 hover:bg-blue-500 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {savingSystemMessage ? "กำลังบันทึก..." : "ยืนยัน"}
             </Button>

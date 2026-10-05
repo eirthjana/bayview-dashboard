@@ -187,7 +187,7 @@ export default function SystemStatusPage() {
           <Button
             onClick={() => probeStatus(true)}
             disabled={isProbing}
-            className="bg-[#0C645B] hover:bg-[#0A524A] text-white text-xs h-9 gap-2 rounded-xl shadow-sm px-4"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-9 gap-2 rounded-xl shadow-sm px-4"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isProbing ? "animate-spin" : ""}`} />
             {isProbing ? "กำลังทดสอบ..." : "ทดสอบ Ping & Refresh"}
@@ -487,7 +487,7 @@ export default function SystemStatusPage() {
                   รายละเอียดการตรวจสอบความพร้อมและข้อความตอบกลับล่าสุดของแต่ละบริการ
                 </CardDescription>
               </div>
-              <ShieldCheck className="w-5 h-5 text-zinc-400" />
+              <ShieldCheck className="w-5 h-5 text-zinc-500 dark:text-zinc-400" />
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -638,17 +638,17 @@ export default function SystemStatusPage() {
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
               <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-zinc-400" />
+                <Clock className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                 ประวัติการทดสอบล่าสุด
               </h3>
-              <span className="text-[0.6875rem] text-zinc-400 font-mono">
+              <span className="text-[0.6875rem] text-zinc-500 dark:text-zinc-400 font-mono">
                 {history.length} รายการ
               </span>
             </div>
 
             <div className="space-y-3 mt-4">
               {history.length === 0 ? (
-                <p className="text-xs text-zinc-400 text-center py-6">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center py-6">
                   กำลังรอผลการทดสอบการเชื่อมต่อ...
                 </p>
               ) : (
@@ -673,7 +673,7 @@ export default function SystemStatusPage() {
                     </div>
 
                     <div className="flex items-center gap-2 font-mono text-[0.6875rem]">
-                      <span className="text-zinc-400">{item.latency} ms</span>
+                      <span className="text-zinc-500 dark:text-zinc-400">{item.latency} ms</span>
                       <Badge
                         variant="outline"
                         className={`text-[0.5625rem] px-1.5 py-0 ${

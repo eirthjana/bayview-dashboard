@@ -180,7 +180,7 @@ export function RepliesClient({
             ))}
           </div>
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -218,7 +218,7 @@ export function RepliesClient({
                       </span>
                     </span>
                     <ChevronDown
-                      className={`w-4 h-4 mt-1 shrink-0 text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                      className={`w-4 h-4 mt-1 shrink-0 text-zinc-500 dark:text-zinc-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
                     />
                   </button>
 
@@ -268,7 +268,7 @@ export function RepliesClient({
                             <Button
                               onClick={() => send(q)}
                               disabled={sendingId === q.id || !draft.trim() || !adminName}
-                              className="gap-2 bg-[#0C645B] hover:bg-[#0a5750] text-white"
+                              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
                             >
                               <SendHorizontal className="w-4 h-4" />
                               {sendingId === q.id ? "กำลังส่ง..." : "ส่งทาง LINE"}

@@ -152,7 +152,7 @@ export function DateInput({ value, onChange, placeholder = "dd/mm/yyyy", classNa
       {/* Weekday row */}
       <div className="grid grid-cols-7 gap-0.5 mb-1">
         {WEEKDAYS_TH.map((w) => (
-          <div key={w} className="text-center text-[0.625rem] font-semibold text-zinc-400 dark:text-zinc-500 py-1">
+          <div key={w} className="text-center text-[0.625rem] font-semibold text-zinc-500 dark:text-zinc-400 py-1">
             {w}
           </div>
         ))}
@@ -214,10 +214,10 @@ export function DateInput({ value, onChange, placeholder = "dd/mm/yyyy", classNa
           className
         )}
       >
-        <span className={value ? "" : "text-zinc-400 dark:text-zinc-500"}>
+        <span className={value ? "" : "text-zinc-500 dark:text-zinc-400"}>
           {value ? formatDisplay(value) : placeholder}
         </span>
-        <CalendarIcon className="w-4 h-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
+        <CalendarIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400 shrink-0" />
       </button>
 
       {open && typeof document !== "undefined" && createPortal(panel, document.body)}

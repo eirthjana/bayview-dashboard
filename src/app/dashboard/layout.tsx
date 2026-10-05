@@ -171,7 +171,7 @@ function SidebarContent({ collapsed = false, onNavigate }: { collapsed?: boolean
                       className={`w-4 h-4 flex-shrink-0 transition-colors ${
                         isActive
                           ? "text-blue-600 dark:text-blue-400"
-                          : "text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300"
+                          : "text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300"
                       }`}
                     />
                     {!collapsed && <span>{item.label}</span>}

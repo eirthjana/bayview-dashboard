@@ -606,7 +606,7 @@ export function ChatLogsTable({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
             {/* 1. Real-time Search */}
             <div className="lg:col-span-4 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 dark:text-zinc-400 pointer-events-none" />
               <Input
                 placeholder="ค้นหาชื่อผู้ส่ง..."
                 value={search}
@@ -614,7 +614,7 @@ export function ChatLogsTable({
                   setSearch(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="pl-9 bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800 transition-colors"
+                className="pl-9 bg-zinc-50/70 dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 h-9 rounded-xl text-xs font-medium focus:bg-white dark:focus:bg-zinc-800 transition-colors"
               />
             </div>
 
@@ -646,7 +646,7 @@ export function ChatLogsTable({
                   setCurrentPage(1);
                 }}
               />
-              <span className="text-zinc-400 text-xs shrink-0">-</span>
+              <span className="text-zinc-500 dark:text-zinc-400 text-xs shrink-0">-</span>
               <DateInput
                 value={endDate}
                 onChange={(v) => {
@@ -709,9 +709,9 @@ export function ChatLogsTable({
               {filteredLogs.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center text-zinc-500 dark:text-zinc-400 py-16">
-                    <MessageSquare className="w-8 h-8 mx-auto mb-2 text-zinc-300 dark:text-zinc-600" />
+                    <MessageSquare className="w-8 h-8 mx-auto mb-2 text-zinc-300 dark:text-zinc-400" />
                     <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">{loadFailed ? LOAD_FAILED_EMPTY_TEXT : "ไม่พบข้อมูลที่ตรงกับเงื่อนไข"}</p>
-                    {!loadFailed && <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">ลองปรับตัวกรองค้นหา หรือกด Reset ตัวกรอง</p>}
+                    {!loadFailed && <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">ลองปรับตัวกรองค้นหา หรือกด Reset ตัวกรอง</p>}
                   </td>
                 </tr>
               ) : (
@@ -737,7 +737,7 @@ export function ChatLogsTable({
                       <td className="px-3.5 py-3 align-middle whitespace-nowrap">
                         <div className="flex flex-col gap-0.5">
                           <span className="font-bold text-zinc-900 dark:text-zinc-100 whitespace-nowrap">{date}</span>
-                          <span className="text-[0.6875rem] text-zinc-400 dark:text-zinc-500 whitespace-nowrap">{time}</span>
+                          <span className="text-[0.6875rem] text-zinc-500 dark:text-zinc-400 whitespace-nowrap">{time}</span>
                         </div>
                       </td>
 
@@ -773,14 +773,14 @@ export function ChatLogsTable({
                       {/* User message — single line truncated */}
                       <td className="px-3.5 py-3 align-middle overflow-hidden">
                         <p className="text-zinc-800 dark:text-zinc-200 font-normal truncate whitespace-nowrap overflow-hidden text-ellipsis max-w-full" title={log.cleanMessage}>
-                          {log.cleanMessage || <span className="text-zinc-400 dark:text-zinc-500 italic">— ไม่มีข้อความ —</span>}
+                          {log.cleanMessage || <span className="text-zinc-500 dark:text-zinc-400 italic">— ไม่มีข้อความ —</span>}
                         </p>
                       </td>
 
                       {/* AI response — single line truncated */}
                       <td className="px-3.5 py-3 align-middle overflow-hidden">
                         <p className="text-zinc-600 dark:text-zinc-300 font-normal truncate whitespace-nowrap overflow-hidden text-ellipsis max-w-full" title={log.cleanResponse}>
-                          {log.cleanResponse || <span className="text-zinc-400 dark:text-zinc-500 italic">— ไม่มีการตอบ —</span>}
+                          {log.cleanResponse || <span className="text-zinc-500 dark:text-zinc-400 italic">— ไม่มีการตอบ —</span>}
                         </p>
                       </td>
 
@@ -801,7 +801,7 @@ export function ChatLogsTable({
                               {log.responseTime.formatted}
                             </span>
                           ) : (
-                            <span className="text-zinc-400 dark:text-zinc-600 font-mono text-xs">-</span>
+                            <span className="text-zinc-500 dark:text-zinc-400 font-mono text-xs">-</span>
                           )}
                         </div>
                       </td>
@@ -822,7 +822,7 @@ export function ChatLogsTable({
                             onClick={() => openDetail(log)}
                             aria-label="ดูรายละเอียดการสนทนา"
                             title="ดูรายละเอียด"
-                            className="h-10 w-10 lg:h-7 lg:w-7 p-0 text-zinc-400 dark:text-zinc-400 hover:text-[#0C645B] dark:hover:text-emerald-400 hover:bg-[#0C645B]/10 dark:hover:bg-zinc-800 rounded-lg"
+                            className="h-10 w-10 lg:h-7 lg:w-7 p-0 text-zinc-500 dark:text-zinc-400 hover:text-[#0C645B] dark:hover:text-emerald-400 hover:bg-[#0C645B]/10 dark:hover:bg-zinc-800 rounded-lg"
                           >
                             <Eye className="w-3.5 h-3.5" />
                           </Button>
@@ -903,7 +903,7 @@ export function ChatLogsTable({
               pageItem === "..." ? (
                 <span
                   key={`dots-${idx}`}
-                  className="px-1.5 py-1 text-zinc-400 dark:text-zinc-500 font-medium select-none text-xs"
+                  className="px-1.5 py-1 text-zinc-500 dark:text-zinc-400 font-medium select-none text-xs"
                 >
                   ...
                 </span>
@@ -915,7 +915,7 @@ export function ChatLogsTable({
                   onClick={() => setCurrentPage(pageItem as number)}
                   className={`h-8 min-w-[2rem] px-2 text-xs font-bold rounded-lg transition-all ${
                     safePage === pageItem
-                      ? "bg-[#0C645B] hover:bg-[#0A524A] text-white shadow-sm"
+                      ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
                       : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
                   }`}
                 >
@@ -999,13 +999,13 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
             {log.isStaff && (
               <span className="text-[#0C645B] dark:text-emerald-400 font-semibold">({log.resolvedDept})</span>
             )}
-            <span className="font-mono text-zinc-400 dark:text-zinc-500 text-[0.6875rem]">{log.cleanLineUserId}</span>
+            <span className="font-mono text-zinc-500 dark:text-zinc-400 text-[0.6875rem]">{log.cleanLineUserId}</span>
           </div>
 
-          <span className="text-zinc-300 dark:text-zinc-600 hidden sm:inline">|</span>
+          <span className="text-zinc-300 dark:text-zinc-400 hidden sm:inline">|</span>
 
           <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 font-medium">
-            <Calendar className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+            <Calendar className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
             <span>
               {date} {time}
             </span>
@@ -1013,7 +1013,7 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
 
           {log.responseTime.seconds !== null && (
             <>
-              <span className="text-zinc-300 dark:text-zinc-600 hidden sm:inline">|</span>
+              <span className="text-zinc-300 dark:text-zinc-400 hidden sm:inline">|</span>
               <div className="flex items-center gap-1 font-mono text-[#0C645B] dark:text-emerald-300 font-bold">
                 <Timer className="w-3.5 h-3.5" />
                 <span>{log.responseTime.formatted}</span>
@@ -1021,7 +1021,7 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
             </>
           )}
 
-          <span className="text-zinc-300 dark:text-zinc-600 hidden sm:inline">|</span>
+          <span className="text-zinc-300 dark:text-zinc-400 hidden sm:inline">|</span>
           <StatusBadge status={log.status} />
         </div>
 
@@ -1032,7 +1032,7 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
             <div className="flex items-center gap-1.5 text-xs font-bold text-[#0C645B] dark:text-emerald-400">
               <User className="w-3.5 h-3.5" />
               <span>{log.resolvedName}</span>
-              <span className="font-normal text-zinc-400 dark:text-zinc-500 font-mono">({shortId(log.cleanLineUserId)})</span>
+              <span className="font-normal text-zinc-500 dark:text-zinc-400 font-mono">({shortId(log.cleanLineUserId)})</span>
             </div>
             <div className="rounded-xl border border-[#0C645B]/20 dark:border-emerald-500/30 bg-[#0C645B]/5 dark:bg-emerald-950/20 px-4 py-3">
               {log.cleanMessage ? (
@@ -1040,7 +1040,7 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
                   {log.cleanMessage}
                 </p>
               ) : (
-                <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">— ไม่มีข้อความ —</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 italic">— ไม่มีข้อความ —</p>
               )}
             </div>
           </div>
@@ -1057,7 +1057,7 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
                   {log.cleanResponse}
                 </p>
               ) : (
-                <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">— ไม่มีการตอบสนอง —</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 italic">— ไม่มีการตอบสนอง —</p>
               )}
             </div>
           </div>

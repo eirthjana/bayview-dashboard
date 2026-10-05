@@ -81,11 +81,11 @@ export function RecentActivity({ logs }: RecentActivityProps) {
           <div className="space-y-2">
             {logs.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full min-h-[13.75rem] text-center">
-                <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 mb-2">
+                <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 dark:text-zinc-400 mb-2">
                   <Clock className="w-5 h-5" />
                 </div>
                 <p className="text-xs font-semibold text-zinc-600 dark:text-zinc-300">ยังไม่มีกิจกรรมการใช้งาน</p>
-                <p className="text-[0.6875rem] text-zinc-400 dark:text-zinc-500 mt-0.5">ข้อความล่าสุดจะปรากฏที่นี่</p>
+                <p className="text-[0.6875rem] text-zinc-500 dark:text-zinc-400 mt-0.5">ข้อความล่าสุดจะปรากฏที่นี่</p>
               </div>
             ) : (
               logs.map((log) => {
@@ -202,12 +202,12 @@ export function RecentActivity({ logs }: RecentActivityProps) {
                       {/* Message Preview (Cleaned) */}
                       <p className="text-xs text-zinc-600 dark:text-zinc-300 truncate leading-tight font-normal">
                         {userMsg || aiResp || (
-                          <span className="text-zinc-400 dark:text-zinc-500 italic">— ไม่มีข้อความ —</span>
+                          <span className="text-zinc-500 dark:text-zinc-400 italic">— ไม่มีข้อความ —</span>
                         )}
                       </p>
 
                       {/* Meta: Time */}
-                      <div className="flex items-center text-[0.625rem] text-zinc-400 dark:text-zinc-500 pt-0.5">
+                      <div className="flex items-center text-[0.625rem] text-zinc-500 dark:text-zinc-400 pt-0.5">
                         <span className="font-medium">
                           {dateStr} {timeStr}
                         </span>
@@ -316,7 +316,7 @@ function RecentActivityDetailModal({
                   แผนก: {employee.department} {employee?.emp_id ? `(ID: ${employee.emp_id})` : ""}
                 </p>
               ) : null}
-              <p className="text-xs text-zinc-400 dark:text-zinc-500 font-mono truncate mt-0.5">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono truncate mt-0.5">
                 LINE ID: {rawLineId || "-"}
               </p>
             </div>
@@ -351,7 +351,7 @@ function RecentActivityDetailModal({
               <span>{displayName}</span>
             </div>
             <div className="rounded-xl border border-[#0C645B]/20 dark:border-emerald-500/30 bg-[#0C645B]/5 dark:bg-emerald-950/20 px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap break-words leading-relaxed">
-              {userMsg || <span className="text-zinc-400 dark:text-zinc-500 italic">— ไม่มีข้อความ —</span>}
+              {userMsg || <span className="text-zinc-500 dark:text-zinc-400 italic">— ไม่มีข้อความ —</span>}
             </div>
           </div>
 
@@ -362,7 +362,7 @@ function RecentActivityDetailModal({
               <span>AI Assistant</span>
             </div>
             <div className="rounded-xl border border-[#8B5E3C]/20 dark:border-[#8B5E3C]/40 bg-[#8B5E3C]/5 dark:bg-[#8B5E3C]/10 px-4 py-3 text-sm text-zinc-900 dark:text-zinc-100 whitespace-pre-wrap break-words leading-relaxed">
-              {aiResp || <span className="text-zinc-400 dark:text-zinc-500 italic">— ไม่มีการตอบสนอง —</span>}
+              {aiResp || <span className="text-zinc-500 dark:text-zinc-400 italic">— ไม่มีการตอบสนอง —</span>}
             </div>
           </div>
         </div>

@@ -487,17 +487,17 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
                     </button>
                   </div>
                 ))}
-                <p className="text-xs text-zinc-400 dark:text-zinc-500 text-center pt-1">
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center pt-1">
                   คลิกเพื่อเพิ่มไฟล์อื่นอีก
                 </p>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center gap-1.5 py-6 text-center">
-                <UploadCloud className="w-8 h-8 text-zinc-400 dark:text-zinc-500" />
+                <UploadCloud className="w-8 h-8 text-zinc-500 dark:text-zinc-400" />
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
                   ลากไฟล์มาวางตรงนี้ (เลือกได้หลายไฟล์) หรือคลิกเพื่อเลือกไฟล์
                 </p>
-                <p className="text-xs text-zinc-400 dark:text-zinc-500">รองรับ PDF, DOCX, TXT, MD</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">รองรับ PDF, DOCX, TXT, MD</p>
               </div>
             )}
           </div>
@@ -520,7 +520,7 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
           <Button
             onClick={handleUpload}
             disabled={pendingFiles.length === 0 || uploading || !groupReady}
-            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white items-center gap-2"
+            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white items-center gap-2"
           >
             {uploading ? (
               <>

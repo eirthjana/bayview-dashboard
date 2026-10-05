@@ -169,7 +169,7 @@ export function DeptActivityChart({ data }: { data: DeptActivity[] }) {
       <CardContent className="p-4 pt-2">
         {sorted.length === 0 ? (
           <div className="h-[13.75rem] flex flex-col items-center justify-center gap-2 text-center">
-            <Building2 className="w-8 h-8 text-zinc-300 dark:text-zinc-600" />
+            <Building2 className="w-8 h-8 text-zinc-300 dark:text-zinc-400" />
             <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">ยังไม่มีข้อมูลการใช้งานแยกตามแผนก</p>
           </div>
         ) : (
@@ -241,7 +241,7 @@ export function DeptActivityChart({ data }: { data: DeptActivity[] }) {
               const share = openDept.count > 0 ? (u.count / openDept.count) * 100 : 0;
               return (
                 <div key={u.lineUserId || i} className="flex items-center gap-3 py-2.5">
-                  <span className="w-6 text-xs font-bold text-zinc-400 dark:text-zinc-500 tabular-nums shrink-0">
+                  <span className="w-6 text-xs font-bold text-zinc-500 dark:text-zinc-400 tabular-nums shrink-0">
                     {i + 1}
                   </span>
                   <div className="min-w-0 flex-1">

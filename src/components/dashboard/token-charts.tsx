@@ -350,7 +350,7 @@ export function DeptMessageChart({ data }: { data: (DeptMessageUsage | DeptToken
       <CardContent className="p-4 pt-2">
         {sorted.length === 0 ? (
           <div className="h-[16.25rem] flex flex-col items-center justify-center gap-2 text-center">
-            <Building2 className="w-8 h-8 text-zinc-300 dark:text-zinc-600" />
+            <Building2 className="w-8 h-8 text-zinc-300 dark:text-zinc-400" />
             <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">ยังไม่มีข้อมูลข้อความแยกตามแผนก</p>
           </div>
         ) : (
