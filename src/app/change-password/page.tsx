@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { KeyRound, AlertCircle, Loader2 } from "lucide-react";
+import { SignOutLink } from "@/components/auth/sign-out-link";
 
 const inputClass =
   "bg-zinc-800/50 border-zinc-700/50 text-zinc-100 placeholder:text-zinc-500 focus:border-blue-500/50 focus:ring-blue-500/20 h-11";
@@ -67,7 +68,7 @@ export default function ChangePasswordPage() {
 
         <CardContent className="pt-4">
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
+            <div role="alert" className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -85,7 +86,7 @@ export default function ChangePasswordPage() {
                 required minLength={8} placeholder="••••••••" disabled={saving} className={inputClass} />
             </div>
             <Button type="submit" disabled={saving}
-              className="w-full h-11 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white font-medium">
+              className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium">
               {saving ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -96,6 +97,9 @@ export default function ChangePasswordPage() {
               )}
             </Button>
           </form>
+          <div className="mt-4">
+            <SignOutLink />
+          </div>
         </CardContent>
       </Card>
     </div>

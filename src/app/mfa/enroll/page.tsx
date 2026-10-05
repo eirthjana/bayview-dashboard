@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { ShieldCheck, AlertCircle, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { SignOutLink } from "@/components/auth/sign-out-link";
 
 export default function MfaEnrollPage() {
   const [qrSvg, setQrSvg] = useState<string | null>(null);
@@ -51,7 +52,8 @@ export default function MfaEnrollPage() {
       setQrSvg(data.totp.qr_code);
       setSecret(data.totp.secret);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "เริ่มตั้งค่า 2FA ไม่สำเร็จ");
+      console.error("MFA enroll failed:", err);
+      setError("เริ่มตั้งค่า 2FA ไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วรีเฟรชหน้านี้");
     } finally {
       setLoading(false);
     }
@@ -86,7 +88,8 @@ export default function MfaEnrollPage() {
       router.push("/dashboard");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "ยืนยันไม่สำเร็จ กรุณาลองใหม่");
+      console.error("MFA enroll verify failed:", err);
+      setError("ยืนยันไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง");
       setVerifying(false);
     }
   }
@@ -113,7 +116,7 @@ export default function MfaEnrollPage() {
 
         <CardContent className="pt-4 space-y-5">
           {error && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
+            <div role="alert" className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -177,7 +180,7 @@ export default function MfaEnrollPage() {
                 <Button
                   type="submit"
                   disabled={verifying || code.length !== 6}
-                  className="w-full h-11 bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-500 hover:to-blue-500 text-white font-medium"
+                  className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium"
                 >
                   {verifying ? (
                     <span className="flex items-center gap-2">
@@ -192,9 +195,10 @@ export default function MfaEnrollPage() {
             </>
           )}
 
-          <p className="text-center text-xs text-zinc-500">
-            ทำมือถือหาย/ลบแอปทิ้ง ให้ติดต่อแอดมินคนอื่นให้ช่วยล้างค่า 2FA ให้ผ่าน Supabase
+          <p className="text-center text-xs text-zinc-400">
+            ทำมือถือหายหรือลบแอป Authenticator ไปแล้ว ให้ติดต่อแอดมินคนอื่นช่วยล้างค่า 2FA ให้ แล้วตั้งค่าใหม่
           </p>
+          <SignOutLink />
         </CardContent>
       </Card>
     </div>
