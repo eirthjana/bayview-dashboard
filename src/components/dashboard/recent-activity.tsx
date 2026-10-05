@@ -21,6 +21,7 @@ import {
   User,
   Crown,
 } from "lucide-react";
+import { FOCUS_RING, onActivateKey } from "@/lib/keyboard";
 
 interface RecentActivityProps {
   logs: ChatLog[];
@@ -142,7 +143,10 @@ export function RecentActivity({ logs }: RecentActivityProps) {
                   <div
                     key={log.id}
                     onClick={() => handleOpenDetail(log)}
-                    className="group relative flex items-start gap-3 p-3 rounded-xl bg-zinc-50/70 dark:bg-zinc-800/40 hover:bg-[#0C645B]/5 dark:hover:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-800 hover:border-[#0C645B]/30 dark:hover:border-zinc-700 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+                    onKeyDown={onActivateKey(() => handleOpenDetail(log))}
+                    role="button"
+                    tabIndex={0}
+                    className={`${FOCUS_RING} group relative flex items-start gap-3 p-3 rounded-xl bg-zinc-50/70 dark:bg-zinc-800/40 hover:bg-[#0C645B]/5 dark:hover:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-800 hover:border-[#0C645B]/30 dark:hover:border-zinc-700 transition-all duration-200 cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.02)]`}
                   >
                     {/* Avatar Initials with Luxury Gradient */}
                     <div

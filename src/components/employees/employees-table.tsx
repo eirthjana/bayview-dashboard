@@ -36,6 +36,7 @@ import { toast } from "sonner";
 import { Copy, Loader2 } from "lucide-react";
 import { DASHBOARD_DATA_REFRESH } from "@/lib/system-health-events";
 import { LOAD_FAILED_EMPTY_TEXT } from "@/components/dashboard/load-error-banner";
+import { FOCUS_RING, onActivateKey } from "@/lib/keyboard";
 
 interface EmployeesTableProps {
   employees: EmployeeRegistry[];
@@ -641,7 +642,10 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
                 <TableRow
                   key={emp.emp_id}
                   onClick={() => setViewing(emp)}
-                  className="border-zinc-200 dark:border-zinc-800/50 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/30 cursor-pointer"
+                  onKeyDown={onActivateKey(() => setViewing(emp))}
+                  tabIndex={0}
+                  aria-label={`ดูรายละเอียด ${emp.name_th || emp.name}`}
+                  className={`border-zinc-200 dark:border-zinc-800/50 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/30 cursor-pointer ${FOCUS_RING}`}
                 >
                   <TableCell className="px-4 py-4 font-mono text-sm text-zinc-500 dark:text-zinc-400">{emp.emp_id}</TableCell>
                   <TableCell className="px-4 py-4">

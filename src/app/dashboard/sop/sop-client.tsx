@@ -35,6 +35,7 @@ import {
   type SopAccess,
   type SopDocumentSummary,
 } from "@/lib/sop-groups";
+import { FOCUS_RING, onActivateKey } from "@/lib/keyboard";
 
 interface SopClientProps {
   initialDocuments: SopDocumentSummary[];
@@ -434,9 +435,15 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }}
             role="button"
             tabIndex={0}
-            className={`rounded-lg border-2 border-dashed p-4 cursor-pointer transition-colors ${
+            aria-label="เลือกไฟล์ SOP ที่จะอัปโหลด"
+            className={`rounded-lg border-2 border-dashed p-4 cursor-pointer transition-colors ${FOCUS_RING} ${
               isDragging
                 ? "border-blue-500 bg-blue-500/5"
                 : "border-zinc-300 dark:border-zinc-700/50 hover:border-zinc-400 dark:hover:border-zinc-600"
@@ -564,9 +571,12 @@ export function SopClient({ initialDocuments, configError }: SopClientProps) {
                   <TableRow
                     key={doc.file_id}
                     onClick={() => doc.view_url && openPreview(doc)}
+                    onKeyDown={doc.view_url ? onActivateKey(() => openPreview(doc)) : undefined}
+                    tabIndex={doc.view_url ? 0 : undefined}
+                    aria-label={doc.view_url ? `ดูตัวอย่าง ${doc.title}` : undefined}
                     title={doc.view_url ? `ดู ${doc.title}` : doc.title}
                     className={`border-zinc-200 dark:border-zinc-800/50 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/30 ${
-                      doc.view_url ? "cursor-pointer" : ""
+                      doc.view_url ? `cursor-pointer ${FOCUS_RING}` : ""
                     }`}
                   >
                     <TableCell className="max-w-[20rem]">
