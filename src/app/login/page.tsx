@@ -17,10 +17,25 @@ import { AlertTriangle, AlertCircle, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { markTabLoggedIn } from "@/components/tab-session-guard";
 
+// Supabase answers in English and the browser's own form checks follow the
+// browser language; everything the user reads here is Thai.
+function loginErrorText(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("invalid login credentials")) return "อีเมลหรือรหัสผ่านไม่ถูกต้อง";
+  if (m.includes("email not confirmed")) return "บัญชีนี้ยังไม่ได้ยืนยันอีเมล กรุณาติดต่อผู้ดูแลระบบ";
+  if (m.includes("rate") || m.includes("too many")) return "พยายามเข้าสู่ระบบหลายครั้งเกินไป กรุณารอสักครู่แล้วลองใหม่";
+  if (m.includes("fetch") || m.includes("network")) return "เชื่อมต่อระบบไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่";
+  return "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่";
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -28,15 +43,22 @@ function LoginForm() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
     const cleanEmail = email.trim();
-    if (!cleanEmail || !password) {
-      setError("กรุณากรอก Email และ Password");
-      setLoading(false);
+    const nextEmailError = !cleanEmail
+      ? "กรุณากรอกอีเมล"
+      : EMAIL_PATTERN.test(cleanEmail)
+        ? null
+        : "รูปแบบอีเมลไม่ถูกต้อง เช่น admin@hotel.com";
+    const nextPasswordError = password ? null : "กรุณากรอกรหัสผ่าน";
+    setEmailError(nextEmailError);
+    setPasswordError(nextPasswordError);
+    if (nextEmailError || nextPasswordError) {
+      document.getElementById(nextEmailError ? "email" : "password")?.focus();
       return;
     }
+    setLoading(true);
 
     try {
       const supabase = createClient();
@@ -60,13 +82,7 @@ function LoginForm() {
           }),
         }).catch(() => {});
 
-        if (authError.message.toLowerCase().includes("email not confirmed")) {
-          setError("Email นี้ยังไม่ได้รับการยืนยัน (ไปที่ Supabase -> Authentication -> Users แล้วกด Confirm Email)");
-        } else if (authError.message.toLowerCase().includes("invalid login credentials")) {
-          setError("Email หรือ Password ไม่ถูกต้อง");
-        } else {
-          setError(authError.message);
-        }
+        setError(loginErrorText(authError.message));
         setLoading(false);
         return;
       }
@@ -154,7 +170,8 @@ function LoginForm() {
       }
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
+      console.error("Login failed:", err);
+      setError(loginErrorText(err instanceof Error ? err.message : ""));
       setLoading(false);
     }
   }
@@ -188,7 +205,7 @@ function LoginForm() {
             Admin Dashboard
           </CardTitle>
           <CardDescription className="text-zinc-400">
-            เข้าสู่ระบบเพื่อจัดการระบบ
+            ระบบจัดการบอท LINE สำหรับพนักงาน The Bayview Pattaya
           </CardDescription>
         </CardHeader>
 
@@ -201,49 +218,71 @@ function LoginForm() {
           )}
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
+            <div role="alert" className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} noValidate className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-zinc-300 text-sm">
-                Email
+                อีเมล
               </Label>
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError(null);
+                }}
+                placeholder="เช่น admin@hotel.com"
                 required
+                aria-invalid={!!emailError}
+                aria-describedby={emailError ? "email-error" : undefined}
                 disabled={loading}
-                className="bg-zinc-800/50 border-zinc-700/50 text-zinc-100 placeholder:text-zinc-500 focus:border-blue-500/50 focus:ring-blue-500/20 h-11"
+                className="bg-zinc-800/50 border-zinc-700/50 text-zinc-100 placeholder:text-zinc-400 focus:border-blue-500/50 focus:ring-blue-500/20 h-11"
               />
+              {emailError && (
+                <p id="email-error" className="text-sm text-red-400">
+                  {emailError}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="password" className="text-zinc-300 text-sm">
-                Password
+                รหัสผ่าน
               </Label>
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (passwordError) setPasswordError(null);
+                }}
                 placeholder="••••••••"
                 required
+                aria-invalid={!!passwordError}
+                aria-describedby={passwordError ? "password-error" : undefined}
                 disabled={loading}
-                className="bg-zinc-800/50 border-zinc-700/50 text-zinc-100 placeholder:text-zinc-500 focus:border-blue-500/50 focus:ring-blue-500/20 h-11"
+                className="bg-zinc-800/50 border-zinc-700/50 text-zinc-100 placeholder:text-zinc-400 focus:border-blue-500/50 focus:ring-blue-500/20 h-11"
               />
+              {passwordError && (
+                <p id="password-error" className="text-sm text-red-400">
+                  {passwordError}
+                </p>
+              )}
             </div>
 
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-11 bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 text-white font-medium shadow-lg shadow-blue-500/20 transition-all duration-300 hover:shadow-blue-500/30 hover:scale-[1.01]"
+              className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-lg shadow-blue-500/20 transition-colors"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
@@ -256,7 +295,7 @@ function LoginForm() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-zinc-500">
+          <p className="mt-6 text-center text-xs text-zinc-400">
             สำหรับผู้ดูแลระบบเท่านั้น ขอบัญชีได้จากแอดมินที่มีอยู่
           </p>
         </CardContent>
