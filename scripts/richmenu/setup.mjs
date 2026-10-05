@@ -25,7 +25,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const IMAGE = path.join(HERE, "bayview_richmenu_full_2500x1686.png");
+// JPEG keeps the detailed design under LINE's 1 MB limit (the PNG export is 4 MB).
+const IMAGE = path.join(HERE, "bayview_richmenu_full_2500x1686.jpg");
 const WIDTH = 2500;
 const HEIGHT = 1686;
 
@@ -65,12 +66,29 @@ const menu = {
 
 function checkImage() {
   if (!fs.existsSync(IMAGE)) throw new Error(`image not found: ${IMAGE}`);
-  const png = fs.readFileSync(IMAGE);
-  if (png.readUInt32BE(0) !== 0x89504e47) throw new Error("image must be a PNG");
-  const [w, h] = [png.readUInt32BE(16), png.readUInt32BE(20)];
+  const img = fs.readFileSync(IMAGE);
+  const [w, h] = imageSize(img);
   if (w !== WIDTH || h !== HEIGHT) throw new Error(`image is ${w}×${h}, must be ${WIDTH}×${HEIGHT}`);
-  if (png.length > 1024 * 1024) throw new Error(`image is ${Math.round(png.length / 1024)} KB, LINE allows 1 MB`);
-  return png;
+  if (img.length > 1024 * 1024) throw new Error(`image is ${Math.round(img.length / 1024)} KB, LINE allows 1 MB`);
+  return img;
+}
+
+function contentType(img) {
+  return img.readUInt32BE(0) === 0x89504e47 ? "image/png" : "image/jpeg";
+}
+
+// Width and height of a PNG, or of a JPEG from its first SOF marker.
+function imageSize(img) {
+  if (img.readUInt32BE(0) === 0x89504e47) return [img.readUInt32BE(16), img.readUInt32BE(20)];
+  if (img.readUInt16BE(0) !== 0xffd8) throw new Error("image must be a PNG or JPEG");
+  for (let i = 2; i < img.length; ) {
+    const marker = img.readUInt16BE(i);
+    if (marker >= 0xffc0 && marker <= 0xffcf && ![0xffc4, 0xffc8, 0xffcc].includes(marker)) {
+      return [img.readUInt16BE(i + 7), img.readUInt16BE(i + 5)];
+    }
+    i += 2 + img.readUInt16BE(i + 2);
+  }
+  throw new Error("JPEG size not found");
 }
 
 function token() {
@@ -100,7 +118,7 @@ async function create() {
   });
   await line(`https://api-data.line.me/v2/bot/richmenu/${richMenuId}/content`, {
     method: "POST",
-    headers: { "Content-Type": "image/png" },
+    headers: { "Content-Type": contentType(png) },
     body: png,
   });
   console.log("Created the full menu and uploaded its image.");
