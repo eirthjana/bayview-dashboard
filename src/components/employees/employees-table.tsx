@@ -33,7 +33,7 @@ import type { EmployeeTable } from "@/lib/config";
 import { DEPARTMENTS, ACCESS_LEVELS } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Copy } from "lucide-react";
+import { Copy, Loader2 } from "lucide-react";
 import { DASHBOARD_DATA_REFRESH } from "@/lib/system-health-events";
 import { LOAD_FAILED_EMPTY_TEXT } from "@/components/dashboard/load-error-banner";
 
@@ -215,6 +215,10 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
   const [linkFilter, setLinkFilter] = useState<string>("__all__");
 
   const [viewing, setViewing] = useState<EmployeeRegistry | null>(null);
+  // Disabling takes the bot and the staff menu away from someone at once, so it
+  // is confirmed first; togglingId blocks a second click while it runs.
+  const [confirmDisable, setConfirmDisable] = useState<EmployeeRegistry | null>(null);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
 
   const [editing, setEditing] = useState<EmployeeRegistry | null>(null);
   const [editDept, setEditDept] = useState("");
@@ -273,6 +277,33 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
     setEditLineName(emp.line_name || "");
     setEditEmail(emp.email || "");
     setEditPhone(emp.phone_number || "");
+  }
+
+  // Closing (Esc, the overlay, ยกเลิก) never drops typed changes silently and
+  // is ignored while a save is in flight.
+  function editDirty() {
+    if (!editing) return false;
+    return (
+      editDept !== (editing.department || "") ||
+      editPos !== (editing.position || "") ||
+      editLineId !== (editing.line_user_id || "") ||
+      editLineName !== (editing.line_name || "") ||
+      editEmail !== (editing.email || "") ||
+      editPhone !== (editing.phone_number || "")
+    );
+  }
+
+  function closeEdit() {
+    if (saving) return;
+    if (editDirty() && !window.confirm("ยังไม่ได้บันทึกสิ่งที่แก้ไว้ ต้องการปิดและทิ้งการแก้ไขหรือไม่")) return;
+    setEditing(null);
+  }
+
+  function closeAdd() {
+    if (adding) return;
+    const dirty = [addName, addNameTh, addNickname, addNicknameTh, addEmail, addPhone].some((v) => v.trim());
+    if (dirty && !window.confirm("ยังไม่ได้บันทึกสิ่งที่แก้ไว้ ต้องการปิดและทิ้งการแก้ไขหรือไม่")) return;
+    setAddOpen(false);
   }
 
   async function saveEdit() {
@@ -482,6 +513,7 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
     const nextStatus = emp.status === "disabled" ? (emp.line_user_id ? "linked" : "unlinked") : "disabled";
     const empDisplay = emp.name_th ? `${emp.name_th} (${emp.name})` : emp.name;
     const target = `พนักงาน: ${empDisplay} (รหัส: ${emp.emp_id})`;
+    setTogglingId(emp.emp_id);
     try {
       const supabase = createClient();
       const { error } = await supabase
@@ -515,6 +547,8 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
         `เปลี่ยนสถานะไม่สำเร็จ: ${err instanceof Error ? err.message : "Error"}`,
         "failed"
       );
+    } finally {
+      setTogglingId(null);
     }
   }
 
@@ -680,10 +714,19 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleToggleDisable(emp)}
+                        onClick={() =>
+                          emp.status === "disabled" ? void handleToggleDisable(emp) : setConfirmDisable(emp)
+                        }
+                        disabled={togglingId === emp.emp_id}
                         className="text-zinc-500 dark:text-zinc-400 hover:text-rose-400 h-9 px-3"
                       >
-                        {emp.status === "disabled" ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+                        {togglingId === emp.emp_id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" aria-label="กำลังบันทึก" />
+                        ) : emp.status === "disabled" ? (
+                          "เปิดใช้งาน"
+                        ) : (
+                          "ปิดใช้งาน"
+                        )}
                       </Button>
                     </div>
                   </TableCell>
@@ -693,6 +736,34 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
           </TableBody>
         </Table>
       </div>
+
+      {/* Confirm disabling an employee */}
+      <Dialog open={!!confirmDisable} onOpenChange={(o) => !o && setConfirmDisable(null)}>
+        <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>ปิดใช้งาน {confirmDisable?.name_th || confirmDisable?.name}?</DialogTitle>
+            <DialogDescription className="text-zinc-600 dark:text-zinc-400">
+              พนักงานคนนี้จะใช้บอทไม่ได้ และเมนูใน LINE จะกลับเป็นเมนูสำหรับคนที่ยังไม่ยืนยันตัวตน
+              จนกว่าจะกดเปิดใช้งานอีกครั้ง
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmDisable(null)} className="text-zinc-600 dark:text-zinc-400">
+              ยกเลิก
+            </Button>
+            <Button
+              onClick={() => {
+                const emp = confirmDisable;
+                setConfirmDisable(null);
+                if (emp) void handleToggleDisable(emp);
+              }}
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              ปิดใช้งาน
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* View details dialog */}
       <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
@@ -768,7 +839,7 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
       </Dialog>
 
       {/* Edit dialog */}
-      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+      <Dialog open={!!editing} onOpenChange={(o) => !o && closeEdit()}>
         <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-h-[85vh] overflow-y-auto custom-scrollbar">
           <DialogHeader>
             <DialogTitle>แก้ไขข้อมูล: {editing?.name}</DialogTitle>
@@ -913,7 +984,7 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
           </div>
 
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setEditing(null)} className="text-zinc-500 dark:text-zinc-400">
+            <Button variant="ghost" onClick={closeEdit} disabled={saving} className="text-zinc-500 dark:text-zinc-400">
               ยกเลิก
             </Button>
             <Button
@@ -928,7 +999,7 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
       </Dialog>
 
       {/* Add employee dialog */}
-      <Dialog open={addOpen} onOpenChange={(o) => !o && setAddOpen(false)}>
+      <Dialog open={addOpen} onOpenChange={(o) => !o && closeAdd()}>
         <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 max-h-[85vh] overflow-y-auto custom-scrollbar">
           <DialogHeader>
             <DialogTitle>เพิ่มพนักงานใหม่</DialogTitle>
@@ -1066,7 +1137,7 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
           </div>
 
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setAddOpen(false)} className="text-zinc-500 dark:text-zinc-400">
+            <Button variant="ghost" onClick={closeAdd} disabled={adding} className="text-zinc-500 dark:text-zinc-400">
               ยกเลิก
             </Button>
             <Button

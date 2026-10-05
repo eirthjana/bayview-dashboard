@@ -361,6 +361,17 @@ export function AdminsClient({
     setDialogOpen(true);
   }
 
+  // Closing never drops typed input silently and is ignored mid-save.
+  function closeDialog() {
+    if (saving) return;
+    const dirty = editing
+      ? form.name !== (editing.name || "") || form.name_th !== (editing.name_th || "")
+      : [form.email, form.name, form.name_th, form.password].some((v) => v.trim());
+    if (dirty && !window.confirm("ยังไม่ได้บันทึกสิ่งที่แก้ไว้ ต้องการปิดและทิ้งการแก้ไขหรือไม่")) return;
+    setDialogOpen(false);
+    setForm(blankForm());
+  }
+
   function pickEmployee(empId: string) {
     setPickedEmp(empId);
     const emp = employees.find((e) => String(e.emp_id) === empId);
@@ -445,6 +456,11 @@ export function AdminsClient({
   }
 
   const canSave = !!form.name.trim() && (editing ? true : !!form.email.trim() && form.password.length >= MIN_PASSWORD);
+  const missingFields = [
+    !editing && !form.email.trim() ? "Email" : null,
+    !form.name.trim() ? "ชื่อ-นามสกุล (อังกฤษ)" : null,
+    !editing && form.password.length < MIN_PASSWORD ? `รหัสผ่านอย่างน้อย ${MIN_PASSWORD} ตัวอักษร` : null,
+  ].filter(Boolean) as string[];
 
   return (
     <div className="space-y-6">
@@ -946,10 +962,7 @@ export function AdminsClient({
       <Dialog
         open={dialogOpen}
         onOpenChange={(o) => {
-          if (!o) {
-            setDialogOpen(false);
-            setForm(blankForm());
-          }
+          if (!o) closeDialog();
         }}
       >
         <DialogContent className="sm:max-w-lg rounded-2xl bg-white dark:bg-[#27211C] border-zinc-200 dark:border-zinc-800">
@@ -967,8 +980,8 @@ export function AdminsClient({
           <div className="space-y-3 py-2">
             {!editing && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">เลือกจากรายชื่อพนักงาน</Label>
-                <select className={selectClass} value={pickedEmp} onChange={(e) => pickEmployee(e.target.value)}>
+                <Label htmlFor="admin-pick" className="text-xs font-semibold">เลือกจากรายชื่อพนักงาน</Label>
+                <select id="admin-pick" className={selectClass} value={pickedEmp} onChange={(e) => pickEmployee(e.target.value)}>
                   <option value="">— กรอกเอง (Manual) —</option>
                   {employees.map((e) => {
                     const already = !!e.email && adminEmails.has(e.email.toLowerCase());
@@ -984,8 +997,9 @@ export function AdminsClient({
             )}
             {!editing && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Email (สำหรับใช้ล็อกอิน)</Label>
+                <Label htmlFor="admin-email" className="text-xs font-semibold">Email (สำหรับใช้ล็อกอิน)</Label>
                 <Input
+                  id="admin-email"
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -995,8 +1009,9 @@ export function AdminsClient({
               </div>
             )}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">ชื่อ-นามสกุล (อังกฤษ)</Label>
+              <Label htmlFor="admin-name" className="text-xs font-semibold">ชื่อ-นามสกุล (อังกฤษ)</Label>
               <Input
+                id="admin-name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="เช่น Somchai Jaidee"
@@ -1004,8 +1019,9 @@ export function AdminsClient({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">ชื่อ-นามสกุล (ไทย)</Label>
+              <Label htmlFor="admin-name-th" className="text-xs font-semibold">ชื่อ-นามสกุล (ไทย)</Label>
               <Input
+                id="admin-name-th"
                 value={form.name_th}
                 onChange={(e) => setForm({ ...form, name_th: e.target.value })}
                 placeholder="เช่น สมชาย ใจดี"
@@ -1020,10 +1036,16 @@ export function AdminsClient({
             )}
           </div>
 
+          {!canSave && !saving && (
+            <p className="text-xs text-zinc-600 dark:text-zinc-400" aria-live="polite">
+              ยังขาด: {missingFields.join(", ")}
+            </p>
+          )}
+
           <DialogFooter className="gap-2">
             <Button
               variant="ghost"
-              onClick={() => setDialogOpen(false)}
+              onClick={closeDialog}
               disabled={saving}
               className="rounded-xl text-xs h-9"
             >
@@ -1044,7 +1066,7 @@ export function AdminsClient({
       <Dialog
         open={!!resetting}
         onOpenChange={(o) => {
-          if (!o) {
+          if (!o && !saving) {
             setResetting(null);
             setResetPassword("");
           }
