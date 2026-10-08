@@ -155,6 +155,22 @@ export interface EmployeeRegistry {
   access_level: "staff" | "manager";
 }
 
+/** An employee's "ask an admin to verify me" request from the LIFF page (migration 19). */
+export interface LinkRequest {
+  id: number;
+  ref_code: string;
+  employee_table: string;
+  emp_id: number;
+  line_user_id: string;
+  line_name: string | null;
+  line_picture_url: string | null;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  created_at: string;
+  decided_at: string | null;
+  decided_by: string | null;
+  note: string | null;
+}
+
 export const DEPARTMENTS: Record<string, string[]> = {
   "Executive Office": [
     "General Manager",

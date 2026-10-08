@@ -28,12 +28,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import type { EmployeeRegistry } from "@/lib/types";
+import type { EmployeeRegistry, LinkRequest } from "@/lib/types";
+import { fetchLinkRequests } from "@/lib/link-requests-query";
+import { LinkRequestsPanel } from "./link-requests-panel";
 import type { EmployeeTable } from "@/lib/config";
 import { DEPARTMENTS, ACCESS_LEVELS } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Copy, Loader2 } from "lucide-react";
+import { Copy, Loader2, UserCheck, Users } from "lucide-react";
 import { DASHBOARD_DATA_REFRESH } from "@/lib/system-health-events";
 import { LOAD_FAILED_EMPTY_TEXT } from "@/components/dashboard/load-error-banner";
 import { FOCUS_RING, onActivateKey } from "@/lib/keyboard";
@@ -44,6 +46,9 @@ interface EmployeesTableProps {
   table: EmployeeTable;
   /** The list failed to load: say so instead of "no employees yet". */
   loadFailed?: boolean;
+  /** "Verify me" requests for the คำขอยืนยันตัวตน tab. */
+  linkRequests: LinkRequest[];
+  requestsLoadFailed?: boolean;
 }
 
 const ACCESS_BADGE_CLASS: Record<string, string> = {
@@ -163,9 +168,18 @@ function DetailRow({
   );
 }
 
-export function EmployeesTable({ employees: initial, table, loadFailed = false }: EmployeesTableProps) {
+export function EmployeesTable({
+  employees: initial,
+  table,
+  loadFailed = false,
+  linkRequests: initialRequests,
+  requestsLoadFailed = false,
+}: EmployeesTableProps) {
   const [employees, setEmployees] = useState(initial);
   const [syncedInitial, setSyncedInitial] = useState(initial);
+  const [linkRequests, setLinkRequests] = useState(initialRequests);
+  const [syncedRequests, setSyncedRequests] = useState(initialRequests);
+  const [activeTab, setActiveTab] = useState<"employees" | "requests">("employees");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Sync state if server component revalidates
@@ -173,6 +187,11 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
     setSyncedInitial(initial);
     setEmployees(initial);
   }
+  if (syncedRequests !== initialRequests) {
+    setSyncedRequests(initialRequests);
+    setLinkRequests(initialRequests);
+  }
+  const pendingRequests = linkRequests.filter((r) => r.status === "pending").length;
 
   const refetchEmployees = useCallback(async (showToast = false) => {
     setIsRefreshing(true);
@@ -184,6 +203,14 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
         .order("emp_id", { ascending: true });
 
       if (error) throw error;
+
+      // Approving a request links an employee, so both lists move together.
+      // A failure here keeps the old requests rather than hiding the employees.
+      try {
+        setLinkRequests(await fetchLinkRequests(supabase, table));
+      } catch (requestsError) {
+        console.error("Failed to refetch link requests:", requestsError);
+      }
 
       if (data) {
         setEmployees(data);
@@ -573,6 +600,43 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
         </div>
       </div>
 
+      {/* Tabs, styled like Admin Manage */}
+      <div role="tablist" aria-label="ส่วนของหน้าจัดการพนักงาน" className="flex flex-wrap items-center gap-1 p-1 bg-white dark:bg-zinc-900/50 rounded-xl w-fit border border-zinc-200 dark:border-zinc-800/50">
+        {[
+          { id: "employees" as const, label: "รายชื่อพนักงาน (Employees)", Icon: Users, count: employees.length },
+          { id: "requests" as const, label: "คำขอยืนยันตัวตน (Verify Requests)", Icon: UserCheck, count: pendingRequests },
+        ].map(({ id, label, Icon, count }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === id}
+            onClick={() => setActiveTab(id)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              activeTab === id
+                ? "bg-blue-500/10 text-blue-400 shadow-sm shadow-blue-500/5"
+                : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
+            }`}
+          >
+            <Icon className="w-4 h-4" aria-hidden />
+            <span>{label}</span>
+            <span
+              className={`text-[0.6875rem] px-2 py-0.5 rounded-full font-medium ${
+                id === "requests" && count > 0
+                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                  : activeTab === id
+                    ? "bg-blue-500/15 text-blue-400"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
+              }`}
+            >
+              {count}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "employees" && (
+      <>
       {/* Search + Filters + Actions */}
       <div className="flex flex-col sm:flex-row gap-3">
         <Input
@@ -742,6 +806,17 @@ export function EmployeesTable({ employees: initial, table, loadFailed = false }
           </TableBody>
         </Table>
       </div>
+      </>
+      )}
+
+      {activeTab === "requests" && (
+        <LinkRequestsPanel
+          requests={linkRequests}
+          employees={employees}
+          loadFailed={requestsLoadFailed}
+          onChanged={() => refetchEmployees(false)}
+        />
+      )}
 
       {/* Confirm disabling an employee */}
       <Dialog open={!!confirmDisable} onOpenChange={(o) => !o && setConfirmDisable(null)}>

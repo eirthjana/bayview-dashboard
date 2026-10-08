@@ -35,6 +35,14 @@ export async function readLiffRequest(request: NextRequest): Promise<LiffRequest
   }
 }
 
+/** An employee id as typed: 1–9 digits, above zero. */
+export function parseEmpId(value: unknown): number | null {
+  const text = typeof value === "number" ? String(value) : typeof value === "string" ? value.trim() : "";
+  if (!/^\d{1,9}$/.test(text)) return null;
+  const empId = Number(text);
+  return empId > 0 ? empId : null;
+}
+
 export function serverError(context: string, error: unknown): NextResponse {
   console.error(`${context}:`, error);
   return NextResponse.json({ status: "error", error: "ระบบขัดข้อง กรุณาลองใหม่อีกครั้ง" }, { status: 500 });

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Liff } from "@line/liff";
-import { CheckCircle2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Clock, ShieldCheck } from "lucide-react";
 import { callLiffApi, closeLiff, errorText, GENERIC_ERROR, useLiff } from "../liff-client";
 import {
   Card,
@@ -27,8 +27,18 @@ type Employee = {
   position: string | null;
 };
 
+type LinkRequest = {
+  status: "pending" | "rejected";
+  ref_code: string;
+  emp_id: number;
+  created_at: string;
+  note: string | null;
+};
+
 type View =
   | { step: "checking" }
+  | { step: "request" }
+  | { step: "requestPending"; request: LinkRequest }
   | { step: "linked"; employee: Employee | null }
   | { step: "empId" }
   | { step: "otp" }
@@ -41,7 +51,20 @@ type ApiResult = Partial<Employee> & {
   retryAfter?: number;
   attemptsLeft?: number;
   profile?: Employee;
+  request?: LinkRequest | null;
 };
+
+const requestTime = new Intl.DateTimeFormat("th-TH", {
+  timeZone: "Asia/Bangkok",
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+function rejectedText(request: LinkRequest) {
+  return `แอดมินปฏิเสธคำขอยืนยันตัวตนล่าสุด${request.note ? ` เหตุผล: ${request.note}` : ""} ส่งคำขอใหม่หรือยืนยันทางอีเมลได้`;
+}
 
 export function RegisterClient({ liffId }: { liffId: string | undefined }) {
   const liffState = useLiff(liffId);
@@ -67,15 +90,21 @@ function RegisterFlow({ liff }: { liff: Liff }) {
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
-  // Already verified? Then there is nothing to fill in.
+  // Already verified? Then there is nothing to fill in. Not yet? An open
+  // "ask an admin" request is shown before the email form.
   useEffect(() => {
     let cancelled = false;
     callLiffApi<ApiResult>(liff, "/api/liff/me")
-      .then(({ status, data }) => {
+      .then(async ({ status, data }) => {
         if (cancelled) return;
-        if (status === 200 && data.profile) setView({ step: "linked", employee: data.profile });
-        else if (status === 404) setView({ step: "empId" });
-        else setFatal(data.error || GENERIC_ERROR);
+        if (status === 200 && data.profile) return setView({ step: "linked", employee: data.profile });
+        if (status !== 404) return setFatal(data.error || GENERIC_ERROR);
+        const own = await callLiffApi<ApiResult>(liff, "/api/liff/link-request", { action: "status" });
+        if (cancelled) return;
+        const request = own.status === 200 ? own.data.request : null;
+        if (request?.status === "pending") return setView({ step: "requestPending", request });
+        if (request?.status === "rejected") setError(rejectedText(request));
+        setView({ step: "empId" });
       })
       .catch((e) => {
         const message = errorText(e);
@@ -111,6 +140,77 @@ function RegisterFlow({ liff }: { liff: Liff }) {
       } else {
         setError(data.error || GENERIC_ERROR);
       }
+    } catch (e) {
+      const message = errorText(e);
+      if (message) setError(message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendAdminRequest() {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const { status, data } = await callLiffApi<ApiResult>(liff, "/api/liff/link-request", {
+        action: "create",
+        empId,
+      });
+      if (status === 200 && data.status === "already_linked") setView({ step: "linked", employee: null });
+      else if (status === 200 && data.request) setView({ step: "requestPending", request: data.request });
+      else setError(data.error || GENERIC_ERROR);
+    } catch (e) {
+      const message = errorText(e);
+      if (message) setError(message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** "Check status" on the waiting screen: linked yet, still waiting, or turned down. */
+  async function checkRequest() {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const me = await callLiffApi<ApiResult>(liff, "/api/liff/me");
+      if (me.status === 200 && me.data.profile) {
+        setView({ step: "done", employee: me.data.profile });
+        return;
+      }
+      const { status, data } = await callLiffApi<ApiResult>(liff, "/api/liff/link-request", { action: "status" });
+      if (status !== 200) {
+        setError(data.error || GENERIC_ERROR);
+      } else if (data.request?.status === "pending") {
+        setView({ step: "requestPending", request: data.request });
+        setNotice("ยังรอแอดมินอนุมัติอยู่");
+      } else if (data.request?.status === "rejected") {
+        setError(rejectedText(data.request));
+        setView({ step: "empId" });
+      } else {
+        setError("ไม่พบคำขอที่รออนุมัติ กรุณาส่งคำขอใหม่");
+        setView({ step: "empId" });
+      }
+    } catch (e) {
+      const message = errorText(e);
+      if (message) setError(message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelRequest() {
+    setBusy(true);
+    setError(null);
+    try {
+      const { status, data } = await callLiffApi<ApiResult>(liff, "/api/liff/link-request", { action: "cancel" });
+      if (status !== 200) {
+        setError(data.error || GENERIC_ERROR);
+        return;
+      }
+      setNotice(null);
+      setView({ step: "empId" });
     } catch (e) {
       const message = errorText(e);
       if (message) setError(message);
@@ -222,7 +322,93 @@ function RegisterFlow({ liff }: { liff: Liff }) {
             >
               มีรหัส 6 หลักจากอีเมลแล้ว
             </TextButton>
+            <div className="border-t border-[#F1ECE2] pt-3 text-center">
+              <p className="text-sm text-zinc-500">ไม่มีอีเมล หรือไม่ได้รับอีเมล?</p>
+              <TextButton
+                onClick={() => {
+                  setError(null);
+                  setView({ step: "request" });
+                }}
+              >
+                ขอให้แอดมินยืนยันตัวตนแทน
+              </TextButton>
+            </div>
           </form>
+        </Card>
+      )}
+
+      {view.step === "request" && (
+        <Card>
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (empId && !busy) sendAdminRequest();
+            }}
+          >
+            <div>
+              <StepLabel>ยืนยันตัวตนผ่านแอดมิน</StepLabel>
+              <h2 className="text-lg font-semibold">ขอให้แอดมินยืนยันตัวตน</h2>
+              <p className="mt-1 text-sm leading-relaxed text-zinc-500">
+                สำหรับพนักงานที่ไม่มีอีเมลรับรหัส กรอกรหัสพนักงานแล้วกดส่งคำขอ จากนั้นนำบัตรพนักงานไปพบแอดมิน
+                (IT หรือ HR) เพื่อให้อนุมัติ
+              </p>
+            </div>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium">รหัสพนักงาน</span>
+              <input
+                value={empId}
+                onChange={(e) => setEmpId(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="เช่น 1001"
+                className={inputClass}
+              />
+            </label>
+            {error && <Notice tone="error">{error}</Notice>}
+            <PrimaryButton type="submit" busy={busy} disabled={!empId}>
+              ส่งคำขอ
+            </PrimaryButton>
+            <TextButton
+              className="self-center"
+              onClick={() => {
+                setError(null);
+                setView({ step: "empId" });
+              }}
+            >
+              กลับไปยืนยันทางอีเมล
+            </TextButton>
+          </form>
+        </Card>
+      )}
+
+      {view.step === "requestPending" && (
+        <Card>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col items-center gap-2 text-center">
+              <Clock className="h-12 w-12 text-amber-500" aria-hidden />
+              <h2 className="text-lg font-semibold">ส่งคำขอแล้ว รอแอดมินอนุมัติ</h2>
+              <p className="text-sm text-zinc-500">แสดงรหัสคำขอนี้ให้แอดมินดู</p>
+              <p className="font-mono text-4xl font-bold tracking-[0.3em] text-zinc-900">{view.request.ref_code}</p>
+            </div>
+            <dl>
+              <InfoRow label="รหัสพนักงาน">{view.request.emp_id}</InfoRow>
+              <InfoRow label="ส่งคำขอเมื่อ">{requestTime.format(new Date(view.request.created_at))}</InfoRow>
+            </dl>
+            <ol className="list-decimal space-y-1 pl-5 text-sm leading-relaxed text-zinc-600">
+              <li>นำบัตรพนักงานไปพบแอดมิน (IT หรือ HR)</li>
+              <li>เปิดหน้านี้ให้แอดมินดูรหัสคำขอ</li>
+              <li>เมื่อแอดมินอนุมัติแล้ว กดตรวจสอบสถานะ เมนูด้านล่างห้องแชทจะเปลี่ยนเป็นเมนูพนักงาน</li>
+            </ol>
+            {notice && <Notice tone="info">{notice}</Notice>}
+            {error && <Notice tone="error">{error}</Notice>}
+            <PrimaryButton type="button" busy={busy} onClick={checkRequest}>
+              ตรวจสอบสถานะ
+            </PrimaryButton>
+            <TextButton className="self-center" disabled={busy} onClick={cancelRequest}>
+              ยกเลิกคำขอ
+            </TextButton>
+          </div>
         </Card>
       )}
 

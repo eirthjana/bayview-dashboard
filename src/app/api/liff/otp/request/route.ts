@@ -2,16 +2,9 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { EMPLOYEE_TABLE } from "@/lib/config";
 import { sendMail } from "@/lib/mailer";
-import { readLiffRequest, serverError } from "@/lib/liff/request";
+import { parseEmpId, readLiffRequest, serverError } from "@/lib/liff/request";
 import { OTP_REQUEST_MESSAGE, otpSentMessage, requestOtp } from "@/lib/liff/registration";
 import { otpEmailMessage } from "@/lib/liff/otp-email";
-
-function parseEmpId(value: unknown): number | null {
-  const text = typeof value === "number" ? String(value) : typeof value === "string" ? value.trim() : "";
-  if (!/^\d{1,9}$/.test(text)) return null;
-  const empId = Number(text);
-  return empId > 0 ? empId : null;
-}
 
 /**
  * Step 1 of LIFF registration: email a one-time code to the employee. When a

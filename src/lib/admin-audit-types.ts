@@ -125,6 +125,20 @@ export function getActionMeta(actionType: string) {
         badgeColor:
           "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60",
       };
+    case "approve_link_request":
+      return {
+        label: "อนุมัติคำขอยืนยันตัวตน",
+        category: "employee",
+        badgeColor:
+          "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60",
+      };
+    case "reject_link_request":
+      return {
+        label: "ปฏิเสธคำขอยืนยันตัวตน",
+        category: "employee",
+        badgeColor:
+          "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60",
+      };
     case "admin_reply":
       return {
         label: "ตอบกลับข้อความ (Pending Reply)",

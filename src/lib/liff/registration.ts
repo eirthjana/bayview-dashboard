@@ -35,7 +35,7 @@ const RESEND_SECONDS = 60;
 const HOURLY_LIMIT = 5;
 const HOUR_MS = 60 * 60 * 1000;
 
-const CLEARED_PENDING = {
+export const CLEARED_PENDING = {
   pending_otp_hash: null,
   pending_otp_code: null,
   pending_otp_expires_at: null,
