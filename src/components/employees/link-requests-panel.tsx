@@ -29,7 +29,7 @@ import { LOAD_FAILED_EMPTY_TEXT } from "@/components/dashboard/load-error-banner
 const STATUS_BADGE: Record<LinkRequest["status"], { label: string; className: string }> = {
   pending: { label: "รออนุมัติ", className: "border-amber-500/30 text-amber-700 dark:text-amber-300 bg-amber-500/10" },
   approved: { label: "อนุมัติแล้ว", className: "border-emerald-500/30 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10" },
-  rejected: { label: "ปฏิเสธ", className: "border-rose-500/30 text-rose-700 dark:text-rose-300 bg-rose-500/10" },
+  rejected: { label: "ไม่อนุมัติ", className: "border-rose-500/30 text-rose-700 dark:text-rose-300 bg-rose-500/10" },
   cancelled: { label: "ยกเลิกแล้ว", className: "border-zinc-500/30 text-zinc-500 dark:text-zinc-400 bg-zinc-500/10" },
 };
 
@@ -37,6 +37,7 @@ const dateFormat = new Intl.DateTimeFormat("th-TH", {
   timeZone: "Asia/Bangkok",
   day: "numeric",
   month: "short",
+  year: "2-digit",
   hour: "2-digit",
   minute: "2-digit",
 });
@@ -65,6 +66,35 @@ function Avatar({ url, name }: { url: string | null; name: string }) {
   return (
     <div aria-hidden className="h-9 w-9 shrink-0 rounded-full flex items-center justify-center text-sm font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
       {(name.trim()[0] || "?").toUpperCase()}
+    </div>
+  );
+}
+
+/** Who approved or rejected the request, when, and the reason given. */
+function Decision({ request: r }: { request: LinkRequest }) {
+  if (r.status === "pending") return <span className="text-sm text-zinc-500 dark:text-zinc-400">-</span>;
+  const byAdmin = r.status === "approved" || r.status === "rejected";
+  return (
+    <div className="text-sm">
+      {byAdmin ? (
+        <>
+          <div className="font-medium text-zinc-900 dark:text-zinc-100">
+            {r.decided_by_name || r.decided_by || "ไม่ทราบชื่อแอดมิน"}
+          </div>
+          {r.decided_by_name && r.decided_by && (
+            <div className="break-all text-xs text-zinc-500 dark:text-zinc-400">{r.decided_by}</div>
+          )}
+        </>
+      ) : (
+        <div className="text-zinc-600 dark:text-zinc-300">{r.note || "ยกเลิก"}</div>
+      )}
+      <div className="text-xs text-zinc-500 dark:text-zinc-400">{formatDate(r.decided_at)}</div>
+      {byAdmin && r.note && (
+        <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
+          {r.status === "rejected" ? "เหตุผล: " : ""}
+          {r.note}
+        </div>
+      )}
     </div>
   );
 }
@@ -135,7 +165,7 @@ export function LinkRequestsPanel({ requests, employees, loadFailed = false, onC
         <div className="flex shrink-0 gap-1 rounded-lg border border-zinc-200 bg-white p-1 dark:border-zinc-800 dark:bg-zinc-900/50">
           {[
             { value: false, label: `รออนุมัติ (${pendingCount})` },
-            { value: true, label: "ทั้งหมด 30 วัน" },
+            { value: true, label: `ทั้งหมด (${requests.length})` },
           ].map((opt) => (
             <button
               key={String(opt.value)}
@@ -162,18 +192,19 @@ export function LinkRequestsPanel({ requests, employees, loadFailed = false, onC
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">บัญชี LINE</TableHead>
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400">พนักงานตามรหัสที่แจ้ง</TableHead>
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400 w-36">ส่งคำขอเมื่อ</TableHead>
-              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400 w-32">สถานะ</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400 w-28">สถานะ</TableHead>
+              <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400 w-52">ผู้อนุมัติ / ไม่อนุมัติ</TableHead>
               <TableHead className="h-12 px-4 text-sm text-zinc-500 dark:text-zinc-400 text-right w-48">จัดการ</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {shown.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-zinc-500 dark:text-zinc-400 py-12">
+                <TableCell colSpan={7} className="text-center text-zinc-500 dark:text-zinc-400 py-12">
                   {loadFailed
                     ? LOAD_FAILED_EMPTY_TEXT
                     : showAll
-                      ? "ไม่มีคำขอในช่วง 30 วันที่ผ่านมา"
+                      ? "ยังไม่มีคำขอ"
                       : "ไม่มีคำขอที่รออนุมัติ"}
                 </TableCell>
               </TableRow>
@@ -226,13 +257,9 @@ export function LinkRequestsPanel({ requests, employees, loadFailed = false, onC
                       <Badge variant="outline" className={badge.className}>
                         {badge.label}
                       </Badge>
-                      {r.status !== "pending" && (
-                        <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                          {formatDate(r.decided_at)}
-                          {r.decided_by && <div className="break-all">โดย {r.decided_by}</div>}
-                          {r.note && <div>{r.note}</div>}
-                        </div>
-                      )}
+                    </TableCell>
+                    <TableCell className="px-4 py-4">
+                      <Decision request={r} />
                     </TableCell>
                     <TableCell className="px-4 py-4 text-right">
                       {r.status === "pending" && (

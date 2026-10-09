@@ -167,7 +167,10 @@ export interface LinkRequest {
   status: "pending" | "approved" | "rejected" | "cancelled";
   created_at: string;
   decided_at: string | null;
+  /** Admin email. */
   decided_by: string | null;
+  /** Admin name at decision time (migration 20). */
+  decided_by_name: string | null;
   note: string | null;
 }
 

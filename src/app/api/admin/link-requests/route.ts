@@ -4,7 +4,7 @@ import { logAdminActivity } from "@/lib/admin-audit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { EMPLOYEE_TABLE } from "@/lib/config";
 import { linkVerifiedMenu } from "@/lib/line/richmenu";
-import { approveLinkRequest, rejectLinkRequest } from "@/lib/liff/link-requests";
+import { approveLinkRequest, rejectLinkRequest, type DecidingAdmin } from "@/lib/liff/link-requests";
 
 /**
  * Dashboard-only: approve or reject an employee's "verify me" request
@@ -22,12 +22,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: "ต้องระบุ id และ action เป็น approve หรือ reject" }, { status: 400 });
   }
   const note = typeof body?.note === "string" && body.note.trim() ? body.note.trim().slice(0, 300) : null;
-  const adminEmail = admin.user.email || admin.user.id;
   const db = createAdminClient();
 
   try {
+    // The name shown in the request history, as in admin_log.
+    const { data: adminRow } = await db
+      .from("admin_users")
+      .select("name, name_th, email")
+      .eq("user_id", admin.user.id)
+      .maybeSingle();
+    const decider: DecidingAdmin = {
+      email: (adminRow?.email || admin.user.email || admin.user.id).trim().toLowerCase(),
+      name: adminRow?.name_th || adminRow?.name || null,
+    };
+
     if (action === "reject") {
-      const result = await rejectLinkRequest(db, id, adminEmail, note);
+      const result = await rejectLinkRequest(db, id, decider, note);
       if (!result.ok) return NextResponse.json({ success: false, error: result.error }, { status: result.status });
       await logAdminActivity({
         action_type: "reject_link_request",
@@ -37,7 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    const result = await approveLinkRequest(db, EMPLOYEE_TABLE, id, adminEmail);
+    const result = await approveLinkRequest(db, EMPLOYEE_TABLE, id, decider);
     if (!result.ok) return NextResponse.json({ success: false, error: result.error }, { status: result.status });
 
     const employee = result.employee!;

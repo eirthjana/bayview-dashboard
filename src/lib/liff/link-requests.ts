@@ -121,6 +121,9 @@ type PendingRow = {
   line_picture_url: string | null;
 };
 
+/** Who approved or rejected: saved on the request so the history names them. */
+export type DecidingAdmin = { email: string; name: string | null };
+
 export type DecideResult =
   | { ok: true; employee?: LinkedEmployee; lineUserId?: string }
   | { ok: false; status: number; error: string };
@@ -151,7 +154,7 @@ export async function approveLinkRequest(
   db: SupabaseClient,
   table: EmployeeTable,
   id: number,
-  adminEmail: string
+  admin: DecidingAdmin
 ): Promise<DecideResult> {
   const request = await loadPending(db, id);
   if (!request) return ALREADY_DECIDED;
@@ -207,7 +210,7 @@ export async function approveLinkRequest(
   const now = new Date().toISOString();
   const { error: doneError } = await db
     .from("link_requests")
-    .update({ status: "approved", decided_at: now, decided_by: adminEmail })
+    .update({ status: "approved", decided_at: now, decided_by: admin.email, decided_by_name: admin.name })
     .eq("id", id);
   if (doneError) throw doneError;
 
@@ -216,7 +219,8 @@ export async function approveLinkRequest(
     .update({
       status: "rejected",
       decided_at: now,
-      decided_by: adminEmail,
+      decided_by: admin.email,
+      decided_by_name: admin.name,
       note: "รหัสพนักงานนี้ได้รับการยืนยันกับบัญชี LINE อื่นแล้ว",
     })
     .eq("emp_id", request.emp_id)
@@ -230,12 +234,18 @@ export async function approveLinkRequest(
 export async function rejectLinkRequest(
   db: SupabaseClient,
   id: number,
-  adminEmail: string,
+  admin: DecidingAdmin,
   note: string | null
 ): Promise<DecideResult> {
   const { data, error } = await db
     .from("link_requests")
-    .update({ status: "rejected", decided_at: new Date().toISOString(), decided_by: adminEmail, note })
+    .update({
+      status: "rejected",
+      decided_at: new Date().toISOString(),
+      decided_by: admin.email,
+      decided_by_name: admin.name,
+      note,
+    })
     .eq("id", id)
     .eq("status", "pending")
     .select("id");
