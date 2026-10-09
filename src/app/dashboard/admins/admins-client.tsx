@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Globe,
   User,
+  Users,
   AlertTriangle,
   Filter,
   Activity,
@@ -475,7 +476,7 @@ export function AdminsClient({
               : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
           }`}
         >
-          <ShieldCheck className="w-4 h-4" />
+          <Users className="w-4 h-4" strokeWidth={2} />
           <span>รายชื่อแอดมิน (Admin List)</span>
           <span
             className={`text-[0.6875rem] px-2 py-0.5 rounded-full font-medium ${
@@ -497,7 +498,7 @@ export function AdminsClient({
               : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
           }`}
         >
-          <Activity className="w-4 h-4" />
+          <History className="w-4 h-4" strokeWidth={2} />
           <span>บันทึกกิจกรรมระบบ (Activity Logs)</span>
           <span
             className={`text-[0.6875rem] px-2 py-0.5 rounded-full font-medium ${
