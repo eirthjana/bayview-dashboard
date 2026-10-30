@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/app/login/actions";
@@ -10,6 +10,8 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { CurrentAdmin } from "@/components/dashboard/current-admin";
 import { RefreshButton } from "@/components/dashboard/refresh-button";
+import { DASHBOARD_DATA_REFRESH } from "@/lib/system-health-events";
+import { createClient } from "@/lib/supabase/client";
 import {
   Tooltip,
   TooltipContent,
@@ -111,7 +113,15 @@ const navSections: NavSection[] = [
   },
 ];
 
-function SidebarContent({ collapsed = false, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
+function SidebarContent({
+  collapsed = false,
+  onNavigate,
+  pendingCount = 0,
+}: {
+  collapsed?: boolean;
+  onNavigate?: () => void;
+  pendingCount?: number;
+}) {
   const pathname = usePathname();
 
   return (
@@ -154,12 +164,21 @@ function SidebarContent({ collapsed = false, onNavigate }: { collapsed?: boolean
                     ? pathname === "/dashboard"
                     : pathname.startsWith(item.href);
 
+                const isReplies = item.href === "/dashboard/replies";
+                const hasBadge = isReplies && pendingCount > 0;
+
                 const linkContent = (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={onNavigate}
-                    className={`flex items-center gap-3 px-3 py-2.5 lg:py-2 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                    className={`flex items-center ${
+                      collapsed
+                        ? "justify-center"
+                        : isReplies
+                        ? "justify-between"
+                        : "gap-3"
+                    } px-3 py-2.5 lg:py-2 rounded-lg text-sm font-medium transition-all duration-200 group ${
                       collapsed ? "justify-center" : ""
                     } ${
                       isActive
@@ -167,14 +186,51 @@ function SidebarContent({ collapsed = false, onNavigate }: { collapsed?: boolean
                         : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
                     }`}
                   >
-                    <Icon
-                      className={`w-4 h-4 flex-shrink-0 transition-colors ${
-                        isActive
-                          ? "text-blue-600 dark:text-blue-400"
-                          : "text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300"
-                      }`}
-                    />
-                    {!collapsed && <span>{item.label}</span>}
+                    {isReplies && !collapsed ? (
+                      <>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Icon
+                            className={`w-4 h-4 flex-shrink-0 transition-colors ${
+                              isActive
+                                ? "text-blue-600 dark:text-blue-400"
+                                : "text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300"
+                            }`}
+                          />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                        {hasBadge && (
+                          <span
+                            className={`inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full text-[11px] font-medium shrink-0 leading-none border transition-colors tabular-nums ${
+                              isActive
+                                ? "bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-500/40"
+                                : "bg-zinc-200 text-zinc-700 border-zinc-300/60 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700"
+                            }`}
+                          >
+                            {pendingCount}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="relative flex items-center justify-center">
+                          <Icon
+                            className={`w-4 h-4 flex-shrink-0 transition-colors ${
+                              isActive
+                                ? "text-blue-600 dark:text-blue-400"
+                                : "text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-300"
+                            }`}
+                          />
+                          {collapsed && hasBadge && (
+                            <span
+                              className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ring-2 ring-white dark:ring-zinc-900 ${
+                                isActive ? "bg-emerald-500" : "bg-zinc-400 dark:bg-zinc-500"
+                              }`}
+                            />
+                          )}
+                        </div>
+                        {!collapsed && <span>{item.label}</span>}
+                      </>
+                    )}
                   </Link>
                 );
 
@@ -184,9 +240,20 @@ function SidebarContent({ collapsed = false, onNavigate }: { collapsed?: boolean
                       <TooltipTrigger render={linkContent} />
                       <TooltipContent
                         side="right"
-                        className="bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700"
+                        className="bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-300 dark:border-zinc-700 flex items-center gap-1.5"
                       >
-                        {item.label}
+                        <span>{item.label}</span>
+                        {hasBadge && (
+                          <span
+                            className={`inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full text-[10px] font-medium leading-none border tabular-nums ${
+                              isActive
+                                ? "bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-900/80 dark:text-emerald-300 dark:border-emerald-500/40"
+                                : "bg-zinc-300 text-zinc-800 border-zinc-400/50 dark:bg-zinc-700 dark:text-zinc-200 dark:border-zinc-600"
+                            }`}
+                          >
+                            {pendingCount}
+                          </span>
+                        )}
                       </TooltipContent>
                     </Tooltip>
                   );
@@ -227,6 +294,62 @@ export default function DashboardLayout({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState<number>(0);
+  const pathname = usePathname();
+
+  const fetchPendingCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/pending-replies/count", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success && typeof data.count === "number") {
+        setPendingCount(data.count);
+      }
+    } catch (err) {
+      console.error("Failed to fetch pending replies count:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPendingCount();
+
+    const handleRefresh = () => {
+      fetchPendingCount();
+    };
+    window.addEventListener(DASHBOARD_DATA_REFRESH, handleRefresh);
+
+    const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        fetchPendingCount();
+      }
+    }, 30_000);
+
+    return () => {
+      window.removeEventListener(DASHBOARD_DATA_REFRESH, handleRefresh);
+      clearInterval(interval);
+    };
+  }, [fetchPendingCount]);
+
+  useEffect(() => {
+    fetchPendingCount();
+  }, [pathname, fetchPendingCount]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("sidebar_pending_replies_count")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "chat_logs" },
+        () => {
+          fetchPendingCount();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchPendingCount]);
 
   return (
     <TooltipProvider>
@@ -237,7 +360,7 @@ export default function DashboardLayout({
             collapsed ? "w-[68px]" : "w-64"
           }`}
         >
-          <SidebarContent collapsed={collapsed} />
+          <SidebarContent collapsed={collapsed} pendingCount={pendingCount} />
         </aside>
 
         {/* Main Content */}
@@ -263,7 +386,7 @@ export default function DashboardLayout({
                 />
                 <SheetContent side="left" className="w-64 p-0 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
                   <SheetTitle className="sr-only">เมนูหลัก</SheetTitle>
-                  <SidebarContent onNavigate={() => setMenuOpen(false)} />
+                  <SidebarContent onNavigate={() => setMenuOpen(false)} pendingCount={pendingCount} />
                 </SheetContent>
               </Sheet>
 

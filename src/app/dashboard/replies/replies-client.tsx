@@ -14,6 +14,7 @@ import {
   type AdminProfile,
 } from "@/lib/admin-reply";
 import { LOAD_FAILED_EMPTY_TEXT } from "@/components/dashboard/load-error-banner";
+import { requestDashboardDataRefresh } from "@/lib/system-health-events";
 
 export interface PendingQuestion {
   id: string;
@@ -115,6 +116,7 @@ export function RepliesClient({
       setOpenId(null);
       if (data.warning) toast.warning(data.warning);
       else toast.success(`ส่งถึง ${q.askerName} แล้ว`);
+      requestDashboardDataRefresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "ส่งไม่สำเร็จ");
     } finally {
