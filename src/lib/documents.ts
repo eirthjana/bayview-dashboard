@@ -189,21 +189,23 @@ export function chunkText(text: string): string[] {
   return chunks;
 }
 
-// Large SOP files can mean 50-100+ sequential embedding calls, and uploading
-// several files back-to-back multiplies that further. Gemini's embedding
-// quota is enforced per-minute, so a burst of chunks/files commonly trips a
-// 429 ("Quota exceeded ... requests_per_minute") — a short single retry
-// lands in the same rate-limit window and just fails again. Exponential
-// backoff (see embedText below) gives the per-minute window time to reset.
-async function embedTextOnce(text: string, apiKey: string): Promise<number[]> {
+// One request per chunk took 3-4 seconds each, so a large SOP (80+ chunks) ran
+// past the upload's time limit and was cut off partway. batchEmbedContents
+// embeds up to 100 texts in one request and returns the same vectors.
+const EMBED_BATCH_SIZE = 100;
+
+async function embedBatchOnce(texts: string[], apiKey: string): Promise<number[][]> {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:batchEmbedContents?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        content: { parts: [{ text }] },
-        taskType: "RETRIEVAL_DOCUMENT",
+        requests: texts.map((text) => ({
+          model: `models/${EMBEDDING_MODEL}`,
+          content: { parts: [{ text }] },
+          taskType: "RETRIEVAL_DOCUMENT",
+        })),
       }),
     }
   );
@@ -216,24 +218,21 @@ async function embedTextOnce(text: string, apiKey: string): Promise<number[]> {
   }
 
   const data = await res.json();
-  const values: number[] | undefined = data?.embedding?.values;
-  if (!values || !Array.isArray(values)) {
-    throw new Error("Gemini embedding response missing embedding.values");
+  const vectors: number[][] | undefined = data?.embeddings?.map((e: { values?: number[] }) => e?.values);
+  if (!vectors || vectors.length !== texts.length || vectors.some((v) => !Array.isArray(v))) {
+    throw new Error("Gemini embedding response missing embeddings");
   }
-  return values;
+  return vectors;
 }
 
 const EMBED_MAX_ATTEMPTS = 5; // 1 initial try + 4 backing-off retries
 
-export async function embedText(text: string): Promise<number[]> {
-  const apiKey = process.env.GOOGLE_API_KEY;
-  if (!apiKey) {
-    throw new Error("GOOGLE_API_KEY is not configured — required to generate embeddings.");
-  }
-
+// Gemini's embedding quota is enforced per minute and uploading several files
+// back-to-back can trip a 429, so back off long enough for the window to reset.
+async function embedBatch(texts: string[], apiKey: string): Promise<number[][]> {
   for (let attempt = 1; attempt <= EMBED_MAX_ATTEMPTS; attempt++) {
     try {
-      return await embedTextOnce(text, apiKey);
+      return await embedBatchOnce(texts, apiKey);
     } catch (error) {
       const status = (error as Error & { status?: number }).status;
       const isTransient = status === 429 || status === 503 || (typeof status === "number" && status >= 500);
@@ -245,6 +244,20 @@ export async function embedText(text: string): Promise<number[]> {
   // Unreachable — the loop always returns or throws — but keeps TypeScript
   // happy about every code path returning a value.
   throw new Error("Gemini embedding request failed after retries");
+}
+
+/** Embeddings for every text, in the same order. */
+export async function embedTexts(texts: string[]): Promise<number[][]> {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    throw new Error("GOOGLE_API_KEY is not configured — required to generate embeddings.");
+  }
+
+  const vectors: number[][] = [];
+  for (let i = 0; i < texts.length; i += EMBED_BATCH_SIZE) {
+    vectors.push(...(await embedBatch(texts.slice(i, i + EMBED_BATCH_SIZE), apiKey)));
+  }
+  return vectors;
 }
 
 /** Deterministic id from the filename so re-uploading the same file replaces its old chunks. */

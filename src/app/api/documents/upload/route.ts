@@ -7,7 +7,7 @@ import {
   SOP_STORAGE_BUCKET,
   chunkText,
   detectFileType,
-  embedText,
+  embedTexts,
   extractText,
   fileIdFromName,
   sopStoragePath,
@@ -16,6 +16,7 @@ import { parseSopGroup } from "@/lib/sop-groups";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024; // 25 MB
+const INSERT_BATCH_SIZE = 50; // each row carries a 3072-number embedding
 
 export const maxDuration = 120;
 
@@ -102,6 +103,9 @@ export async function POST(request: NextRequest) {
     const fileId = fileIdFromName(file.name);
     const admin = createAdminClient();
 
+    // Before touching the old copy: if Gemini fails, the current file stays.
+    const embeddings = await embedTexts(chunks);
+
     // Replace: remove any previously-ingested chunks for this same filename.
     const { error: deleteError } = await admin
       .from("documents1")
@@ -123,21 +127,23 @@ export async function POST(request: NextRequest) {
 
     const now = new Date().toISOString();
     try {
-      for (let i = 0; i < chunks.length; i++) {
-        const embedding = await embedText(chunks[i]);
-        const { error: insertError } = await admin.from("documents1").insert({
-          title: file.name,
-          content: chunks[i],
-          embedding,
-          metadata: { file_id: fileId, title: file.name, chunk_index: i },
-          uploaded_by: uploadedBy,
-          uploaded_by_user_id: user.id,
-          sop_group: group,
-          sop_group_type: groupType,
-          sop_access: access,
-          created_at: now,
-          updated_at: now,
-        });
+      const rows = chunks.map((content, i) => ({
+        title: file.name,
+        content,
+        embedding: embeddings[i],
+        metadata: { file_id: fileId, title: file.name, chunk_index: i },
+        uploaded_by: uploadedBy,
+        uploaded_by_user_id: user.id,
+        sop_group: group,
+        sop_group_type: groupType,
+        sop_access: access,
+        created_at: now,
+        updated_at: now,
+      }));
+      for (let i = 0; i < rows.length; i += INSERT_BATCH_SIZE) {
+        const { error: insertError } = await admin
+          .from("documents1")
+          .insert(rows.slice(i, i + INSERT_BATCH_SIZE));
         if (insertError) throw insertError;
       }
     } catch (error) {
