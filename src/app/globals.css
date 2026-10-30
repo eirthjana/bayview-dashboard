@@ -179,11 +179,15 @@
     @apply font-sans;
     /* The dashboard read too small at the browser's own 100%. Everything in
        the UI is sized in rem, so lifting the root size scales type, padding,
-       gaps, panel heights and max-widths together — the same result as the
-       browser's 110% zoom, but without shrinking the viewport, so media
-       queries and 100vh keep behaving as they do at 100%. Change this one
-       number to retune the whole app. */
+       gaps, panel heights and max-widths together — the same result as
+       browser zoom, but without shrinking the viewport, so media queries and
+       100vh keep behaving as they do at 100%. Desktop is 110% of the old 110%
+       (the size picked by trying browser zoom); phones, mostly the LIFF
+       pages, stay at 110%. Change these numbers to retune the whole app. */
     font-size: 110%;
+    @media (min-width: 1024px) {
+      font-size: 121%;
+    }
   }
 }
 
