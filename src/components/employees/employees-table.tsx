@@ -60,6 +60,13 @@ function deriveAccessLevel(position: string): EmployeeRegistry["access_level"] {
   return (position || "").toLowerCase().includes("manager") ? "manager" : "staff";
 }
 
+// Supabase errors are plain objects (PostgrestError), not Error instances.
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === "object" && "message" in err) return String((err as { message: unknown }).message);
+  return "Error";
+}
+
 // Keeps the employee's LINE menu in step with their link: "link" gives the full
 // menu, "unlink" drops them back to the default menu set in LINE OA Manager.
 // The database change has already been saved, so a failure here only warns.
@@ -428,7 +435,7 @@ export function EmployeesTable({
       }
       setEditing(null);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "";
+      const message = errorMessage(err);
       if (message.includes("duplicate") || message.includes("unique")) {
         toast.error("LINE ID นี้ถูกผูกกับพนักงานคนอื่นไปแล้ว");
       } else {
@@ -437,7 +444,7 @@ export function EmployeesTable({
       void logAudit(
         "employee_update",
         target,
-        `บันทึกข้อมูลไม่สำเร็จ: ${err instanceof Error ? err.message : "Error"}`,
+        `บันทึกข้อมูลไม่สำเร็จ: ${errorMessage(err)}`,
         "failed"
       );
     } finally {
@@ -522,16 +529,31 @@ export function EmployeesTable({
         "success"
       );
     } catch (err) {
-      const message = err instanceof Error ? err.message : "";
+      const message = errorMessage(err);
       if (message.includes("duplicate") || message.includes("emp_id")) {
-        toast.error("รหัสพนักงานนี้มีอยู่แล้ว ลองเปลี่ยนรหัส");
+        // Usually another admin added this ID after our list loaded, so the
+        // suggested ID is stale. Look up the real next free ID.
+        const supabase = createClient();
+        const { data: last } = await supabase
+          .from(table)
+          .select("emp_id")
+          .order("emp_id", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (last && typeof last.emp_id === "number" && last.emp_id >= empId) {
+          const nextId = String(last.emp_id + 1);
+          setAddEmpId(nextId);
+          toast.error(`รหัส ${empId} ถูกใช้ไปแล้ว เปลี่ยนเป็น ${nextId} ให้แล้ว กดเพิ่มพนักงานอีกครั้ง`);
+        } else {
+          toast.error("รหัสพนักงานนี้มีอยู่แล้ว ลองเปลี่ยนรหัส");
+        }
       } else {
         toast.error("เพิ่มไม่สำเร็จ กรุณาลองใหม่");
       }
       void logAudit(
         "create_employee",
         target,
-        `เพิ่มพนักงานไม่สำเร็จ: ${err instanceof Error ? err.message : "Error"}`,
+        `เพิ่มพนักงานไม่สำเร็จ: ${errorMessage(err)}`,
         "failed"
       );
     } finally {
@@ -574,7 +596,7 @@ export function EmployeesTable({
       void logAudit(
         "toggle_employee_status",
         target,
-        `เปลี่ยนสถานะไม่สำเร็จ: ${err instanceof Error ? err.message : "Error"}`,
+        `เปลี่ยนสถานะไม่สำเร็จ: ${errorMessage(err)}`,
         "failed"
       );
     } finally {
