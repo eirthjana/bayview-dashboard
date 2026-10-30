@@ -149,6 +149,7 @@ type StatusFilterType = "all" | "success" | "not_found" | "unauthorized";
 interface EnrichedLog extends ChatLog {
   isStaff: boolean;
   resolvedName: string;
+  resolvedNameTh: string;
   resolvedDept: string;
   roleLabel: string;
   roleType: "admin" | "manager" | "staff" | "guest";
@@ -348,6 +349,14 @@ export function ChatLogsTable({
         const key = normalizeLineId(emp.name);
         if (key) nameMap.set(key, emp);
       }
+      if (emp.name_th) {
+        const key = normalizeLineId(emp.name_th);
+        if (key) nameMap.set(key, emp);
+      }
+      if (emp.nickname_th) {
+        const key = normalizeLineId(emp.nickname_th);
+        if (key) nameMap.set(key, emp);
+      }
     });
 
     return { empLineIdMap: idMap, empLineNameMap: nameMap };
@@ -370,13 +379,15 @@ export function ChatLogsTable({
       }
 
       let resolvedName = "";
+      let resolvedNameTh = "";
       let roleLabel = "Guest";
       let roleType: "admin" | "manager" | "staff" | "guest" = "guest";
       let resolvedDept = "Guest / Unregistered";
       const isStaff = Boolean(emp);
 
       if (emp) {
-        resolvedName = emp.name || "Employee";
+        resolvedName = emp.name || emp.name_th || "Employee";
+        resolvedNameTh = emp.name_th || "";
         resolvedDept = emp.department || "General Staff";
         const level = String(emp.access_level || "").toLowerCase();
         const pos = String(emp.position || "").toLowerCase();
@@ -414,6 +425,7 @@ export function ChatLogsTable({
         employee: emp || log.employee || null,
         isStaff,
         resolvedName,
+        resolvedNameTh,
         resolvedDept,
         roleLabel,
         roleType,
@@ -456,10 +468,20 @@ export function ChatLogsTable({
         if (logDateStr > endDate) return false;
       }
 
-      // 4. Search Bar Filter — sender name only
+      // 4. Universal Search Bar Filter (Question, AI Response, Thai Name, English Name)
       if (q) {
-        const nameMatch = String(log.resolvedName || "").toLowerCase().includes(q);
-        if (!nameMatch) {
+        const question = (log.cleanMessage || log.user_message || "").toLowerCase();
+        const response = (log.cleanResponse || log.ai_response || "").toLowerCase();
+        const nameEn = (log.resolvedName || log.employee?.name || "").toLowerCase();
+        const nameTh = (log.resolvedNameTh || log.employee?.name_th || log.employee?.nickname_th || "").toLowerCase();
+        const lineDisplayName = (log.display_name || "").toLowerCase();
+
+        const matchesQuestion = question.includes(q);
+        const matchesResponse = response.includes(q);
+        const matchesNameTh = nameTh.includes(q);
+        const matchesNameEn = nameEn.includes(q) || lineDisplayName.includes(q);
+
+        if (!matchesQuestion && !matchesResponse && !matchesNameTh && !matchesNameEn) {
           return false;
         }
       }
@@ -608,7 +630,7 @@ export function ChatLogsTable({
             <div className="lg:col-span-4 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 dark:text-zinc-400 pointer-events-none" />
               <Input
-                placeholder="ค้นหาชื่อผู้ส่ง..."
+                placeholder="ค้นหาคำถาม, คำตอบ, หรือชื่อผู้ใช้..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -982,47 +1004,68 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
           </DialogTitle>
         </DialogHeader>
 
-        {/* Meta Bar */}
-        <div className="shrink-0 flex flex-wrap items-center gap-x-4 gap-y-2 p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 text-xs">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="outline" className={`text-[0.625rem] gap-1 font-bold ${badgeClass}`}>
-              {log.roleType === "admin" ? (
-                <Crown className="w-2.5 h-2.5" />
-              ) : log.isStaff ? (
-                <Briefcase className="w-2.5 h-2.5" />
-              ) : (
-                <UserCircle className="w-2.5 h-2.5" />
-              )}
-              {log.roleLabel}
-            </Badge>
-            <span className="font-extrabold text-zinc-900 dark:text-zinc-100">{log.resolvedName}</span>
-            {log.isStaff && (
-              <span className="text-[#0C645B] dark:text-emerald-400 font-semibold">({log.resolvedDept})</span>
-            )}
-            <span className="font-mono text-zinc-500 dark:text-zinc-400 text-[0.6875rem]">{log.cleanLineUserId}</span>
-          </div>
+        {/* User Profile & Meta Info Bar */}
+        <div className="shrink-0 p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 text-xs space-y-2.5">
+          {/* Top row: Profile & Names */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap min-w-0">
+              <Badge variant="outline" className={`text-[0.625rem] gap-1 font-bold shrink-0 ${badgeClass}`}>
+                {log.roleType === "admin" ? (
+                  <Crown className="w-2.5 h-2.5" />
+                ) : log.isStaff ? (
+                  <Briefcase className="w-2.5 h-2.5" />
+                ) : (
+                  <UserCircle className="w-2.5 h-2.5" />
+                )}
+                {log.roleLabel}
+              </Badge>
 
-          <span className="text-zinc-300 dark:text-zinc-400 hidden sm:inline">|</span>
-
-          <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400 font-medium">
-            <Calendar className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-            <span>
-              {date} {time}
-            </span>
-          </div>
-
-          {log.responseTime.seconds !== null && (
-            <>
-              <span className="text-zinc-300 dark:text-zinc-400 hidden sm:inline">|</span>
-              <div className="flex items-center gap-1 font-mono text-[#0C645B] dark:text-emerald-300 font-bold">
-                <Timer className="w-3.5 h-3.5" />
-                <span>{log.responseTime.formatted}</span>
+              <div className="flex items-baseline gap-2 flex-wrap min-w-0">
+                <span className="font-extrabold text-sm text-zinc-900 dark:text-zinc-100">
+                  {log.resolvedName}
+                </span>
+                {log.resolvedNameTh && log.resolvedNameTh !== log.resolvedName && (
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 font-normal">
+                    {log.resolvedNameTh}
+                  </span>
+                )}
+                {log.isStaff && (
+                  <span className="text-xs text-[#0C645B] dark:text-emerald-400 font-semibold">
+                    ({log.resolvedDept})
+                  </span>
+                )}
               </div>
-            </>
-          )}
+            </div>
 
-          <span className="text-zinc-300 dark:text-zinc-400 hidden sm:inline">|</span>
-          <StatusBadge status={log.status} />
+            <StatusBadge status={log.status} />
+          </div>
+
+          {/* Bottom row: Meta Information (User ID, Date/Time, Response Time) */}
+          <div className="flex items-center gap-3 text-[0.6875rem] text-zinc-500 dark:text-zinc-400 font-medium flex-wrap pt-2 border-t border-zinc-200/60 dark:border-zinc-700/60">
+            <div className="flex items-center gap-1 font-mono">
+              <span className="text-zinc-400 dark:text-zinc-500">ID:</span>
+              <span className="text-zinc-600 dark:text-zinc-300 select-all">{log.cleanLineUserId}</span>
+            </div>
+
+            <span className="text-zinc-300 dark:text-zinc-600">|</span>
+
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+              <span>
+                {date} {time}
+              </span>
+            </div>
+
+            {log.responseTime.seconds !== null && (
+              <>
+                <span className="text-zinc-300 dark:text-zinc-600">|</span>
+                <div className="flex items-center gap-1 font-mono text-[#0C645B] dark:text-emerald-300 font-bold">
+                  <Timer className="w-3.5 h-3.5" />
+                  <span>{log.responseTime.formatted}</span>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Conversation Stream */}
@@ -1030,9 +1073,8 @@ function ChatLogDetailDialog({ log, open, onOpenChange }: ChatLogDetailDialogPro
           {/* User Message */}
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-xs font-bold text-[#0C645B] dark:text-emerald-400">
-              <User className="w-3.5 h-3.5" />
-              <span>{log.resolvedName}</span>
-              <span className="font-normal text-zinc-500 dark:text-zinc-400 font-mono">({shortId(log.cleanLineUserId)})</span>
+              <User className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{log.resolvedName}</span>
             </div>
             <div className="rounded-xl border border-[#0C645B]/20 dark:border-emerald-500/30 bg-[#0C645B]/5 dark:bg-emerald-950/20 px-4 py-3">
               {log.cleanMessage ? (

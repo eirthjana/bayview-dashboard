@@ -29,6 +29,8 @@ export interface Employee {
   status: string;
   access_level: "staff" | "manager" | "admin";
   line_name: string | null;
+  name_th?: string | null;
+  nickname_th?: string | null;
 }
 
 export interface ChatLog {

@@ -71,7 +71,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
       // Employee list directly from employee_test
       supabase
         .from(EMPLOYEE_TABLE)
-        .select("emp_id, name, department, position, line_user_id, access_level, line_name, status"),
+        .select("emp_id, name, name_th, nickname_th, department, position, line_user_id, access_level, line_name, status"),
     ]);
 
     if (logsResult.error) throw logsResult.error;
